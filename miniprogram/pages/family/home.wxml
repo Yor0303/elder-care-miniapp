@@ -1,0 +1,23 @@
+<!--pages/family/home.wxml-->
+<view class="page">
+
+<!-- 欢迎语 -->
+<view class="header">
+  欢迎回来！
+</view>
+
+<!-- 上传入口 -->
+<view class="card upload" bindtap="goToUpload">
+  <view class="icon">📤</view>
+  <view class="title">上传照片/视频</view>
+  <view class="desc">记录重要记忆</view>
+</view>
+
+<!-- 管理入口 -->
+<view class="card manage" bindtap="goToManage">
+  <view class="icon">🗂️</view>
+  <view class="title">管理家人/记忆</view>
+  <view class="desc">查看、编辑家属信息</view>
+</view>
+
+</view>

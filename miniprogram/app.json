@@ -1,0 +1,21 @@
+{
+  "pages": [
+    "pages/login/login",
+    "pages/elder/home",
+    "pages/elder/family-tree",
+    "pages/elder/memory",
+    "pages/elder/health",
+    "pages/elder/profile",
+    "pages/family/home",
+    "pages/family/members",
+    "pages/family/upload",
+    "pages/family/profile",
+    "components/tree-node/tree-node"
+  ],
+  "window": {
+    "navigationBarTitleText": "忆站",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#F5F7FB"
+  }
+}

@@ -1,0 +1,54 @@
+.page {
+  padding: 80rpx 40rpx;
+  background-color: #F8F9FB;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+.logo {
+  font-size: 72rpx;
+  font-weight: bold;
+  color: #1A3A5F;
+  text-align: center;
+  margin-bottom: 20rpx;
+}
+
+.subtitle {
+  font-size: 32rpx;
+  color: #666;
+  text-align: center;
+  margin-bottom: 60rpx;
+}
+
+.card.feature {
+  display: flex;
+  align-items: center;
+  background: #FFFFFF;
+  padding: 50rpx 40rpx;
+  margin-bottom: 40rpx;
+  border-radius: 30rpx;
+  box-shadow: 0 10rpx 30rpx rgba(0,0,0,0.06);
+  transition: transform 0.2s;
+}
+
+.card.feature:active {
+  transform: scale(0.97);
+  background: #F0F4F8;
+}
+
+.icon {
+  font-size: 80rpx;
+  margin-right: 40rpx;
+}
+
+.title {
+  font-size: 44rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 10rpx;
+}
+
+.desc {
+  font-size: 30rpx;
+  color: #888;
+}

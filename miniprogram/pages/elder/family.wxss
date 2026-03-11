@@ -1,0 +1,22 @@
+/* pages/elder/family.wxss */
+.page {
+  padding: 40rpx;
+  background-color: #F8F9FB;
+  min-height: 100vh;
+}
+
+.section-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #1A3A5F;
+  margin-bottom: 20rpx;
+}
+
+.family-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.family-item {
+  margin-bottom: 30rpx;
+}

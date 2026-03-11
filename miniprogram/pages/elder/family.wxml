@@ -1,0 +1,14 @@
+<!--pages/elder/family.wxml-->
+<view class="page">
+
+<view class="section-title">家人列表</view>
+
+<scroll-view scroll-y="true" class="family-list">
+  <block wx:for="{{familyList}}" wx:key="id">
+    <view class="family-item" bindtap="goToProfile" data-id="{{item.id}}">
+      <family-avatar avatar="{{item.avatar}}" name="{{item.name}}" />
+    </view>
+  </block>
+</scroll-view>
+
+</view>

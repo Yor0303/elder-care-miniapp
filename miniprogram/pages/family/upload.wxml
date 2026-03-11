@@ -1,0 +1,33 @@
+<!--pages/family/upload.wxml-->
+<view class="page">
+
+<view class="title">上传新的回忆</view>
+
+<!-- 选择照片 -->
+<view class="card" bindtap="chooseImage">
+  <view class="icon">🖼️</view>
+  <view class="text">上传照片</view>
+</view>
+
+<!-- 选择视频 -->
+<view class="card" bindtap="chooseVideo">
+  <view class="icon">🎥</view>
+  <view class="text">上传视频</view>
+</view>
+
+<!-- 预览 -->
+<view class="preview" wx:if="{{fileUrl}}">
+  <image wx:if="{{type=='image'}}" src="{{fileUrl}}" mode="widthFix"></image>
+  <video wx:if="{{type=='video'}}" src="{{fileUrl}}" controls></video>
+</view>
+
+<!-- 描述 -->
+<input 
+  class="input"
+  placeholder="写下这段回忆..."
+  bindinput="onInput"
+/>
+
+<button class="btn" bindtap="uploadFile">上传</button>
+
+</view>

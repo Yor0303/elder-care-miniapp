@@ -1,0 +1,67 @@
+/* components/family-avatar/family-avatar.wxss */
+.node-wrapper{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  position:relative;
+  margin-bottom:60rpx;
+}
+
+.node{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  cursor:pointer;
+}
+
+.avatar{
+  width:120rpx;
+  height:120rpx;
+  border-radius:50%;
+  border:4rpx solid #4A90E2;
+  overflow:hidden;
+}
+
+.avatar image{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.name{
+  font-size:32rpx;
+  margin-top:10rpx;
+}
+
+.children-wrapper{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  position:relative;
+  margin-top:40rpx;
+}
+
+.vertical-line{
+  width:2rpx;
+  height:40rpx;
+  background:#4A90E2;
+  position:absolute;
+  top:-40rpx;
+  left:50%;
+}
+
+.children{
+  display:flex;
+  justify-content:center;
+  margin-top:20rpx;
+}
+
+/* 横线 */
+.children > view.horizontal-line{
+  position:absolute;
+  height:2rpx;
+  background:#4A90E2;
+  top:0;
+  left:0;
+  right:0;
+}

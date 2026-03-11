@@ -1,0 +1,64 @@
+/* pages/elder/health.wxss */
+.page{
+  padding:40rpx;
+  background:#F8F9FB;
+  min-height:100vh;
+}
+
+.title{
+  font-size:44rpx;
+  text-align:center;
+  font-weight:bold;
+  margin-bottom:40rpx;
+}
+
+.section{
+  margin-bottom:50rpx;
+}
+
+.section-title{
+  font-size:38rpx;
+  font-weight:bold;
+  margin-bottom:20rpx;
+  color:#4A90E2;
+}
+
+/* 健康卡片 */
+.card{
+  background:#fff;
+  padding:30rpx;
+  margin-bottom:20rpx;
+  border-radius:20rpx;
+  display:flex;
+  justify-content:space-between;
+  box-shadow:0 6rpx 16rpx rgba(0,0,0,0.05);
+}
+
+.label{
+  font-size:34rpx;
+}
+
+.value{
+  font-size:34rpx;
+  font-weight:bold;
+}
+
+/* 病史 */
+.history{
+  font-size:34rpx;
+}
+
+/* 药物 */
+.medicine{
+  flex-direction:column;
+}
+
+.med-name{
+  font-size:36rpx;
+  font-weight:bold;
+}
+
+.med-info{
+  font-size:30rpx;
+  color:#666;
+}

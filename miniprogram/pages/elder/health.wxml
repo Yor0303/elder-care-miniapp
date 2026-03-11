@@ -1,0 +1,64 @@
+<!--pages/elder/health.wxml-->
+<view class="page">
+
+<view class="title">医疗健康</view>
+
+<!-- 今日健康 -->
+<view class="section">
+  <view class="section-title">今日健康</view>
+
+  <view class="card">
+    <view class="label">血压</view>
+    <view class="value">120 / 80</view>
+  </view>
+
+  <view class="card">
+    <view class="label">心率</view>
+    <view class="value">72 次/分钟</view>
+  </view>
+
+  <view class="card">
+    <view class="label">血糖</view>
+    <view class="value">5.6 mmol/L</view>
+  </view>
+</view>
+
+
+<!-- 既往病史 -->
+<view class="section">
+
+  <view class="section-title">既往病史</view>
+
+  <view class="card history">
+    高血压（2015年确诊）
+  </view>
+
+  <view class="card history">
+    糖尿病（2018年确诊）
+  </view>
+
+</view>
+
+
+<!-- 当前用药 -->
+<view class="section">
+
+  <view class="section-title">当前用药</view>
+
+  <view class="card medicine">
+
+    <view class="med-name">降压药</view>
+    <view class="med-info">每日 1 次</view>
+
+  </view>
+
+  <view class="card medicine">
+
+    <view class="med-name">二甲双胍</view>
+    <view class="med-info">每日 2 次</view>
+
+  </view>
+
+</view>
+
+</view>

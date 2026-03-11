@@ -1,0 +1,61 @@
+/* components/tree-node/tree-node.wxss */
+.node-wrapper {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  position:relative;
+  margin-bottom:60rpx;
+}
+
+.node{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  cursor:pointer;
+}
+
+.avatar{
+  width:140rpx;
+  height:140rpx;
+  border-radius:50%;
+  border:4rpx solid #4A90E2;
+  overflow:hidden;
+}
+
+.name{
+  font-size:32rpx;
+  margin-top:10rpx;
+}
+
+.children-wrapper{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  position:relative;
+  margin-top:40rpx;
+}
+
+.vertical-line{
+  width:2rpx;
+  height:50rpx;
+  background:#4A90E2;
+  position:absolute;
+  top:-50rpx;
+  left:50%;
+}
+
+.children{
+  display:flex;
+  justify-content:center;
+  position:relative;
+  margin-top:20rpx;
+}
+
+.horizontal-line{
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
+  height:2rpx;
+  background:#4A90E2;
+}

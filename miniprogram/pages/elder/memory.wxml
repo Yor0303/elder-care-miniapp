@@ -1,0 +1,81 @@
+<view class="page">
+
+<!-- 顶部按钮 -->
+<view class="top-bar">
+  <view class="filter-btn" bindtap="openFilter">🔎 筛选</view>
+  <view class="story-btn" bindtap="startStory">▶ 故事模式</view>
+</view>
+
+<!-- 时间线 -->
+<view class="timeline">
+
+  <block wx:for="{{list}}" wx:key="id">
+
+    <view class="timeline-item">
+
+      <view class="year">
+        {{item.year}}
+      </view>
+
+      <view class="memory-card">
+
+        <image
+          class="memory-img"
+          src="{{item.img}}"
+          mode="aspectFill"
+        />
+
+        <view class="memory-title">
+          {{item.title}}
+        </view>
+
+      </view>
+
+    </view>
+
+  </block>
+
+</view>
+
+<!-- 遮罩 -->
+<view
+  wx:if="{{showFilter}}"
+  class="mask"
+  bindtap="closeFilter"
+></view>
+
+<!-- 筛选面板 -->
+<view wx:if="{{showFilter}}" class="filter-panel">
+
+  <view class="panel-title">
+    筛选回忆
+  </view>
+
+  <view class="filter-item" bindtap="toggleDecade">
+    🕰 年代
+    <text>></text>
+  </view>
+
+  <view wx:if="{{showDecade}}" class="options">
+    <view class="option" data-value="90" bindtap="filterDecade">90年代</view>
+    <view class="option" data-value="00" bindtap="filterDecade">2000年代</view>
+  </view>
+
+  <view class="filter-item" bindtap="toggleType">
+    📷 类型
+    <text>></text>
+  </view>
+
+  <view wx:if="{{showType}}" class="options">
+    <view class="option" data-value="family" bindtap="filterType">家庭</view>
+    <view class="option" data-value="travel" bindtap="filterType">旅行</view>
+    <view class="option" data-value="medical" bindtap="filterType">医疗</view>
+  </view>
+
+  <view class="reset" bindtap="resetFilter">
+    重置筛选
+  </view>
+
+</view>
+
+</view>

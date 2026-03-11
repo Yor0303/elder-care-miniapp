@@ -1,0 +1,33 @@
+<view class="page">
+
+<view class="logo">忆站</view>
+<view class="subtitle">帮助记住家人与回忆</view>
+
+<!-- 功能按钮：看家人 -->
+<view class="card feature" bindtap="goToFamily">
+  <view class="icon">👨‍👩‍👧</view>
+  <view class="info">
+    <view class="title">看家人</view>
+    <view class="desc">查看家属头像列表</view>
+  </view>
+</view>
+
+<!-- 功能按钮：看过去 -->
+<view class="card feature" bindtap="goToMemory">
+  <view class="icon">🕰️</view>
+  <view class="info">
+    <view class="title">看过去</view>
+    <view class="desc">浏览回忆时间线</view>
+  </view>
+</view>
+
+<!-- 功能按钮：今日健康 -->
+<view class="card feature" bindtap="goToHealth">
+  <view class="icon">❤️</view>
+  <view class="info">
+    <view class="title">今日健康</view>
+    <view class="desc">查看血压、血糖等健康信息</view>
+  </view>
+</view>
+
+</view>
