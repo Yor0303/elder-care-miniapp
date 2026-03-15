@@ -1,74 +1,45 @@
+const { getFamilyTreeAPI } = require("../../api/user");
+
 Page({
   data: {
     showCard: false,
     currentPerson: {},
-    treeData: [
-      {
-        id: 1,
-        name: "爷爷",
-        avatar: "/assets/images/avatar1.png",
-        relation: "祖父",
-        age: 78,
-        health: "良好",
-        description: "家里的长辈",
-        children: [
-          {
-            id: 2,
-            name: "爸爸",
-            avatar: "/assets/images/avatar2.png",
-            relation: "父亲",
-            age: 50,
-            health: "一般",
-            description: "非常关心家人",
-            children: [
-              {
-                id: 4,
-                name: "我",
-                avatar: "/assets/images/avatar4.png",
-                relation: "本人",
-                age: 25,
-                health: "健康",
-                description: "家庭成员",
-                children: [
-                  {
-                    id: 5,
-                    name: "孩子",
-                    avatar: "/assets/images/avatar5.png",
-                    relation: "孙子",
-                    age: 3,
-                    health: "健康",
-                    description: "家里的小宝贝"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            id: 3,
-            name: "叔叔",
-            avatar: "/assets/images/avatar3.png",
-            relation: "叔叔",
-            age: 48,
-            health: "良好",
-            description: "爸爸的弟弟"
-          }
-        ]
-      }
-    ]
+    treeData: []
+  },
+
+  async onLoad() {
+    try {
+      wx.showLoading({ title: "加载中" });
+      const treeData = await getFamilyTreeAPI();
+      this.setData({ treeData });
+      wx.hideLoading();
+    } catch (error) {
+      wx.hideLoading();
+      wx.showToast({
+        title: "加载失败",
+        icon: "none"
+      });
+      console.error("load family tree failed", error);
+    }
   },
 
   showCard(e) {
     const id = e.detail.id;
 
     const findPerson = (list) => {
-      for (const p of list) {
-        if (p.id === id) return p;
+      for (const person of list) {
+        if (person.id === id) {
+          return person;
+        }
 
-        if (p.children) {
-          const r = findPerson(p.children);
-          if (r) return r;
+        if (person.children && person.children.length) {
+          const result = findPerson(person.children);
+          if (result) {
+            return result;
+          }
         }
       }
+
       return null;
     };
 

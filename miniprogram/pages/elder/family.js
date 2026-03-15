@@ -1,26 +1,30 @@
-// pages/elder/family.js
+const { getPersonListAPI } = require("../../api/user");
+
 Page({
   data: {
     familyList: []
   },
 
-  onLoad() {
-    // 假数据
-    this.setData({
-      familyList: [
-        { id: 1, name: '爸爸', avatar: '/assets/images/avatar1.png' },
-        { id: 2, name: '妈妈', avatar: '/assets/images/avatar2.png' },
-        { id: 3, name: '孙子', avatar: '/assets/images/avatar3.png' }
-      ]
-    })
+  async onLoad() {
+    try {
+      wx.showLoading({ title: "加载中" });
+      const familyList = await getPersonListAPI();
+      this.setData({ familyList });
+      wx.hideLoading();
+    } catch (error) {
+      wx.hideLoading();
+      wx.showToast({
+        title: "加载失败",
+        icon: "none"
+      });
+      console.error("load family list failed", error);
+    }
   },
 
-  // 点击家属头像跳转人物详情
   goToProfile(e) {
-    const id = e.currentTarget.dataset.id
+    const id = e.currentTarget.dataset.id;
     wx.navigateTo({
-      url: `/pages/elder/profile?familyId=${id}`
-    })
+      url: `/pages/elder/profile?personId=${id}`
+    });
   }
-
-})
+});

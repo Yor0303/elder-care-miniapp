@@ -1,2 +1,26 @@
-<!--pages/elder/profile.wxml-->
-<text>pages/elder/profile.wxml</text>
+<view class="page" wx:if="{{person}}">
+  <image class="avatar" src="{{person.avatar}}" mode="aspectFill"></image>
+  <view class="name">{{person.name}}</view>
+  <view class="meta">关系：{{person.relation}}</view>
+  <view class="meta">年龄：{{person.age}}</view>
+  <view class="meta">性别：{{person.gender}}</view>
+  <view class="meta">简介：{{person.description}}</view>
+
+  <view class="section-title">健康信息</view>
+  <view class="meta">血压：{{person.healthStatus.bloodPressure}}</view>
+  <view class="meta">心率：{{person.healthStatus.heartRate}}</view>
+  <view class="meta">血糖：{{person.healthStatus.bloodSugar}}</view>
+
+  <view class="section-title">回忆片段</view>
+  <block wx:for="{{person.memories}}" wx:key="id">
+    <view class="memory-card">
+      <view>类型：{{item.type}}</view>
+      <view>时间：{{item.time}}</view>
+      <view>描述：{{item.desc}}</view>
+    </view>
+  </block>
+</view>
+
+<view class="page" wx:else>
+  <text>暂无人物信息</text>
+</view>
