@@ -1,1 +1,125 @@
 /* pages/family/members.wxss */
+.page {
+  padding: 40rpx;
+  background: #F8F9FB;
+  min-height: 100vh;
+}
+
+.title {
+  font-size: 44rpx;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 40rpx;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  padding: 100rpx 0;
+}
+
+.loading {
+  font-size: 30rpx;
+  color: #999;
+}
+
+/* 成员列表 */
+.member-list {
+  margin-bottom: 30rpx;
+}
+
+.member-card {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+  border-radius: 20rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.05);
+}
+
+.avatar {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50%;
+  margin-right: 25rpx;
+  background: #f0f0f0;
+}
+
+.info {
+  flex: 1;
+}
+
+.name {
+  font-size: 34rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.meta {
+  margin-top: 10rpx;
+}
+
+.relation {
+  font-size: 28rpx;
+  color: #4A90E2;
+  margin-right: 20rpx;
+}
+
+.age {
+  font-size: 28rpx;
+  color: #999;
+}
+
+.desc {
+  font-size: 26rpx;
+  color: #999;
+  margin-top: 10rpx;
+}
+
+.arrow {
+  font-size: 40rpx;
+  color: #ccc;
+}
+
+.edit-btn {
+  font-size: 26rpx;
+  color: #4A90E2;
+  padding: 10rpx 20rpx;
+  border: 1rpx solid #4A90E2;
+  border-radius: 20rpx;
+}
+
+/* 空状态 */
+.empty-state {
+  text-align: center;
+  padding: 100rpx 0;
+}
+
+.empty-icon {
+  font-size: 100rpx;
+  margin-bottom: 20rpx;
+}
+
+.empty-text {
+  font-size: 30rpx;
+  color: #999;
+}
+
+/* 添加按钮 */
+.add-member-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  padding: 35rpx;
+  border-radius: 20rpx;
+  border: 2rpx dashed #4A90E2;
+  color: #4A90E2;
+  font-size: 32rpx;
+}
+
+.add-icon {
+  font-size: 40rpx;
+  margin-right: 10rpx;
+}

@@ -3,21 +3,57 @@
 
 <!-- 欢迎语 -->
 <view class="header">
-  欢迎回来！
+  <view class="welcome">欢迎回来！</view>
+  <view class="subtitle">您可以在这里为 {{elderName}} 上传和管理信息</view>
 </view>
 
-<!-- 上传入口 -->
-<view class="card upload" bindtap="goToUpload">
-  <view class="icon">📤</view>
-  <view class="title">上传照片/视频</view>
-  <view class="desc">记录重要记忆</view>
+<!-- 功能入口 -->
+<view class="menu-section">
+
+  <!-- 上传回忆 -->
+  <view class="card" bindtap="goToUpload">
+    <view class="card-left">
+      <view class="icon">📤</view>
+      <view class="card-content">
+        <view class="card-title">上传回忆</view>
+        <view class="card-desc">照片、视频、故事记录</view>
+      </view>
+    </view>
+    <view class="arrow">›</view>
+  </view>
+
+  <!-- 健康管理 -->
+  <view class="card" bindtap="goToHealthManage">
+    <view class="card-left">
+      <view class="icon">💊</view>
+      <view class="card-content">
+        <view class="card-title">健康管理</view>
+        <view class="card-desc">健康数据、病史、用药</view>
+      </view>
+    </view>
+    <view class="arrow">›</view>
+  </view>
+
+  <!-- 家庭成员 -->
+  <view class="card" bindtap="goToMembers">
+    <view class="card-left">
+      <view class="icon">👨‍👩‍👧‍👦</view>
+      <view class="card-content">
+        <view class="card-title">家庭成员</view>
+        <view class="card-desc">查看和管理家人信息</view>
+      </view>
+    </view>
+    <view class="arrow">›</view>
+  </view>
+
 </view>
 
-<!-- 管理入口 -->
-<view class="card manage" bindtap="goToManage">
-  <view class="icon">🗂️</view>
-  <view class="title">管理家人/记忆</view>
-  <view class="desc">查看、编辑家属信息</view>
+<!-- 提示信息 -->
+<view class="tips">
+  <view class="tips-title">💡 温馨提示</view>
+  <view class="tips-content">
+    上传的内容将同步显示在老人端小程序中，方便老人随时查看家人的关爱。
+  </view>
 </view>
 
 </view>

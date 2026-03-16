@@ -3,61 +3,71 @@
 
 <view class="title">医疗健康</view>
 
+<!-- 加载状态 -->
+<view wx:if="{{loading}}" class="loading-container">
+  <view class="loading">加载中...</view>
+</view>
+
+<!-- 错误提示 -->
+<view wx:if="{{errorMsg}}" class="error-container">
+  <view class="error-msg">{{errorMsg}}</view>
+  <button class="retry-btn" bindtap="loadHealthInfo">重试</button>
+</view>
+
+<!-- 正常内容 -->
+<view wx:if="{{!loading && !errorMsg}}">
+
 <!-- 今日健康 -->
 <view class="section">
   <view class="section-title">今日健康</view>
 
-  <view class="card">
+  <view class="card" bindtap="updateHealthData">
     <view class="label">血压</view>
-    <view class="value">120 / 80</view>
+    <view class="value">{{todayHealth.bloodPressure}}</view>
   </view>
 
-  <view class="card">
+  <view class="card" bindtap="updateHealthData">
     <view class="label">心率</view>
-    <view class="value">72 次/分钟</view>
+    <view class="value">{{todayHealth.heartRate}} 次/分钟</view>
   </view>
 
-  <view class="card">
+  <view class="card" bindtap="updateHealthData">
     <view class="label">血糖</view>
-    <view class="value">5.6 mmol/L</view>
+    <view class="value">{{todayHealth.bloodSugar}} mmol/L</view>
   </view>
 </view>
-
 
 <!-- 既往病史 -->
 <view class="section">
-
   <view class="section-title">既往病史</view>
 
-  <view class="card history">
-    高血压（2015年确诊）
+  <view wx:if="{{medicalHistory.length === 0}}" class="empty-tip">
+    暂无病史记录
   </view>
 
-  <view class="card history">
-    糖尿病（2018年确诊）
+  <view wx:for="{{medicalHistory}}" wx:key="id" class="card history">
+    {{item.name}}（{{item.diagnoseYear}}年确诊）
+    <view wx:if="{{item.notes}}" class="notes">{{item.notes}}</view>
   </view>
 
 </view>
-
 
 <!-- 当前用药 -->
 <view class="section">
 
   <view class="section-title">当前用药</view>
 
-  <view class="card medicine">
-
-    <view class="med-name">降压药</view>
-    <view class="med-info">每日 1 次</view>
-
+  <view wx:if="{{medications.length === 0}}" class="empty-tip">
+    暂无用药记录
   </view>
 
-  <view class="card medicine">
-
-    <view class="med-name">二甲双胍</view>
-    <view class="med-info">每日 2 次</view>
-
+  <view wx:for="{{medications}}" wx:key="id" class="card medicine">
+    <view class="med-name">{{item.name}}</view>
+    <view class="med-info">{{item.frequency}}</view>
+    <view wx:if="{{item.time}}" class="med-time">{{item.time}}</view>
   </view>
+
+</view>
 
 </view>
 

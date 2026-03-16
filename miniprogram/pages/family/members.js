@@ -1,66 +1,60 @@
 // pages/family/members.js
+const { getPersonListAPI } = require("../../api/user");
+
 Page({
 
-  /**
-   * 页面的初始数据
-   */
   data: {
-
+    loading: false,
+    members: []
   },
 
-  /**
-   * 生命周期函数--监听页面加载
-   */
   onLoad() {
-
+    this.loadMembers();
   },
 
-  /**
-   * 生命周期函数--监听页面初次渲染完成
-   */
-  onReady() {
-
-  },
-
-  /**
-   * 生命周期函数--监听页面显示
-   */
   onShow() {
+    this.loadMembers();
+  },
 
+  async loadMembers() {
+    this.setData({ loading: true });
+
+    try {
+      const members = await getPersonListAPI();
+
+      this.setData({
+        members,
+        loading: false
+      });
+
+    } catch (error) {
+      console.error("加载成员失败:", error);
+      this.setData({ loading: false });
+      wx.showToast({ title: "加载失败", icon: "none" });
+    }
+  },
+
+  async onPullDownRefresh() {
+    await this.loadMembers();
+    wx.stopPullDownRefresh();
   },
 
   /**
-   * 生命周期函数--监听页面隐藏
+   * 编辑成员
    */
-  onHide() {
-
+  editMember(e) {
+    const { id } = e.currentTarget.dataset;
+    wx.navigateTo({
+      url: `/pages/family/member-edit?id=${id}`
+    });
   },
 
   /**
-   * 生命周期函数--监听页面卸载
+   * 添加新成员
    */
-  onUnload() {
-
-  },
-
-  /**
-   * 页面相关事件处理函数--监听用户下拉动作
-   */
-  onPullDownRefresh() {
-
-  },
-
-  /**
-   * 页面上拉触底事件的处理函数
-   */
-  onReachBottom() {
-
-  },
-
-  /**
-   * 用户点击右上角分享
-   */
-  onShareAppMessage() {
-
+  addMember() {
+    wx.navigateTo({
+      url: '/pages/family/member-edit'
+    });
   }
-})
+});

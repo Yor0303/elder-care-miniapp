@@ -1,55 +1,93 @@
 /* pages/family/home.wxss */
-.page{
-  padding:40rpx;
-  background:#F8F9FB;
-  min-height:100vh;
+.page {
+  padding: 40rpx;
+  background: #F8F9FB;
+  min-height: 100vh;
 }
 
-.header{
-  font-size:36rpx;
-  font-weight:bold;
-  text-align:center;
-  margin-bottom:40rpx;
+.header {
+  text-align: center;
+  margin-bottom: 50rpx;
 }
 
-.card{
-  display:flex;
-  align-items:center;
-  background:#FFFFFF;
-  padding:50rpx 40rpx;
-  margin-bottom:40rpx;
-  border-radius:30rpx;
-  box-shadow:0 10rpx 30rpx rgba(0,0,0,0.06);
+.welcome {
+  font-size: 44rpx;
+  font-weight: bold;
+  color: #1A3A5F;
+}
+
+.subtitle {
+  font-size: 28rpx;
+  color: #888;
+  margin-top: 15rpx;
+}
+
+/* 菜单区域 */
+.menu-section {
+  margin-bottom: 40rpx;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #FFFFFF;
+  padding: 35rpx 40rpx;
+  margin-bottom: 25rpx;
+  border-radius: 24rpx;
+  box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.06);
   transition: transform 0.2s;
 }
 
-.card:active{
-  transform: scale(0.97);
-  background:#F0F4F8;
+.card:active {
+  transform: scale(0.98);
+  background: #F5F8FC;
 }
 
-.icon{
-  font-size:80rpx;
-  margin-right:40rpx;
+.card-left {
+  display: flex;
+  align-items: center;
 }
 
-.title{
-  font-size:36rpx;
-  font-weight:600;
-  color:#333;
-  margin-bottom:10rpx;
+.icon {
+  font-size: 60rpx;
+  margin-right: 30rpx;
 }
 
-.desc{
-  font-size:28rpx;
-  color:#888;
+.card-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8rpx;
 }
 
-/* 不同卡片配色区分 */
-.upload{
-  border-left:6rpx solid #4A90E2;
+.card-desc {
+  font-size: 26rpx;
+  color: #999;
 }
 
-.manage{
-  border-left:6rpx solid #50E3C2;
+.arrow {
+  font-size: 36rpx;
+  color: #ccc;
+}
+
+/* 提示信息 */
+.tips {
+  background: #FFF9E6;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin-top: 40rpx;
+}
+
+.tips-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #D4A000;
+  margin-bottom: 15rpx;
+}
+
+.tips-content {
+  font-size: 26rpx;
+  color: #997A00;
+  line-height: 1.6;
 }

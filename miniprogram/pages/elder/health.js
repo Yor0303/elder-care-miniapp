@@ -1,46 +1,94 @@
-// pages/elder/health.ts
+// pages/elder/health.js
+const { getHealthInfoAPI, updateTodayHealthAPI } = require("../../api/user");
+
 Page({
 
   /**
    * 页面的初始数据
    */
   data: {
+    loading: false,
+    errorMsg: "",
 
+    // 今日健康数据
+    todayHealth: {
+      bloodPressure: "--/--",
+      heartRate: "--",
+      bloodSugar: "--"
+    },
+
+    // 既往病史
+    medicalHistory: [],
+
+    // 当前用药
+    medications: []
   },
 
   /**
    * 生命周期函数--监听页面加载
    */
   onLoad() {
-
+    this.loadHealthInfo();
   },
 
   /**
-   * 生命周期函数--监听页面初次渲染完成
+   * 从云端加载健康信息
    */
-  onReady() {
+  async loadHealthInfo() {
+    this.setData({ loading: true, errorMsg: "" });
 
+    try {
+      const healthInfo = await getHealthInfoAPI();
+
+      this.setData({
+        todayHealth: healthInfo.todayHealth,
+        medicalHistory: healthInfo.medicalHistory,
+        medications: healthInfo.medications,
+        loading: false
+      });
+
+    } catch (error) {
+      console.error("加载健康信息失败:", error);
+      this.setData({
+        loading: false,
+        errorMsg: error.message || "加载失败，请重试"
+      });
+
+      wx.showToast({
+        title: "加载失败",
+        icon: "none"
+      });
+    }
   },
 
   /**
-   * 生命周期函数--监听页面显示
+   * 下拉刷新
    */
-  onShow() {
-
+  async onPullDownRefresh() {
+    await this.loadHealthInfo();
+    wx.stopPullDownRefresh();
   },
 
   /**
-   * 生命周期函数--监听页面隐藏
+   * 更新今日健康数据
    */
-  onHide() {
-
-  },
-
-  /**
-   * 生命周期函数--监听页面卸载
-   */
-  onUnload() {
-
+  async updateHealthData() {
+    wx.showModal({
+      title: "更新健康数据",
+      editable: true,
+      placeholderText: "请输入血压值（如 120/80）",
+      success: async (res) => {
+        if (res.confirm && res.content) {
+          try {
+            await updateTodayHealthAPI({ bloodPressure: res.content });
+            await this.loadHealthInfo();
+            wx.showToast({ title: "更新成功", icon: "success" });
+          } catch (error) {
+            wx.showToast({ title: "更新失败", icon: "none" });
+          }
+        }
+      }
+    });
   },
 
   /**

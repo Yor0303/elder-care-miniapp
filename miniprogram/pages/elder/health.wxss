@@ -62,3 +62,59 @@
   font-size:30rpx;
   color:#666;
 }
+
+.med-time{
+  font-size:28rpx;
+  color:#999;
+  margin-top:8rpx;
+}
+
+.notes{
+  font-size:28rpx;
+  color:#999;
+  margin-top:8rpx;
+}
+
+/* 加载状态 */
+.loading-container{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 100rpx 0;
+}
+
+.loading{
+  font-size: 30rpx;
+  color: #999;
+}
+
+/* 错误提示 */
+.error-container{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 100rpx 0;
+}
+
+.error-msg{
+  font-size: 30rpx;
+  color: #ff4d4f;
+  margin-bottom: 20rpx;
+}
+
+.retry-btn{
+  font-size: 28rpx;
+  color: #4A90E2;
+  background: transparent;
+  border: 2rpx solid #4A90E2;
+  padding: 16rpx 40rpx;
+  border-radius: 30rpx;
+}
+
+/* 空状态 */
+.empty-tip{
+  font-size: 30rpx;
+  color: #999;
+  text-align: center;
+  padding: 30rpx 0;
+}

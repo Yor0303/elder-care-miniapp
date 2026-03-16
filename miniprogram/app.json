@@ -10,6 +10,9 @@
     "pages/family/members",
     "pages/family/upload",
     "pages/family/profile",
+    "pages/family/health-manage",
+    "pages/family/member-edit",
+    "pages/family/memory-edit",
     "components/tree-node/tree-node"
   ],
   "window": {
