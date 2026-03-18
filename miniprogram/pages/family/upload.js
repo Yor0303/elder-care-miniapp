@@ -1,8 +1,7 @@
 // pages/family/upload.js
-const { addMemoryAPI } = require("../../api/user");
+const { addMemoryAPI, getPersonListAPI } = require("../../api/user");
 
 Page({
-
   data: {
     fileUrl: "",
     cloudUrl: "",
@@ -11,7 +10,63 @@ Page({
     story: "",
     year: new Date().getFullYear(),
     person: "",
+    personOptions: [],
+    personIndex: -1,
     uploading: false
+  },
+
+  onLoad() {
+    this.loadPersonOptions();
+  },
+
+  async loadPersonOptions() {
+    try {
+      const persons = await getPersonListAPI();
+      const names = (persons || [])
+        .map((item) => (item && item.name ? item.name.trim() : ""))
+        .filter(Boolean);
+      const options = this.normalizePersonOptions(names);
+      this.setData({ personOptions: options });
+      this.syncPersonIndex(this.data.person, options);
+    } catch (error) {
+      const options = this.normalizePersonOptions([]);
+      this.setData({ personOptions: options });
+      this.syncPersonIndex(this.data.person, options);
+    }
+  },
+
+  normalizePersonOptions(names) {
+    const result = [];
+    const seen = new Set();
+    const base = ["本人", ...names];
+
+    base.forEach((name) => {
+      const value = (name || "").trim();
+      if (!value) return;
+      if (seen.has(value)) return;
+      seen.add(value);
+      result.push(value);
+    });
+
+    return result;
+  },
+
+  syncPersonIndex(personValue, options = this.data.personOptions) {
+    const person = (personValue || "").trim();
+    if (!options || options.length === 0) {
+      this.setData({ personIndex: -1 });
+      return;
+    }
+
+    let index = options.findIndex((name) => name === person);
+    if (person && index === -1) {
+      const nextOptions = [person, ...options.filter((name) => name !== person)];
+      index = 0;
+      this.setData({ personOptions: nextOptions, personIndex: index });
+      return;
+    }
+
+    this.setData({ personIndex: person ? index : -1 });
   },
 
   chooseImage() {
@@ -46,11 +101,13 @@ Page({
   },
 
   onYearChange(e) {
-    this.setData({ year: parseInt(e.detail.value) || new Date().getFullYear() });
+    this.setData({ year: parseInt(e.detail.value, 10) || new Date().getFullYear() });
   },
 
-  onPersonInput(e) {
-    this.setData({ person: e.detail.value });
+  onPersonChange(e) {
+    const index = Number(e.detail.value);
+    const person = this.data.personOptions[index] || "";
+    this.setData({ personIndex: index, person });
   },
 
   /**
@@ -58,7 +115,7 @@ Page({
    */
   uploadToCloud(tempFilePath) {
     return new Promise((resolve, reject) => {
-      const cloudPath = `memories/${Date.now()}-${Math.random().toString(36).substr(2, 9)}${tempFilePath.match(/\.[^.]+$/)[0] || '.jpg'}`;
+      const cloudPath = `memories/${Date.now()}-${Math.random().toString(36).substr(2, 9)}${tempFilePath.match(/\.[^.]+$/)[0] || ".jpg"}`;
 
       wx.cloud.uploadFile({
         cloudPath: cloudPath,
@@ -70,7 +127,7 @@ Page({
   },
 
   /**
-   * 提交记忆
+   * 提交回忆
    */
   async submitMemory() {
     const { title, story, year, person, fileUrl, type } = this.data;
@@ -97,7 +154,7 @@ Page({
         wx.hideLoading();
       }
 
-      // 保存记忆到数据库
+      // 保存回忆到数据库
       wx.showLoading({ title: "保存中..." });
       await addMemoryAPI({
         title: title.trim(),
@@ -120,9 +177,9 @@ Page({
         story: "",
         year: new Date().getFullYear(),
         person: "",
+        personIndex: -1,
         uploading: false
       });
-
     } catch (error) {
       wx.hideLoading();
       console.error("上传失败:", error);
@@ -143,5 +200,4 @@ Page({
       type: ""
     });
   }
-
 });

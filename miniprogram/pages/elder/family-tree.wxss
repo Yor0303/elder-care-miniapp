@@ -1,47 +1,148 @@
 /* pages/elder/family-tree.wxss */
-.page{
-  padding:40rpx;
-  background:#F8F9FB;
-  min-height:100vh;
+:root {
+  --paper: #fff8ec;
+  --ink: #1a2b3c;
+  --accent: #c07a3f;
+  --shadow: rgba(18, 32, 46, 0.18);
 }
 
-.title{
-  font-size:44rpx;
-  font-weight:bold;
-  text-align:center;
-  margin-bottom:40rpx;
+.page {
+  min-height: 100vh;
+  background: radial-gradient(circle at 15% 10%, #fff3e0 0%, #f5f1ea 40%, #eef2f5 100%);
+  padding: 40rpx 30rpx 80rpx;
+  box-sizing: border-box;
 }
 
-/* 横向滑动容器 */
-.tree-scroll{
-  width:100%;
-  overflow-x:auto;
+.title {
+  text-align: center;
+  font-size: 46rpx;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 4rpx;
+  margin-bottom: 40rpx;
 }
 
-/* 弹窗 */
-.mask{
-  position:fixed;top:0;left:0;right:0;bottom:0;
-  background:rgba(0,0,0,0.4);
-  display:flex;justify-content:center;align-items:center;z-index:100;
+.album {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-.card{
-  width:70%;
-  background:#fff;
-  padding:40rpx;
-  border-radius:30rpx;
-  text-align:center;
-  box-shadow:0 10rpx 30rpx rgba(0,0,0,0.2);
+.book {
+  position: relative;
+  width: 600rpx;
+  height: 820rpx;
+  perspective: 2000rpx;
 }
 
-.card .avatar{
-  width:140rpx;height:140rpx;border-radius:50%;margin-bottom:20rpx;
+.page-sheet {
+  position: absolute;
+  inset: 0;
+  border-radius: 26rpx;
+  background: var(--paper);
+  box-shadow: 0 20rpx 60rpx var(--shadow);
+  overflow: hidden;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+  transition: transform 0.6s ease;
 }
 
-.card .name{font-size:36rpx;font-weight:bold;}
-.card .relation,.card .age,.card .health{font-size:28rpx;color:#888;margin-bottom:10rpx;}
-.card .desc{font-size:28rpx;margin-bottom:30rpx;}
-.card .close{
-  width:150rpx;height:50rpx;border-radius:25rpx;
-  background:#4A90E2;color:#fff;font-size:28rpx;
+.page-front {
+  transform: rotateY(0deg);
+  transform-origin: left center;
+  z-index: 2;
+}
+
+.page-back {
+  transform: rotateY(180deg);
+  transform-origin: left center;
+}
+
+.book.flip-next .page-front {
+  transform: rotateY(-180deg);
+}
+
+.book.flip-next .page-back {
+  transform: rotateY(0deg);
+}
+
+.book.flip-prev .page-front {
+  transform-origin: right center;
+  transform: rotateY(180deg);
+}
+
+.book.flip-prev .page-back {
+  transform-origin: right center;
+  transform: rotateY(0deg);
+}
+
+.photo {
+  width: 100%;
+  height: 520rpx;
+  object-fit: cover;
+  border-bottom: 8rpx solid #e6d8c6;
+}
+
+.caption {
+  padding: 28rpx 36rpx 0;
+  color: var(--ink);
+}
+
+.name {
+  font-size: 40rpx;
+  font-weight: 700;
+  margin-bottom: 8rpx;
+}
+
+.relation {
+  font-size: 30rpx;
+  color: var(--accent);
+  margin-bottom: 10rpx;
+}
+
+.desc {
+  font-size: 26rpx;
+  color: #5c636b;
+  line-height: 1.6;
+}
+
+.empty {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8b8b8b;
+  font-size: 30rpx;
+}
+
+.nav {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 36rpx;
+}
+
+.nav-btn {
+  width: 200rpx;
+  height: 80rpx;
+  border-radius: 40rpx;
+  background: #1a2b3c;
+  color: #fff;
+  font-size: 30rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-indicator {
+  font-size: 28rpx;
+  color: #5c636b;
+}
+
+@media (max-width: 375px) {
+  .book {
+    width: 540rpx;
+    height: 760rpx;
+  }
 }

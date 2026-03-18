@@ -210,8 +210,41 @@ async function getElderInfo() {
     age: user.age,
     gender: user.gender,
     relation: user.relation,
-    healthStatus: user.healthStatus
+    healthStatus: user.healthStatus,
+    birthYear: user.birthYear || "",
+    hometown: user.hometown || "",
+    address: user.address || "",
+    emergencyContactName: user.emergencyContactName || "",
+    emergencyContactPhone: user.emergencyContactPhone || "",
+    allergies: user.allergies || "",
+    medications: user.medications || "",
+    notes: user.notes || ""
   };
+}
+
+async function updateElderInfo(event) {
+  const user = await getCurrentUser();
+  const updateData = { updatedAt: new Date().toISOString() };
+
+  if (event.name !== undefined) updateData.name = event.name;
+  if (event.avatar !== undefined) updateData.avatar = event.avatar;
+  if (event.age !== undefined) updateData.age = event.age;
+  if (event.gender !== undefined) updateData.gender = event.gender;
+  if (event.relation !== undefined) updateData.relation = event.relation;
+  if (event.birthYear !== undefined) updateData.birthYear = event.birthYear;
+  if (event.hometown !== undefined) updateData.hometown = event.hometown;
+  if (event.address !== undefined) updateData.address = event.address;
+  if (event.emergencyContactName !== undefined) updateData.emergencyContactName = event.emergencyContactName;
+  if (event.emergencyContactPhone !== undefined) updateData.emergencyContactPhone = event.emergencyContactPhone;
+  if (event.allergies !== undefined) updateData.allergies = event.allergies;
+  if (event.medications !== undefined) updateData.medications = event.medications;
+  if (event.notes !== undefined) updateData.notes = event.notes;
+
+  await db.collection(COLLECTION_NAMES.users).doc(user._id).update({
+    data: updateData
+  });
+
+  return { success: true };
 }
 
 /**
@@ -545,6 +578,8 @@ exports.main = async (event) => {
         return await getPersonDetail(event);
       case "getElderInfo":
         return await getElderInfo();
+      case "updateElderInfo":
+        return await updateElderInfo(event);
       case "addPerson":
         return await addPerson(event);
       case "updatePerson":

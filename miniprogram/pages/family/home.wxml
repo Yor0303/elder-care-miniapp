@@ -10,13 +10,25 @@
 <!-- 功能入口 -->
 <view class="menu-section">
 
-  <!-- 上传回忆 -->
-  <view class="card" bindtap="goToUpload">
+  <!-- 老人资料 -->
+  <view class="card" bindtap="goToProfile">
     <view class="card-left">
-      <view class="icon">📤</view>
+      <view class="icon">🪪</view>
       <view class="card-content">
-        <view class="card-title">上传回忆</view>
-        <view class="card-desc">照片、视频、故事记录</view>
+        <view class="card-title">老人资料</view>
+        <view class="card-desc">完善身份信息与紧急联系人</view>
+      </view>
+    </view>
+    <view class="arrow">›</view>
+  </view>
+
+  <!-- 回忆管理 -->
+  <view class="card" bindtap="goToMemoryManage">
+    <view class="card-left">
+      <view class="icon">🗂️</view>
+      <view class="card-content">
+        <view class="card-title">回忆管理</view>
+        <view class="card-desc">像时间线一样查看与修改</view>
       </view>
     </view>
     <view class="arrow">›</view>

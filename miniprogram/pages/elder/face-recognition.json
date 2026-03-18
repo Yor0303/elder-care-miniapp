@@ -1,0 +1,9 @@
+{
+  "usingComponents": {},
+  "navigationBarTitleText": "人脸识别",
+  "permission": {
+    "scope.camera": {
+      "desc": "用于人脸识别功能"
+    }
+  }
+}

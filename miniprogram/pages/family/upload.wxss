@@ -105,6 +105,25 @@
   font-size: 32rpx;
 }
 
+.form-picker {
+  background: #F8F9FB;
+  padding: 25rpx 30rpx;
+  border-radius: 15rpx;
+  font-size: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.form-picker .placeholder {
+  color: #999;
+}
+
+.form-picker .arrow {
+  color: #ccc;
+  font-size: 36rpx;
+}
+
 .form-textarea {
   background: #F8F9FB;
   padding: 25rpx 30rpx;

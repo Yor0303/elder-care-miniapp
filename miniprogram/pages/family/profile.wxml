@@ -1,2 +1,95 @@
-<!--pages/family/profile.wxml-->
-<text>pages/family/profile.wxml</text>
+<!-- pages/family/profile.wxml -->
+<view class="page">
+  <view wx:if="{{loading}}" class="loading">加载中...</view>
+
+  <view wx:else>
+    <view class="section">
+      <view class="section-title">老人资料</view>
+
+      <view class="avatar-card">
+        <image class="avatar" src="{{avatar || '/assets/images/avatar1.png'}}" mode="aspectFill"></image>
+        <button class="avatar-btn" bindtap="chooseAvatar">更换头像</button>
+      </view>
+
+      <view class="form-item">
+        <view class="form-label">姓名</view>
+        <input class="form-input" placeholder="请输入姓名" value="{{name}}" bindinput="onNameInput" />
+      </view>
+
+      <view class="form-item">
+        <view class="form-label">性别</view>
+        <picker
+          mode="selector"
+          range="{{genderOptions}}"
+          value="{{genderIndex < 0 ? 0 : genderIndex}}"
+          bindchange="onGenderChange"
+        >
+          <view class="form-picker">
+            <text class="{{genderIndex < 0 ? 'placeholder' : ''}}">
+              {{genderIndex < 0 ? "请选择性别" : genderOptions[genderIndex]}}
+            </text>
+            <text class="arrow">></text>
+          </view>
+        </picker>
+      </view>
+
+      <view class="form-row">
+        <view class="form-item half">
+          <view class="form-label">年龄</view>
+          <input class="form-input" type="number" placeholder="如 76" value="{{age}}" bindinput="onAgeInput" />
+        </view>
+        <view class="form-item half">
+          <view class="form-label">出生年份</view>
+          <input class="form-input" type="number" placeholder="如 1948" value="{{birthYear}}" bindinput="onBirthYearInput" />
+        </view>
+      </view>
+
+      <view class="form-item">
+        <view class="form-label">籍贯</view>
+        <input class="form-input" placeholder="如 上海" value="{{hometown}}" bindinput="onHometownInput" />
+      </view>
+
+      <view class="form-item">
+        <view class="form-label">常住地址</view>
+        <input class="form-input" placeholder="请输入地址" value="{{address}}" bindinput="onAddressInput" />
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-title">紧急联系人</view>
+
+      <view class="form-item">
+        <view class="form-label">联系人姓名</view>
+        <input class="form-input" placeholder="请输入联系人姓名" value="{{emergencyContactName}}" bindinput="onEmergencyContactNameInput" />
+      </view>
+
+      <view class="form-item">
+        <view class="form-label">联系人电话</view>
+        <input class="form-input" type="number" placeholder="请输入电话号码" value="{{emergencyContactPhone}}" bindinput="onEmergencyContactPhoneInput" />
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-title">健康备注</view>
+
+      <view class="form-item">
+        <view class="form-label">过敏史</view>
+        <input class="form-input" placeholder="如 青霉素过敏" value="{{allergies}}" bindinput="onAllergiesInput" />
+      </view>
+
+      <view class="form-item">
+        <view class="form-label">常用药</view>
+        <input class="form-input" placeholder="如 降压药" value="{{medications}}" bindinput="onMedicationsInput" />
+      </view>
+
+      <view class="form-item">
+        <view class="form-label">备注</view>
+        <textarea class="form-textarea" placeholder="补充说明..." value="{{notes}}" bindinput="onNotesInput" maxlength="300" />
+      </view>
+    </view>
+
+    <button class="save-btn" bindtap="save" disabled="{{saving}}">
+      {{saving ? "保存中..." : "保存资料"}}
+    </button>
+  </view>
+</view>

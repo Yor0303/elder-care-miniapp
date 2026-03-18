@@ -5,7 +5,7 @@
 
 <!-- 功能按钮：看家人 -->
 <view class="card feature" bindtap="goToFamily">
-  <view class="icon">👨‍👩‍👧</view>
+  <view class="icon">👨‍👩‍👧‍👦</view>
   <view class="info">
     <view class="title">看家人</view>
     <view class="desc">查看家属头像列表</view>
@@ -14,10 +14,10 @@
 
 <!-- 功能按钮：看过去 -->
 <view class="card feature" bindtap="goToMemory">
-  <view class="icon">🕰️</view>
+  <view class="icon">🕰</view>
   <view class="info">
     <view class="title">看过去</view>
-    <view class="desc">浏览回忆时间线</view>
+    <view class="desc">浏览回忆时间</view>
   </view>
 </view>
 
@@ -27,6 +27,23 @@
   <view class="info">
     <view class="title">今日健康</view>
     <view class="desc">查看血压、血糖等健康信息</view>
+  </view>
+</view>
+
+<!-- 功能按钮：我的资料 -->
+<view class="card feature" bindtap="goToProfile">
+  <view class="icon">👴</view>
+  <view class="info">
+    <view class="title">我的资料</view>
+    <view class="desc">身份卡与我的故事轴</view>
+  </view>
+</view>
+
+<!-- 人脸识别悬浮按钮 -->
+<view class="floating-buttons">
+  <view class="floating-btn face-btn" bindtap="goToFaceRecognition">
+    <view class="btn-icon">👤</view>
+    <view class="btn-text">人脸识别</view>
   </view>
 </view>
 

@@ -1,5 +1,10 @@
 // pages/family/member-edit.js
-const { getPersonDetailAPI, addPersonAPI, updatePersonAPI, deletePersonAPI } = require("../../api/user");
+const {
+  getPersonDetailAPI,
+  addPersonAPI,
+  updatePersonAPI,
+  deletePersonAPI
+} = require("../../api/user");
 
 Page({
   data: {
@@ -49,13 +54,11 @@ Page({
     }
   },
 
-  // 输入事件
   onNameInput(e) { this.setData({ name: e.detail.value }); },
   onAgeInput(e) { this.setData({ age: e.detail.value }); },
   onHealthInput(e) { this.setData({ health: e.detail.value }); },
   onDescriptionInput(e) { this.setData({ description: e.detail.value }); },
 
-  // 选择器
   showRelationPicker() { this.setData({ showRelationPicker: true }); },
   hideRelationPicker() { this.setData({ showRelationPicker: false }); },
 
@@ -63,20 +66,17 @@ Page({
   hideGenderPicker() { this.setData({ showGenderPicker: false }); },
 
   onRelationChange(e) {
-    this.setData({
-      relation: this.data.relationOptions[e.detail.value],
-      showRelationPicker: false
-    });
+    const index = Number(e.currentTarget.dataset.index);
+    const relation = this.data.relationOptions[index] || "";
+    this.setData({ relation, showRelationPicker: false });
   },
 
   onGenderChange(e) {
-    this.setData({
-      gender: this.data.genderOptions[e.detail.value],
-      showGenderPicker: false
-    });
+    const index = Number(e.currentTarget.dataset.index);
+    const gender = this.data.genderOptions[index] || "";
+    this.setData({ gender, showGenderPicker: false });
   },
 
-  // 保存
   async save() {
     const { name, relation, age, gender, health, description, isEdit, personId, saving } = this.data;
 
@@ -89,10 +89,11 @@ Page({
     this.setData({ saving: true });
 
     try {
+      const parsedAge = parseInt(age, 10);
       const data = {
         name: name.trim(),
         relation,
-        age: age ? parseInt(age) : null,
+        age: Number.isFinite(parsedAge) ? parsedAge : null,
         gender,
         health,
         description
@@ -105,11 +106,9 @@ Page({
       }
 
       wx.showToast({ title: "保存成功", icon: "success" });
-
       setTimeout(() => {
         wx.navigateBack();
       }, 1500);
-
     } catch (error) {
       wx.showToast({ title: error.message || "保存失败", icon: "none" });
     }
@@ -117,7 +116,6 @@ Page({
     this.setData({ saving: false });
   },
 
-  // 删除
   delete() {
     wx.showModal({
       title: "确认删除",

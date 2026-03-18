@@ -1,29 +1,48 @@
 // pages/family/home.js
-Page({
+const { getElderInfoAPI } = require("../../api/user");
 
+Page({
   data: {
     elderName: "老人"
   },
 
   onLoad() {
-    // 可以从云端获取老人信息
+    this.loadElderName();
   },
 
-  goToUpload() {
+  async loadElderName() {
+    try {
+      const elder = await getElderInfoAPI();
+      const name = elder && elder.name ? elder.name.trim() : "";
+      if (name) {
+        this.setData({ elderName: name });
+      }
+    } catch (error) {
+      // ignore
+    }
+  },
+
+  goToMemoryManage() {
     wx.navigateTo({
-      url: '/pages/family/upload'
+      url: "/pages/memories/index"
     });
   },
 
   goToMembers() {
     wx.navigateTo({
-      url: '/pages/family/members'
+      url: "/pages/family/members"
     });
   },
 
   goToHealthManage() {
     wx.navigateTo({
-      url: '/pages/family/health-manage'
+      url: "/pages/family/health-manage"
+    });
+  },
+
+  goToProfile() {
+    wx.navigateTo({
+      url: "/pages/family/profile"
     });
   }
 });

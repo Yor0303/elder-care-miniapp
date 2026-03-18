@@ -3,6 +3,7 @@
   background-color: #F8F9FB;
   min-height: 100vh;
   box-sizing: border-box;
+  padding-bottom: 280rpx;
 }
 
 .logo {
@@ -51,4 +52,46 @@
 .desc {
   font-size: 30rpx;
   color: #888;
+}
+
+/* 悬浮按钮区域 */
+.floating-buttons {
+  position: fixed;
+  bottom: 60rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 40rpx;
+  z-index: 100;
+}
+
+.floating-btn {
+  width: 140rpx;
+  height: 140rpx;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10rpx 40rpx rgba(74, 144, 226, 0.4);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.floating-btn:active {
+  transform: scale(0.95);
+}
+
+.face-btn {
+  background: linear-gradient(135deg, #4A90E2 0%, #1A3A5F 100%);
+}
+
+.btn-icon {
+  font-size: 45rpx;
+}
+
+.btn-text {
+  font-size: 20rpx;
+  color: #fff;
+  margin-top: 6rpx;
+  font-weight: 500;
 }

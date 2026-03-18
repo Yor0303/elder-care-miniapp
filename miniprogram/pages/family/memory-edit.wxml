@@ -1,48 +1,78 @@
-<!--pages/family/memory-edit.wxml-->
+<!-- pages/family/memory-edit.wxml -->
 <view class="page">
-  <view class="title">{{isEdit ? '编辑回忆' : '添加回忆'}}</view>
+  <view class="title">{{isEdit ? "编辑回忆" : "添加回忆"}}</view>
 
   <view class="form">
     <!-- 标题 -->
     <view class="form-item">
       <view class="form-label">标题 *</view>
-      <input class="form-input" placeholder="给这段回忆起个名字" value="{{title}}" bindinput="onTitleInput" maxlength="50" />
+      <input
+        class="form-input"
+        placeholder="给这段回忆起个名字"
+        value="{{title}}"
+        bindinput="onTitleInput"
+        maxlength="50"
+      />
     </view>
 
     <!-- 故事 -->
     <view class="form-item">
       <view class="form-label">故事内容 *</view>
-      <textarea class="form-textarea" placeholder="写下这段回忆的故事..." value="{{story}}" bindinput="onStoryInput" maxlength="500" />
+      <textarea
+        class="form-textarea"
+        placeholder="写下这段回忆的故事..."
+        value="{{story}}"
+        bindinput="onStoryInput"
+        maxlength="500"
+      />
     </view>
 
     <!-- 年份 -->
     <view class="form-item">
       <view class="form-label">年份</view>
-      <input class="form-input" type="number" placeholder="如 2020" value="{{year}}" bindinput="onYearInput" />
+      <input
+        class="form-input"
+        type="number"
+        placeholder="如 2020"
+        value="{{year}}"
+        bindinput="onYearInput"
+      />
     </view>
 
     <!-- 相关人物 -->
     <view class="form-item">
       <view class="form-label">相关人物</view>
-      <input class="form-input" placeholder="如 爷爷" value="{{person}}" bindinput="onPersonInput" />
+      <picker
+        mode="selector"
+        range="{{personOptions}}"
+        value="{{personIndex < 0 ? 0 : personIndex}}"
+        bindchange="onPersonChange"
+      >
+        <view class="form-picker">
+          <text class="{{personIndex < 0 ? 'placeholder' : ''}}">
+            {{personIndex < 0 ? "请选择人物" : personOptions[personIndex]}}
+          </text>
+          <text class="arrow">></text>
+        </view>
+      </picker>
     </view>
 
     <!-- 类型 -->
     <view class="form-item" bindtap="showTypePicker">
       <view class="form-label">类型</view>
       <view class="form-picker">
-        <text class="{{type ? '' : 'placeholder'}}">{{typeLabels[type] || '请选择类型'}}</text>
-        <text class="arrow">›</text>
+        <text class="{{type ? '' : 'placeholder'}}">{{typeLabels[type] || "请选择类型"}}</text>
+        <text class="arrow">></text>
       </view>
     </view>
 
-    <!-- 图片 -->
+    <!-- 照片 -->
     <view class="form-item">
       <view class="form-label">照片</view>
       <view class="image-section">
         <view wx:if="{{fileList.length > 0}}" class="image-preview">
           <image src="{{fileList[0].url}}" mode="aspectFill" class="preview-img"></image>
-          <view class="remove-btn" catchtap="removeImage">×</view>
+          <view class="remove-btn" catchtap="removeImage">X</view>
         </view>
         <view wx:else class="image-upload" bindtap="chooseImage">
           <text class="upload-icon">+</text>
@@ -54,7 +84,7 @@
 
   <!-- 保存按钮 -->
   <button class="save-btn" bindtap="save" disabled="{{saving}}">
-    {{saving ? '保存中...' : '保存'}}
+    {{saving ? "保存中..." : "保存"}}
   </button>
 
   <!-- 删除按钮 -->

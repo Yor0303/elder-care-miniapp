@@ -32,18 +32,18 @@
  
  /* 时间线 */
  
- .timeline{
+.timeline{
   position:relative;
-  padding-left:80rpx;
+  padding-left:110rpx;
  }
  
  
  /* 时间轴线 */
  
- .timeline::before{
+.timeline::before{
   content:"";
   position:absolute;
-  left:30rpx;
+  left:48rpx;
   top:0;
   bottom:0;
   width:4rpx;
@@ -57,12 +57,17 @@
  }
  
  
- .year{
+.year{
   position:absolute;
-  left:-80rpx;
+  left:-98rpx;
+  top:4rpx;
   font-size:32rpx;
   color:#4A90E2;
   font-weight:bold;
+  background:#F8F9FB;
+  padding:4rpx 10rpx;
+  border-radius:12rpx;
+  z-index:2;
  }
  
  

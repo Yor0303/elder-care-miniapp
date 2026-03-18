@@ -8,12 +8,6 @@ const MEMORY_TYPES = {
   daily: "daily"
 };
 
-// TTS 配置
-const TTS_CONFIG = {
-  enabled: true,
-  urlTemplate: "https://tts.baidu.com/text2audio?lan=zh&ie=UTF-8&spd=4&text="
-};
-
 Page({
 
   data: {
@@ -36,7 +30,7 @@ Page({
   },
 
   /**
-   * 从云端加载记忆数据
+   * 从云端加载记忆数�?
    */
   async loadMemories(options) {
     this.setData({ loading: true, errorMsg: "" });
@@ -92,33 +86,7 @@ Page({
     });
   },
 
-  // 语音播放
-  playStory() {
-    const text = this.data.currentMemory.story;
-    if (!text) {
-      wx.showToast({
-        title: "暂无故事内容",
-        icon: "none"
-      });
-      return;
-    }
-
-    const ttsUrl = `${TTS_CONFIG.urlTemplate}${encodeURIComponent(text)}`;
-
-    const audio = wx.createInnerAudioContext();
-    audio.src = ttsUrl;
-    audio.play();
-
-    audio.onError((err) => {
-      console.error("TTS 播放失败:", err);
-      wx.showToast({
-        title: "播放失败",
-        icon: "none"
-      });
-    });
-  },
-
-  // 打开筛选
+  // 打开筛�?
   openFilter() {
     this.setData({
       showFilter: true
@@ -146,7 +114,7 @@ Page({
   },
 
   /**
-   * 按年代筛选
+   * 按年代筛�?
    */
   filterDecade(e) {
     const value = e.currentTarget.dataset.value;
@@ -159,7 +127,7 @@ Page({
   },
 
   /**
-   * 按类型筛选
+   * 按类型筛�?
    */
   filterType(e) {
     const value = e.currentTarget.dataset.value;
@@ -197,3 +165,4 @@ Page({
   }
 
 });
+

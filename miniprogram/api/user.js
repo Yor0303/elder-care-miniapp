@@ -43,6 +43,10 @@ function getElderInfoAPI() {
   return callService("getElderInfo");
 }
 
+function updateElderInfoAPI(data) {
+  return callService("updateElderInfo", data);
+}
+
 /**
  * 获取记忆列表
  * @param {Object} options - 筛选条件
@@ -149,12 +153,40 @@ function getMemoryDetailAPI(memoryId) {
   return callService("getMemoryDetail", { memoryId });
 }
 
+// ==================== 人脸识别相关 ====================
+
+/**
+ * 上传人脸照片
+ * @param {string} tempFilePath - 临时文件路径
+ * @param {string} personId - 成员ID（可选）
+ */
+function uploadFacePhotoAPI(tempFilePath, personId) {
+  return callService("uploadFacePhoto", { tempFilePath, personId });
+}
+
+/**
+ * 人脸识别
+ * @param {string} photoFileID - 云存储文件ID
+ */
+function recognizeFaceAPI(photoFileID) {
+  return callService("recognizeFace", { photoFileID });
+}
+
+/**
+ * 上传并识别人脸
+ * @param {string} tempFilePath - 临时文件路径
+ */
+function uploadAndRecognizeAPI(tempFilePath) {
+  return callService("uploadAndRecognize", { tempFilePath });
+}
+
 module.exports = {
   loginAPI,
   getPersonListAPI,
   getFamilyTreeAPI,
   getPersonDetailAPI,
   getElderInfoAPI,
+  updateElderInfoAPI,
   getMemoriesAPI,
   addMemoryAPI,
   updateMemoryAPI,
@@ -167,5 +199,8 @@ module.exports = {
   addPersonAPI,
   updatePersonAPI,
   deletePersonAPI,
-  getMemoryDetailAPI
+  getMemoryDetailAPI,
+  uploadFacePhotoAPI,
+  recognizeFaceAPI,
+  uploadAndRecognizeAPI
 };

@@ -1,23 +1,44 @@
-const { getPersonDetailAPI } = require("../../api/user");
+const { getElderInfoAPI, getMemoriesAPI } = require("../../api/user");
 
 Page({
   data: {
-    person: null
+    loading: true,
+    elder: null,
+    selfMemories: []
   },
 
-  async onLoad(options) {
+  onLoad() {
+    this.loadData();
+  },
+
+  async loadData() {
+    this.setData({ loading: true });
+
     try {
-      wx.showLoading({ title: "加载中" });
-      const person = await getPersonDetailAPI(options.personId);
-      this.setData({ person });
-      wx.hideLoading();
-    } catch (error) {
-      wx.hideLoading();
-      wx.showToast({
-        title: "加载失败",
-        icon: "none"
+      const elder = await getElderInfoAPI();
+      const memories = await getMemoriesAPI({});
+
+      const name = elder && elder.name ? elder.name.trim() : "";
+      const selfKeys = ["本人", "自己", "我"];
+      const selfMemories = (memories || [])
+        .filter((m) => {
+          const person = (m.person || "").trim();
+          if (!person) return false;
+          if (selfKeys.includes(person)) return true;
+          if (name && person === name) return true;
+          return false;
+        })
+        .sort((a, b) => (a.year || 0) - (b.year || 0));
+
+      this.setData({
+        elder,
+        selfMemories,
+        loading: false
       });
-      console.error("load person detail failed", error);
+    } catch (error) {
+      console.error("load elder profile failed", error);
+      this.setData({ loading: false });
+      wx.showToast({ title: "加载失败", icon: "none" });
     }
   }
 });

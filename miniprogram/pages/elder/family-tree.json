@@ -1,6 +1,4 @@
 {
-  "usingComponents": {
-    "tree-node": "/components/tree-node/tree-node"
-  },
-  "navigationBarTitleText": "家庭树"
+  "usingComponents": {},
+  "navigationBarTitleText": "相片薄"
 }

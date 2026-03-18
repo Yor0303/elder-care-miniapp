@@ -15,5 +15,17 @@ Page({
     wx.navigateTo({
       url: '/pages/elder/health'
     })
+  },
+
+  goToProfile() {
+    wx.navigateTo({
+      url: '/pages/elder/profile'
+    })
+  },
+
+  goToFaceRecognition() {
+    wx.navigateTo({
+      url: '/pages/elder/face-recognition'
+    })
   }
 })

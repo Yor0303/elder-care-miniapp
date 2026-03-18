@@ -8,26 +8,20 @@ const {
 } = require("../../api/user");
 
 Page({
-
   data: {
     loading: false,
 
-    // 今日健康数据
     todayHealth: {
       bloodPressure: "",
       heartRate: "",
       bloodSugar: ""
     },
 
-    // 既往病史
     medicalHistory: [],
-
-    // 当前用药
     medications: [],
 
-    // 编辑弹窗
     showAddModal: false,
-    addType: "", // "history" 或 "medication"
+    addType: "",
     newRecord: {}
   },
 
@@ -39,22 +33,20 @@ Page({
     this.loadHealthInfo();
   },
 
-  /**
-   * 加载健康信息
-   */
   async loadHealthInfo() {
     this.setData({ loading: true });
-
     try {
       const healthInfo = await getHealthInfoAPI();
-
       this.setData({
-        todayHealth: healthInfo.todayHealth,
-        medicalHistory: healthInfo.medicalHistory,
-        medications: healthInfo.medications,
+        todayHealth: healthInfo.todayHealth || {
+          bloodPressure: "",
+          heartRate: "",
+          bloodSugar: ""
+        },
+        medicalHistory: healthInfo.medicalHistory || [],
+        medications: healthInfo.medications || [],
         loading: false
       });
-
     } catch (error) {
       console.error("加载健康信息失败:", error);
       this.setData({ loading: false });
@@ -62,23 +54,16 @@ Page({
     }
   },
 
-  /**
-   * 下拉刷新
-   */
   async onPullDownRefresh() {
     await this.loadHealthInfo();
     wx.stopPullDownRefresh();
   },
 
-  /**
-   * 编辑今日健康数据
-   */
   editTodayHealth() {
     const { todayHealth } = this.data;
-
     wx.showModal({
-      title: "更新今日健康数据",
-      content: "血压: " + (todayHealth.bloodPressure || "--/--"),
+      title: "更新今日血压",
+      content: "血压 " + (todayHealth.bloodPressure || "--/--"),
       editable: true,
       placeholderText: "请输入血压值（如 120/80）",
       success: async (res) => {
@@ -103,7 +88,7 @@ Page({
       success: async (res) => {
         if (res.confirm && res.content) {
           try {
-            await updateTodayHealthAPI({ heartRate: parseInt(res.content) });
+            await updateTodayHealthAPI({ heartRate: parseInt(res.content, 10) });
             await this.loadHealthInfo();
             wx.showToast({ title: "更新成功", icon: "success" });
           } catch (error) {
@@ -133,9 +118,6 @@ Page({
     });
   },
 
-  /**
-   * 显示添加病史弹窗
-   */
   showAddHistory() {
     this.setData({
       showAddModal: true,
@@ -148,9 +130,6 @@ Page({
     });
   },
 
-  /**
-   * 显示添加用药弹窗
-   */
   showAddMedication() {
     this.setData({
       showAddModal: true,
@@ -165,16 +144,10 @@ Page({
     });
   },
 
-  /**
-   * 关闭弹窗
-   */
   closeModal() {
     this.setData({ showAddModal: false });
   },
 
-  /**
-   * 输入框变化
-   */
   onInputChange(e) {
     const { field } = e.currentTarget.dataset;
     this.setData({
@@ -182,9 +155,6 @@ Page({
     });
   },
 
-  /**
-   * 提交新记录
-   */
   async submitNewRecord() {
     const { addType, newRecord } = this.data;
 
@@ -197,7 +167,7 @@ Page({
       if (addType === "history") {
         await addMedicalHistoryAPI({
           name: newRecord.name.trim(),
-          diagnoseYear: parseInt(newRecord.diagnoseYear) || new Date().getFullYear(),
+          diagnoseYear: parseInt(newRecord.diagnoseYear, 10) || new Date().getFullYear(),
           notes: newRecord.notes || ""
         });
       } else {
@@ -213,18 +183,14 @@ Page({
       this.setData({ showAddModal: false });
       await this.loadHealthInfo();
       wx.showToast({ title: "添加成功", icon: "success" });
-
     } catch (error) {
       console.error("添加失败:", error);
       wx.showToast({ title: "添加失败", icon: "none" });
     }
   },
 
-  /**
-   * 删除记录
-   */
   deleteRecord(e) {
-    const { id, type } = e.currentTarget.dataset;
+    const { id } = e.currentTarget.dataset;
 
     wx.showModal({
       title: "确认删除",

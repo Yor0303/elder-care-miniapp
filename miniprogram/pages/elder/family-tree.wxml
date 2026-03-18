@@ -1,26 +1,38 @@
-<!--pages/elder/family-tree.wxml-->
+﻿<!-- pages/elder/family-tree.wxml -->
 <view class="page">
-  <view class="title">我的家人</view>
+  <view class="title">相片薄</view>
 
-  <!-- 横向可滑动 -->
-  <scroll-view scroll-x="true" class="tree-scroll">
-    <view class="tree">
-      <block wx:for="{{treeData}}" wx:key="id">
-        <tree-node node="{{item}}" bind:click="showCard"/>
-      </block>
+  <view class="album">
+    <view class="book {{flipClass}}" bindtap="handleNext">
+      <view class="page-sheet page-back">
+        <block wx:if="{{flipPerson}}">
+          <image class="photo" src="{{flipPerson.facePhoto || flipPerson.avatar}}" mode="aspectFill"></image>
+          <view class="caption">
+            <view class="name">{{flipPerson.name}}</view>
+            <view class="relation">{{flipPerson.relation}}</view>
+            <view class="desc" wx:if="{{flipPerson.description}}">{{flipPerson.description}}</view>
+          </view>
+        </block>
+        <view class="empty" wx:else>暂无可翻页面</view>
+      </view>
+
+      <view class="page-sheet page-front">
+        <block wx:if="{{currentPerson}}">
+          <image class="photo" src="{{currentPerson.facePhoto || currentPerson.avatar}}" mode="aspectFill"></image>
+          <view class="caption">
+            <view class="name">{{currentPerson.name}}</view>
+            <view class="relation">{{currentPerson.relation}}</view>
+            <view class="desc" wx:if="{{currentPerson.description}}">{{currentPerson.description}}</view>
+          </view>
+        </block>
+        <view class="empty" wx:else>暂无家人照片</view>
+      </view>
     </view>
-  </scroll-view>
 
-  <!-- 弹窗 -->
-  <view class="mask" wx:if="{{showCard}}">
-    <view class="card">
-      <image class="avatar" src="{{currentPerson.avatar}}"></image>
-      <view class="name">{{currentPerson.name}}</view>
-      <view class="relation">{{currentPerson.relation}}</view>
-      <view class="age">年龄: {{currentPerson.age}}</view>
-      <view class="health">健康: {{currentPerson.health}}</view>
-      <view class="desc">{{currentPerson.description}}</view>
-      <button class="close" bindtap="closeCard">关闭</button>
+    <view class="nav">
+      <button class="nav-btn" bindtap="handlePrev">上一页</button>
+      <view class="page-indicator">{{currentIndex + 1}} / {{persons.length || 0}}</view>
+      <button class="nav-btn" bindtap="handleNext">下一页</button>
     </view>
   </view>
 </view>
