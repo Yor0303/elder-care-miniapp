@@ -1,15 +1,17 @@
 /* pages/family/health-manage.wxss */
 .page {
-  padding: 40rpx;
-  background: #F8F9FB;
   min-height: 100vh;
+  padding: 40rpx;
+  background: #f8f9fb;
 }
 
 .title {
-  font-size: 44rpx;
-  font-weight: bold;
-  text-align: center;
   margin-bottom: 40rpx;
+  font-size: 44rpx;
+  font-weight: 700;
+  text-align: center;
+  color: #1a3a5f;
+  letter-spacing: 1rpx;
 }
 
 .loading-container {
@@ -23,22 +25,21 @@
   color: #999;
 }
 
-/* 区块 */
 .section {
   margin-bottom: 40rpx;
 }
 
 .section-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 20rpx;
+  justify-content: space-between;
+  margin-bottom: 22rpx;
 }
 
 .section-title {
-  font-size: 36rpx;
-  font-weight: bold;
-  color: #4A90E2;
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #4a90e2;
 }
 
 .tip {
@@ -47,23 +48,23 @@
 }
 
 .add-btn {
-  font-size: 28rpx;
-  color: #4A90E2;
-  padding: 10rpx 20rpx;
-  border: 1rpx solid #4A90E2;
-  border-radius: 20rpx;
+  padding: 12rpx 22rpx;
+  font-size: 26rpx;
+  color: #4a90e2;
+  border: 1rpx solid #4a90e2;
+  border-radius: 999rpx;
+  background: #fff;
 }
 
-/* 卡片 */
 .card {
-  background: #fff;
-  padding: 30rpx;
-  margin-bottom: 20rpx;
-  border-radius: 20rpx;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.05);
+  justify-content: space-between;
+  margin-bottom: 20rpx;
+  padding: 30rpx;
+  background: #fff;
+  border-radius: 24rpx;
+  box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.06);
 }
 
 .label {
@@ -73,100 +74,115 @@
 
 .value {
   font-size: 32rpx;
-  font-weight: bold;
-  color: #1A3A5F;
+  font-weight: 700;
+  color: #1a3a5f;
 }
 
 .edit-icon {
-  font-size: 28rpx;
-  opacity: 0.6;
+  font-size: 26rpx;
+  color: #4a90e2;
 }
 
-/* 记录卡片 */
 .record-card {
   align-items: flex-start;
 }
 
 .record-info {
   flex: 1;
+  min-width: 0;
 }
 
 .record-name {
   font-size: 34rpx;
-  font-weight: bold;
+  font-weight: 700;
   color: #333;
 }
 
 .record-meta {
+  margin-top: 8rpx;
   font-size: 28rpx;
   color: #666;
-  margin-top: 8rpx;
 }
 
 .record-notes {
+  margin-top: 8rpx;
   font-size: 26rpx;
   color: #999;
-  margin-top: 8rpx;
+  line-height: 1.5;
 }
 
 .delete-btn {
+  margin-left: 20rpx;
+  padding: 10rpx 18rpx;
   font-size: 26rpx;
   color: #ff4d4f;
-  padding: 10rpx 20rpx;
+  border-radius: 999rpx;
+  background: #fff5f5;
 }
 
 .empty-tip {
-  font-size: 28rpx;
-  color: #999;
-  text-align: center;
   padding: 40rpx 0;
+  font-size: 28rpx;
+  text-align: center;
+  color: #999;
   background: #fff;
-  border-radius: 20rpx;
+  border-radius: 24rpx;
+  box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.06);
 }
 
-/* 弹窗 */
 .modal-mask {
   position: fixed;
   top: 0;
-  left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  left: 0;
+  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  padding: 32rpx;
+  background: rgba(0, 0, 0, 0.45);
 }
 
 .modal-content {
-  width: 600rpx;
-  background: #fff;
-  border-radius: 30rpx;
+  width: 100%;
+  max-width: 640rpx;
   padding: 40rpx;
+  background: #fff;
+  border-radius: 32rpx;
+  box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.16);
+  box-sizing: border-box;
 }
 
 .modal-title {
-  font-size: 36rpx;
-  font-weight: bold;
-  text-align: center;
   margin-bottom: 30rpx;
+  font-size: 36rpx;
+  font-weight: 700;
+  text-align: center;
+  color: #1a3a5f;
 }
 
 .modal-item {
-  margin-bottom: 25rpx;
+  margin-bottom: 24rpx;
 }
 
 .modal-label {
+  margin-bottom: 10rpx;
   font-size: 28rpx;
   color: #666;
-  margin-bottom: 10rpx;
 }
 
 .modal-input {
-  background: #F8F9FB;
-  padding: 25rpx;
-  border-radius: 15rpx;
+  display: block;
+  width: 100%;
+  height: 88rpx;
+  line-height: 88rpx;
+  padding: 0 24rpx;
   font-size: 30rpx;
+  color: #333;
+  background: #f8f9fb;
+  border-radius: 15rpx;
+  box-sizing: border-box;
 }
 
 .modal-actions {
@@ -178,11 +194,9 @@
 .modal-btn {
   flex: 1;
   height: 80rpx;
-  border-radius: 20rpx;
+  line-height: 80rpx;
   font-size: 32rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border-radius: 20rpx;
 }
 
 .modal-btn.cancel {
@@ -191,6 +205,6 @@
 }
 
 .modal-btn.confirm {
-  background: #4A90E2;
+  background: #4a90e2;
   color: #fff;
 }

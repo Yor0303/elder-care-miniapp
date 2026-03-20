@@ -13,6 +13,7 @@
     "pages/family/health-manage",
     "pages/family/member-edit",
     "pages/family/memory-edit",
+    "pages/family/bind",
     "pages/memories/index",
     "components/tree-node/tree-node"
   ],

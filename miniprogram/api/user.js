@@ -1,13 +1,29 @@
 const FUNCTION_NAME = "yizhanService";
+const FAMILY_ELDER_ACTIONS = new Set([
+  "getElderInfo",
+  "updateElderInfo",
+  "getMemories",
+  "addMemory",
+  "updateMemory",
+  "deleteMemory"
+]);
 
 function callService(action, data = {}) {
   return new Promise((resolve, reject) => {
+    const payload = {
+      action,
+      ...data
+    };
+
+    const role = wx.getStorageSync("role");
+    const elderId = wx.getStorageSync("elderId");
+    if (role === "family" && elderId && FAMILY_ELDER_ACTIONS.has(action) && !payload.elderId) {
+      payload.elderId = elderId;
+    }
+
     wx.cloud.callFunction({
       name: FUNCTION_NAME,
-      data: {
-        action,
-        ...data
-      },
+      data: payload,
       success: (res) => {
         const result = res.result;
 
@@ -23,12 +39,20 @@ function callService(action, data = {}) {
   });
 }
 
-function loginAPI() {
-  return callService("login");
+function loginAPI(role) {
+  return callService("login", { role });
 }
 
 function getPersonListAPI() {
   return callService("getPersonList");
+}
+
+function getElderListAPI() {
+  return callService("getElderList");
+}
+
+function bindElderAPI(elderId) {
+  return callService("bindElder", { elderId });
 }
 
 function getFamilyTreeAPI() {
@@ -182,6 +206,8 @@ function uploadAndRecognizeAPI(tempFilePath) {
 
 module.exports = {
   loginAPI,
+  getElderListAPI,
+  bindElderAPI,
   getPersonListAPI,
   getFamilyTreeAPI,
   getPersonDetailAPI,

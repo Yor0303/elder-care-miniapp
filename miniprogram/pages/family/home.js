@@ -44,5 +44,15 @@ Page({
     wx.navigateTo({
       url: "/pages/family/profile"
     });
+  },
+
+  goToBindPage() {
+    console.log("跳转到绑定页面");
+    wx.navigateTo({
+      url: '/pages/family/bind',
+      fail: (err) => {
+        console.error("跳转失败:", err);
+      }
+    });
   }
 });

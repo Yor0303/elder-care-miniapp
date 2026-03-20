@@ -6,7 +6,7 @@ cloud.init({
 
 const db = cloud.database();
 
-// 数据库集合名称配置
+// 鏁版嵁搴撻泦鍚堝悕绉伴厤缃?
 const COLLECTION_NAMES = {
   users: "users",
   persons: "persons",
@@ -15,7 +15,7 @@ const COLLECTION_NAMES = {
 };
 
 /**
- * 确保集合存在
+ * 纭繚闆嗗悎瀛樺湪
  */
 async function ensureCollections() {
   const collectionNames = Object.values(COLLECTION_NAMES);
@@ -30,41 +30,98 @@ async function ensureCollections() {
 }
 
 /**
- * 获取当前用户
+ * 鑾峰彇褰撳墠鐢ㄦ埛
  */
 async function getCurrentUser() {
   const wxContext = cloud.getWXContext();
   const result = await db.collection(COLLECTION_NAMES.users).where({ openId: wxContext.OPENID }).get();
 
   if (!result.data.length) {
-    throw new Error("用户不存在，请先登录");
+    throw new Error("鐢ㄦ埛涓嶅瓨鍦紝璇峰厛鐧诲綍");
   }
 
   return result.data[0];
 }
 
+
+function normalizeUserType(user) {
+  return user && user.userType ? user.userType : "elder";
+}
+
+function isElderUser(user) {
+  return normalizeUserType(user) === "elder";
+}
+
+async function getEffectiveElderId(user) {
+  if (user.boundElderId) {
+    return user.boundElderId;
+  }
+
+  const userType = normalizeUserType(user);
+  if (userType === "family") {
+    throw new Error("请先绑定老人");
+  }
+  return user._id;
+}
+
+async function resolveElderIdForEvent(user, event = {}) {
+  const requestedElderId = event && event.elderId;
+  if (!requestedElderId) {
+    return getEffectiveElderId(user);
+  }
+
+  if (requestedElderId === user._id) {
+    return user._id;
+  }
+
+  if (user.boundElderId && user.boundElderId !== requestedElderId) {
+    throw new Error("当前绑定的老人不匹配，请重新绑定后再试");
+  }
+
+  const elder = await getUserById(requestedElderId);
+  if (!elder || !isElderUser(elder)) {
+    throw new Error("老人不存在");
+  }
+
+  return requestedElderId;
+}
+
+async function getUserById(userId) {
+  const result = await db.collection(COLLECTION_NAMES.users).doc(userId).get();
+  return result.data;
+}
+
 /**
- * 登录 - 创建或获取用户
+ * 鐧诲綍 - 鍒涘缓鎴栬幏鍙栫敤鎴?
  */
-async function login() {
+async function login(event = {}) {
   await ensureCollections();
 
   const wxContext = cloud.getWXContext();
   const userCollection = db.collection(COLLECTION_NAMES.users);
+  const role = event.role || "elder";
 
-  // 查找已存在的用户
+  // 鏌ユ壘宸插瓨鍦ㄧ殑鐢ㄦ埛
   const existingUser = await userCollection.where({ openId: wxContext.OPENID }).get();
 
   if (existingUser.data.length) {
     const user = existingUser.data[0];
+    if (role && user.userType !== role) {
+      await userCollection.doc(user._id).update({
+        data: {
+          userType: role
+        }
+      });
+      user.userType = role;
+    }
     return {
       token: `cloud-${wxContext.OPENID}`,
-      userType: user.userType || "elder",
+      userType: user.userType || role || "elder",
       userId: user._id
     };
   }
 
-  // 创建新用户 - 基础信息，无演示数据
+  // 鍒涘缓鏂扮敤鎴?- 鍩虹淇℃伅锛屾棤婕旂ず鏁版嵁
   const addResult = await userCollection.add({
     data: {
       openId: wxContext.OPENID,
@@ -72,8 +129,8 @@ async function login() {
       avatar: "",
       age: null,
       gender: "",
-      userType: "elder",
-      relation: "本人",
+      userType: role || "elder",
+      relation: "鏈汉",
       healthStatus: {
         bloodPressure: "",
         heartRate: null,
@@ -85,16 +142,54 @@ async function login() {
 
   return {
     token: `cloud-${wxContext.OPENID}`,
-    userType: "elder",
+    userType: role || "elder",
     userId: addResult._id
   };
 }
+// ==================== 浜虹墿鐩稿叧 ====================
+// ==================== 绑定老人相关 ====================
 
-// ==================== 人物相关 ====================
+async function getElderList() {
+  await ensureCollections();
+  const result = await db.collection(COLLECTION_NAMES.users).get();
+  const elders = result.data.filter((user) => isElderUser(user));
+
+  return elders.map((user) => ({
+    id: user._id,
+    name: user.name || "未命名",
+    avatar: user.avatar || "",
+    age: user.age || null,
+    gender: user.gender || ""
+  }));
+}
+
+async function bindElder(event) {
+  if (!event.elderId) {
+    throw new Error("缺少 elderId");
+  }
+
+  const user = await getCurrentUser();
+  const elder = await getUserById(event.elderId);
+
+  if (!elder || !isElderUser(elder)) {
+    throw new Error("老人不存在");
+  }
+
+  await db.collection(COLLECTION_NAMES.users).doc(user._id).update({
+    data: {
+      boundElderId: event.elderId,
+      boundAt: new Date().toISOString()
+    }
+  });
+
+  return { success: true };
+}
+
 
 async function getPersonList() {
   const user = await getCurrentUser();
-  const result = await db.collection(COLLECTION_NAMES.persons).where({ elderId: user._id }).get();
+  const elderId = await getEffectiveElderId(user);
+  const result = await db.collection(COLLECTION_NAMES.persons).where({ elderId }).get();
 
   return result.data.map((person) => ({
     id: person._id,
@@ -110,19 +205,19 @@ function buildTree(persons) {
   const nodeMap = new Map();
   const roots = [];
 
-  // 关系映射：确定父子关系
+  // 鍏崇郴鏄犲皠锛氱‘瀹氱埗瀛愬叧绯?
   const relationParentMap = {
-    "祖父": null,      // 祖父是根节点
-    "祖母": null,      // 祖母是根节点
-    "父亲": ["祖父", "祖母"],  // 父亲的父母是祖父/祖母
-    "母亲": null,
-    "叔叔": ["祖父", "祖母"],  // 叔叔的父母是祖父/祖母
-    "姑姑": ["祖父", "祖母"],
-    "本人": ["父亲", "母亲"],  // 本人的父母
-    "儿子": ["本人"],
-    "女儿": ["本人"],
-    "孙子": ["本人", "儿子"],
-    "孙女": ["本人", "儿子"]
+    "绁栫埗": null,      // 绁栫埗鏄牴鑺傜偣
+    "绁栨瘝": null,      // 绁栨瘝鏄牴鑺傜偣
+    "鐖朵翰": ["绁栫埗", "绁栨瘝"],  // 鐖朵翰鐨勭埗姣嶆槸绁栫埗/绁栨瘝
+    "姣嶄翰": null,
+    "鍙斿彅": ["绁栫埗", "绁栨瘝"],  // 鍙斿彅鐨勭埗姣嶆槸绁栫埗/绁栨瘝
+    "濮戝": ["绁栫埗", "绁栨瘝"],
+    "鏈汉": ["鐖朵翰", "姣嶄翰"],  // 鏈汉鐨勭埗姣?
+    "鍎垮瓙": ["鏈汉"],
+    "濂冲効": ["鏈汉"],
+    "瀛欏瓙": ["鏈汉", "鍎垮瓙"],
+    "瀛欏コ": ["鏈汉", "鍎垮瓙"]
   };
 
   persons.forEach((person) => {
@@ -132,26 +227,26 @@ function buildTree(persons) {
       avatar: person.avatar,
       relation: person.relation,
       age: person.age,
-      health: person.health || "未知",
+      health: person.health || "鏈煡",
       description: person.description,
       children: []
     });
   });
 
-  // 建立父子关系
+  // 寤虹珛鐖跺瓙鍏崇郴
   persons.forEach((person) => {
     const node = nodeMap.get(person._id);
 
-    // 优先使用数据库中的 parentPersonId
+    // 浼樺厛浣跨敤鏁版嵁搴撲腑鐨?parentPersonId
     if (person.parentPersonId && nodeMap.has(person.parentPersonId)) {
       nodeMap.get(person.parentPersonId).children.push(node);
       return;
     }
 
-    // 如果没有 parentPersonId，尝试根据关系推断
+    // 濡傛灉娌℃湁 parentPersonId锛屽皾璇曟牴鎹叧绯绘帹鏂?
     const parentRelations = relationParentMap[person.relation];
     if (parentRelations && parentRelations.length > 0) {
-      // 查找具有指定关系的成员
+      // 鏌ユ壘鍏锋湁鎸囧畾鍏崇郴鐨勬垚鍛?
       for (const parentRelation of parentRelations) {
         const parent = persons.find(p => p.relation === parentRelation);
         if (parent && nodeMap.has(parent._id)) {
@@ -161,7 +256,7 @@ function buildTree(persons) {
       }
     }
 
-    // 没有父节点，作为根节点
+    // 娌℃湁鐖惰妭鐐癸紝浣滀负鏍硅妭鐐?
     roots.push(node);
   });
 
@@ -170,20 +265,22 @@ function buildTree(persons) {
 
 async function getFamilyTree() {
   const user = await getCurrentUser();
-  const result = await db.collection(COLLECTION_NAMES.persons).where({ elderId: user._id }).get();
+  const elderId = await getEffectiveElderId(user);
+  const result = await db.collection(COLLECTION_NAMES.persons).where({ elderId }).get();
   return buildTree(result.data);
 }
 
 async function getPersonDetail(event) {
   if (!event.personId) {
-    throw new Error("缺少 personId");
+    throw new Error("缂哄皯 personId");
   }
 
   const user = await getCurrentUser();
+  const elderId = await getEffectiveElderId(user);
   const result = await db.collection(COLLECTION_NAMES.persons).doc(event.personId).get();
   const person = result.data;
 
-  if (!person || person.elderId !== user._id) {
+  if (!person || person.elderId !== elderId) {
     throw new Error("人物不存在");
   }
 
@@ -200,30 +297,37 @@ async function getPersonDetail(event) {
   };
 }
 
-async function getElderInfo() {
+async function getElderInfo(event = {}) {
   const user = await getCurrentUser();
+  const elderId = await resolveElderIdForEvent(user, event);
+  const elder = elderId === user._id ? user : await getUserById(elderId);
+
+  if (!elder) {
+    throw new Error("老人不存在");
+  }
 
   return {
-    id: user._id,
-    name: user.name,
-    avatar: user.avatar,
-    age: user.age,
-    gender: user.gender,
-    relation: user.relation,
-    healthStatus: user.healthStatus,
-    birthYear: user.birthYear || "",
-    hometown: user.hometown || "",
-    address: user.address || "",
-    emergencyContactName: user.emergencyContactName || "",
-    emergencyContactPhone: user.emergencyContactPhone || "",
-    allergies: user.allergies || "",
-    medications: user.medications || "",
-    notes: user.notes || ""
+    id: elder._id,
+    name: elder.name,
+    avatar: elder.avatar,
+    age: elder.age,
+    gender: elder.gender,
+    relation: elder.relation,
+    healthStatus: elder.healthStatus,
+    birthYear: elder.birthYear || "",
+    hometown: elder.hometown || "",
+    address: elder.address || "",
+    emergencyContactName: elder.emergencyContactName || "",
+    emergencyContactPhone: elder.emergencyContactPhone || "",
+    allergies: elder.allergies || "",
+    medications: elder.medications || "",
+    notes: elder.notes || ""
   };
 }
 
 async function updateElderInfo(event) {
   const user = await getCurrentUser();
+  const elderId = await getEffectiveElderId(user);
   const updateData = { updatedAt: new Date().toISOString() };
 
   if (event.name !== undefined) updateData.name = event.name;
@@ -240,7 +344,7 @@ async function updateElderInfo(event) {
   if (event.medications !== undefined) updateData.medications = event.medications;
   if (event.notes !== undefined) updateData.notes = event.notes;
 
-  await db.collection(COLLECTION_NAMES.users).doc(user._id).update({
+  await db.collection(COLLECTION_NAMES.users).doc(elderId).update({
     data: updateData
   });
 
@@ -248,18 +352,19 @@ async function updateElderInfo(event) {
 }
 
 /**
- * 添加家庭成员
+ * 娣诲姞瀹跺涵鎴愬憳
  */
 async function addPerson(event) {
   if (!event.name) {
-    throw new Error("姓名不能为空");
+    throw new Error("濮撳悕涓嶈兘涓虹┖");
   }
 
   const user = await getCurrentUser();
+  const elderId = await getEffectiveElderId(user);
 
   const result = await db.collection(COLLECTION_NAMES.persons).add({
     data: {
-      elderId: user._id,
+      elderId: elderId,
       name: event.name,
       avatar: event.avatar || "",
       relation: event.relation || "",
@@ -278,17 +383,18 @@ async function addPerson(event) {
 }
 
 /**
- * 更新家庭成员信息
+ * 鏇存柊瀹跺涵鎴愬憳淇℃伅
  */
 async function updatePerson(event) {
   if (!event.personId) {
-    throw new Error("缺少成员ID");
+    throw new Error("缂哄皯鎴愬憳ID");
   }
 
   const user = await getCurrentUser();
+  const elderId = await getEffectiveElderId(user);
 
   const person = await db.collection(COLLECTION_NAMES.persons).doc(event.personId).get();
-  if (!person.data || person.data.elderId !== user._id) {
+  if (!person.data || person.data.elderId !== elderId) {
     throw new Error("成员不存在或无权限修改");
   }
 
@@ -311,17 +417,18 @@ async function updatePerson(event) {
 }
 
 /**
- * 删除家庭成员
+ * 鍒犻櫎瀹跺涵鎴愬憳
  */
 async function deletePerson(event) {
   if (!event.personId) {
-    throw new Error("缺少成员ID");
+    throw new Error("缂哄皯鎴愬憳ID");
   }
 
   const user = await getCurrentUser();
+  const elderId = await getEffectiveElderId(user);
 
   const person = await db.collection(COLLECTION_NAMES.persons).doc(event.personId).get();
-  if (!person.data || person.data.elderId !== user._id) {
+  if (!person.data || person.data.elderId !== elderId) {
     throw new Error("成员不存在或无权限删除");
   }
 
@@ -330,13 +437,11 @@ async function deletePerson(event) {
   return { success: true };
 }
 
-// ==================== 记忆相关 ====================
-
-async function getMemories(event) {
+async function getMemories(event = {}) {
   const user = await getCurrentUser();
+  const elderId = await resolveElderIdForEvent(user, event);
 
-  // 构建查询条件
-  let query = { elderId: user._id };
+  let query = { elderId };
   if (event.person) {
     query.person = event.person;
   }
@@ -366,20 +471,20 @@ async function getMemories(event) {
   }));
 }
 
-async function addMemory(event) {
+async function addMemory(event = {}) {
   if (!event.title || !event.story) {
     throw new Error("标题和故事内容不能为空");
   }
 
   const user = await getCurrentUser();
+  const elderId = await resolveElderIdForEvent(user, event);
 
-  // 计算年代
   const year = event.year || new Date().getFullYear();
   const decade = Math.floor(year / 10) % 100 + "0";
 
   const result = await db.collection(COLLECTION_NAMES.memories).add({
     data: {
-      elderId: user._id,
+      elderId: elderId,
       year: year,
       decade: decade,
       type: event.type || "daily",
@@ -397,15 +502,16 @@ async function addMemory(event) {
   };
 }
 
-async function updateMemory(event) {
+async function updateMemory(event = {}) {
   if (!event.memoryId) {
     throw new Error("缺少记忆ID");
   }
 
   const user = await getCurrentUser();
+  const elderId = await resolveElderIdForEvent(user, event);
 
   const memory = await db.collection(COLLECTION_NAMES.memories).doc(event.memoryId).get();
-  if (!memory.data || memory.data.elderId !== user._id) {
+  if (!memory.data || memory.data.elderId !== elderId) {
     throw new Error("记忆不存在或无权限修改");
   }
 
@@ -428,15 +534,16 @@ async function updateMemory(event) {
   return { success: true };
 }
 
-async function deleteMemory(event) {
+async function deleteMemory(event = {}) {
   if (!event.memoryId) {
     throw new Error("缺少记忆ID");
   }
 
   const user = await getCurrentUser();
+  const elderId = await resolveElderIdForEvent(user, event);
 
   const memory = await db.collection(COLLECTION_NAMES.memories).doc(event.memoryId).get();
-  if (!memory.data || memory.data.elderId !== user._id) {
+  if (!memory.data || memory.data.elderId !== elderId) {
     throw new Error("记忆不存在或无权限删除");
   }
 
@@ -445,25 +552,23 @@ async function deleteMemory(event) {
   return { success: true };
 }
 
-// ==================== 健康数据相关 ====================
-
-async function getHealthInfo(event) {
+async function getHealthInfo(event = {}) {
   const user = await getCurrentUser();
+  const elderId = await resolveElderIdForEvent(user, event);
+  const elder = elderId === user._id ? user : await getUserById(elderId);
 
-  // 获取既往病史
   const historyResult = await db
     .collection(COLLECTION_NAMES.healthRecords)
-    .where({ elderId: user._id, type: "medicalHistory" })
+    .where({ elderId, type: "medicalHistory" })
     .get();
 
-  // 获取用药记录
   const medicationResult = await db
     .collection(COLLECTION_NAMES.healthRecords)
-    .where({ elderId: user._id, type: "medication" })
+    .where({ elderId, type: "medication" })
     .get();
 
   return {
-    todayHealth: user.healthStatus || {
+    todayHealth: (elder && elder.healthStatus) || {
       bloodPressure: "",
       heartRate: null,
       bloodSugar: ""
@@ -485,16 +590,17 @@ async function getHealthInfo(event) {
   };
 }
 
-async function addMedicalHistory(event) {
+async function addMedicalHistory(event = {}) {
   if (!event.name) {
     throw new Error("病史名称不能为空");
   }
 
   const user = await getCurrentUser();
+  const elderId = await resolveElderIdForEvent(user, event);
 
   const result = await db.collection(COLLECTION_NAMES.healthRecords).add({
     data: {
-      elderId: user._id,
+      elderId,
       type: "medicalHistory",
       name: event.name,
       diagnoseYear: event.diagnoseYear || new Date().getFullYear(),
@@ -506,16 +612,17 @@ async function addMedicalHistory(event) {
   return { id: result._id, success: true };
 }
 
-async function addMedication(event) {
+async function addMedication(event = {}) {
   if (!event.name) {
     throw new Error("药物名称不能为空");
   }
 
   const user = await getCurrentUser();
+  const elderId = await resolveElderIdForEvent(user, event);
 
   const result = await db.collection(COLLECTION_NAMES.healthRecords).add({
     data: {
-      elderId: user._id,
+      elderId,
       type: "medication",
       name: event.name,
       frequency: event.frequency || "",
@@ -529,8 +636,9 @@ async function addMedication(event) {
   return { id: result._id, success: true };
 }
 
-async function updateTodayHealth(event) {
+async function updateTodayHealth(event = {}) {
   const user = await getCurrentUser();
+  const elderId = await resolveElderIdForEvent(user, event);
 
   const updateData = {};
   if (event.bloodPressure !== undefined) updateData["healthStatus.bloodPressure"] = event.bloodPressure;
@@ -538,7 +646,7 @@ async function updateTodayHealth(event) {
   if (event.bloodSugar !== undefined) updateData["healthStatus.bloodSugar"] = event.bloodSugar;
 
   if (Object.keys(updateData).length > 0) {
-    await db.collection(COLLECTION_NAMES.users).doc(user._id).update({
+    await db.collection(COLLECTION_NAMES.users).doc(elderId).update({
       data: updateData
     });
   }
@@ -546,15 +654,16 @@ async function updateTodayHealth(event) {
   return { success: true };
 }
 
-async function deleteHealthRecord(event) {
+async function deleteHealthRecord(event = {}) {
   if (!event.recordId) {
     throw new Error("缺少记录ID");
   }
 
   const user = await getCurrentUser();
+  const elderId = await resolveElderIdForEvent(user, event);
 
   const record = await db.collection(COLLECTION_NAMES.healthRecords).doc(event.recordId).get();
-  if (!record.data || record.data.elderId !== user._id) {
+  if (!record.data || record.data.elderId !== elderId) {
     throw new Error("记录不存在或无权限删除");
   }
 
@@ -563,13 +672,17 @@ async function deleteHealthRecord(event) {
   return { success: true };
 }
 
-// ==================== 云函数入口 ====================
+// ==================== ????? ====================
 
 exports.main = async (event) => {
   try {
     switch (event.action) {
       case "login":
-        return await login();
+        return await login(event);
+      case "getElderList":
+        return await getElderList();
+      case "bindElder":
+        return await bindElder(event);
       case "getPersonList":
         return await getPersonList();
       case "getFamilyTree":
@@ -577,7 +690,7 @@ exports.main = async (event) => {
       case "getPersonDetail":
         return await getPersonDetail(event);
       case "getElderInfo":
-        return await getElderInfo();
+        return await getElderInfo(event);
       case "updateElderInfo":
         return await updateElderInfo(event);
       case "addPerson":
@@ -605,7 +718,7 @@ exports.main = async (event) => {
       case "deleteHealthRecord":
         return await deleteHealthRecord(event);
       default:
-        throw new Error("未知操作");
+        throw new Error("鏈煡鎿嶄綔");
     }
   } catch (error) {
     return {
@@ -614,3 +727,13 @@ exports.main = async (event) => {
     };
   }
 };
+
+
+
+
+
+
+
+
+
+

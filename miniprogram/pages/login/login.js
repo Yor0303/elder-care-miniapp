@@ -4,7 +4,7 @@ Page({
   async doLogin(role) {
     try {
       wx.showLoading({ title: "登录中" });
-      const res = await loginAPI();
+      const res = await loginAPI(role);
 
       wx.setStorageSync("role", role);
       wx.setStorageSync("token", res.token);

@@ -3,22 +3,19 @@ const {
   getMemoriesAPI,
   addMemoryAPI,
   updateMemoryAPI,
-  deleteMemoryAPI,
-  getPersonListAPI
+  deleteMemoryAPI
 } = require("../../api/user");
 
 Page({
   data: {
     isEdit: false,
     memoryId: "",
-
     title: "",
     story: "",
     year: "",
     person: "",
     img: "",
     type: "",
-
     typeOptions: ["family", "travel", "festival", "daily"],
     typeLabels: {
       family: "家庭",
@@ -27,54 +24,22 @@ Page({
       daily: "日常"
     },
     showTypePicker: false,
-
-    personOptions: [],
+    personOptions: ["本人", "家人"],
     personIndex: -1,
-
     fileList: [],
     saving: false
   },
 
+  noop() {},
+
   onLoad(options) {
-    this.loadPersonOptions();
+    this.syncPersonIndex(this.data.person, this.data.personOptions);
 
     const memoryId = options.id || options.memoryId;
     if (memoryId) {
       this.setData({ isEdit: true, memoryId });
       this.loadMemoryDetail(memoryId);
     }
-  },
-
-  async loadPersonOptions() {
-    try {
-      const persons = await getPersonListAPI();
-      const names = (persons || [])
-        .map((item) => (item && item.name ? item.name.trim() : ""))
-        .filter(Boolean);
-      const options = this.normalizePersonOptions(names);
-      this.setData({ personOptions: options });
-      this.syncPersonIndex(this.data.person, options);
-    } catch (error) {
-      const options = this.normalizePersonOptions([]);
-      this.setData({ personOptions: options });
-      this.syncPersonIndex(this.data.person, options);
-    }
-  },
-
-  normalizePersonOptions(names) {
-    const result = [];
-    const seen = new Set();
-    const base = ["本人", ...names];
-
-    base.forEach((name) => {
-      const value = (name || "").trim();
-      if (!value) return;
-      if (seen.has(value)) return;
-      seen.add(value);
-      result.push(value);
-    });
-
-    return result;
   },
 
   syncPersonIndex(personValue, options = this.data.personOptions) {
@@ -86,10 +51,7 @@ Page({
 
     let index = options.findIndex((name) => name === person);
     if (person && index === -1) {
-      const nextOptions = [person, ...options.filter((name) => name !== person)];
       index = 0;
-      this.setData({ personOptions: nextOptions, personIndex: index });
-      return;
     }
 
     this.setData({ personIndex: person ? index : -1 });
@@ -97,9 +59,12 @@ Page({
 
   async loadMemoryDetail(memoryId) {
     try {
-      wx.showLoading({ title: "加载中" });
-      const memories = await getMemoriesAPI({});
-      const memory = memories.find((m) => m.id === memoryId);
+      wx.showLoading({ title: "加载中..." });
+      const memoriesRaw = await getMemoriesAPI({});
+      const memories = Array.isArray(memoriesRaw)
+        ? memoriesRaw
+        : (memoriesRaw && Array.isArray(memoriesRaw.data) ? memoriesRaw.data : []);
+      const memory = memories.find((item) => item.id === memoryId);
 
       if (memory) {
         this.setData({
@@ -121,10 +86,17 @@ Page({
     }
   },
 
-  // 输入事件
-  onTitleInput(e) { this.setData({ title: e.detail.value }); },
-  onStoryInput(e) { this.setData({ story: e.detail.value }); },
-  onYearInput(e) { this.setData({ year: e.detail.value }); },
+  onTitleInput(e) {
+    this.setData({ title: e.detail.value });
+  },
+
+  onStoryInput(e) {
+    this.setData({ story: e.detail.value });
+  },
+
+  onYearInput(e) {
+    this.setData({ year: e.detail.value });
+  },
 
   onPersonChange(e) {
     const index = Number(e.detail.value);
@@ -132,16 +104,19 @@ Page({
     this.setData({ personIndex: index, person });
   },
 
-  // 类型选择
-  showTypePicker() { this.setData({ showTypePicker: true }); },
-  hideTypePicker() { this.setData({ showTypePicker: false }); },
+  showTypePicker() {
+    this.setData({ showTypePicker: true });
+  },
+
+  hideTypePicker() {
+    this.setData({ showTypePicker: false });
+  },
 
   onTypeSelect(e) {
     const { type } = e.currentTarget.dataset;
     this.setData({ type, showTypePicker: false });
   },
 
-  // 选择图片
   chooseImage() {
     wx.chooseImage({
       count: 1,
@@ -161,13 +136,14 @@ Page({
     });
   },
 
-  // 上传图片到云存储
   uploadToCloud(tempFilePath) {
     return new Promise((resolve, reject) => {
-      const cloudPath = `memories/${Date.now()}-${Math.random().toString(36).substr(2, 9)}${tempFilePath.match(/\.[^.]+$/)[0] || ".jpg"}`;
+      const extMatch = tempFilePath.match(/\.[^.]+$/);
+      const ext = extMatch ? extMatch[0] : ".jpg";
+      const cloudPath = `memories/${Date.now()}-${Math.random().toString(36).slice(2, 11)}${ext}`;
 
       wx.cloud.uploadFile({
-        cloudPath: cloudPath,
+        cloudPath,
         filePath: tempFilePath,
         success: (res) => resolve(res.fileID),
         fail: reject
@@ -175,7 +151,6 @@ Page({
     });
   },
 
-  // 保存
   async save() {
     const { title, story, year, person, type, img, isEdit, memoryId, saving } = this.data;
 
@@ -184,24 +159,24 @@ Page({
       return;
     }
     if (!story.trim()) {
-      wx.showToast({ title: "请写下这段回忆", icon: "none" });
+      wx.showToast({ title: "请输入回忆内容", icon: "none" });
+      return;
+    }
+    if (saving) {
       return;
     }
 
-    if (saving) return;
     this.setData({ saving: true });
 
     try {
       let cloudUrl = img;
 
-      // 如果是本地临时文件，先上传
       if (img && img.startsWith("wxfile://")) {
-        wx.showLoading({ title: "上传图片..." });
+        wx.showLoading({ title: "上传图片中..." });
         cloudUrl = await this.uploadToCloud(img);
       }
 
       wx.showLoading({ title: "保存中..." });
-
       const parsedYear = parseInt(year, 10);
       const data = {
         title: title.trim(),
@@ -223,7 +198,7 @@ Page({
 
       setTimeout(() => {
         wx.navigateBack();
-      }, 1500);
+      }, 1200);
     } catch (error) {
       wx.hideLoading();
       wx.showToast({ title: error.message || "保存失败", icon: "none" });
@@ -232,22 +207,23 @@ Page({
     this.setData({ saving: false });
   },
 
-  // 删除
   delete() {
     wx.showModal({
       title: "确认删除",
-      content: "删除后无法恢复，确定要删除吗？",
+      content: "删除后无法恢复，确定要删除这条回忆吗？",
       success: async (res) => {
-        if (res.confirm) {
-          try {
-            await deleteMemoryAPI(this.data.memoryId);
-            wx.showToast({ title: "删除成功", icon: "success" });
-            setTimeout(() => {
-              wx.navigateBack();
-            }, 1500);
-          } catch (error) {
-            wx.showToast({ title: "删除失败", icon: "none" });
-          }
+        if (!res.confirm) {
+          return;
+        }
+
+        try {
+          await deleteMemoryAPI(this.data.memoryId);
+          wx.showToast({ title: "删除成功", icon: "success" });
+          setTimeout(() => {
+            wx.navigateBack();
+          }, 1200);
+        } catch (error) {
+          wx.showToast({ title: "删除失败", icon: "none" });
         }
       }
     });

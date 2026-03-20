@@ -1,15 +1,27 @@
 <!-- pages/family/member-edit.wxml -->
 <view class="page">
-  <view class="title">{{isEdit ? "编辑成员" : "添加成员"}}</view>
+  <view class="title">{{isEdit ? "编辑成员" : "新增成员"}}</view>
 
   <view class="form">
-    <!-- 姓名 -->
+    <view class="form-item">
+      <view class="form-label">照片</view>
+      <view class="avatar-section">
+        <view wx:if="{{avatar}}" class="avatar-preview">
+          <image class="avatar-image" src="{{avatar}}" mode="aspectFill"></image>
+          <view class="remove-avatar" catchtap="removeAvatar">X</view>
+        </view>
+        <view wx:else class="avatar-upload" bindtap="chooseAvatar">
+          <text class="avatar-plus">+</text>
+          <text class="avatar-text">上传照片</text>
+        </view>
+      </view>
+    </view>
+
     <view class="form-item">
       <view class="form-label">姓名 *</view>
       <input class="form-input" placeholder="请输入姓名" value="{{name}}" bindinput="onNameInput" />
     </view>
 
-    <!-- 关系 -->
     <view class="form-item" bindtap="showRelationPicker">
       <view class="form-label">家庭关系</view>
       <view class="form-picker">
@@ -18,7 +30,6 @@
       </view>
     </view>
 
-    <!-- 性别 -->
     <view class="form-item" bindtap="showGenderPicker">
       <view class="form-label">性别</view>
       <view class="form-picker">
@@ -27,36 +38,30 @@
       </view>
     </view>
 
-    <!-- 年龄 -->
     <view class="form-item">
       <view class="form-label">年龄</view>
       <input class="form-input" type="number" placeholder="请输入年龄" value="{{age}}" bindinput="onAgeInput" />
     </view>
 
-    <!-- 健康状况 -->
     <view class="form-item">
       <view class="form-label">健康状况</view>
       <input class="form-input" placeholder="如：良好、一般" value="{{health}}" bindinput="onHealthInput" />
     </view>
 
-    <!-- 简介 -->
     <view class="form-item">
       <view class="form-label">简介</view>
       <textarea class="form-textarea" placeholder="简单介绍一下这位家人..." value="{{description}}" bindinput="onDescriptionInput" />
     </view>
   </view>
 
-  <!-- 保存按钮 -->
   <button class="save-btn" bindtap="save" disabled="{{saving}}">
     {{saving ? "保存中..." : "保存"}}
   </button>
 
-  <!-- 删除按钮 -->
   <button wx:if="{{isEdit}}" class="delete-btn" bindtap="delete">删除成员</button>
 
-  <!-- 关系选择器 -->
   <view class="picker-mask" wx:if="{{showRelationPicker}}" bindtap="hideRelationPicker">
-    <view class="picker-content" catchtap="">
+    <view class="picker-content" catchtap="noop">
       <view class="picker-title">选择关系</view>
       <scroll-view scroll-y class="picker-list">
         <view
@@ -72,9 +77,8 @@
     </view>
   </view>
 
-  <!-- 性别选择器 -->
   <view class="picker-mask" wx:if="{{showGenderPicker}}" bindtap="hideGenderPicker">
-    <view class="picker-content" catchtap="">
+    <view class="picker-content" catchtap="noop">
       <view class="picker-title">选择性别</view>
       <view class="picker-list">
         <view

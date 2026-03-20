@@ -15,7 +15,7 @@
 .identity-card {
   background: #fff;
   border-radius: 24rpx;
-  padding: 28rpx;
+  padding: 30rpx;
   box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.06);
 }
 
@@ -30,9 +30,10 @@
 
 .name {
   font-size: 40rpx;
-  font-weight: 600;
+  font-weight: 700;
   text-align: center;
   margin-bottom: 16rpx;
+  color: #1a3a5f;
 }
 
 .basic-row {
@@ -44,7 +45,7 @@
 
 .pill {
   padding: 8rpx 18rpx;
-  border-radius: 20rpx;
+  border-radius: 999rpx;
   background: #f0f7ff;
   color: #4A90E2;
   font-size: 26rpx;
@@ -58,8 +59,8 @@
 
 .info-item {
   background: #f7f8fa;
-  border-radius: 16rpx;
-  padding: 16rpx;
+  border-radius: 18rpx;
+  padding: 18rpx;
 }
 
 .label {
@@ -75,9 +76,10 @@
 
 .section-title {
   margin-top: 32rpx;
-  margin-bottom: 16rpx;
-  font-size: 30rpx;
-  font-weight: 600;
+  margin-bottom: 18rpx;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #1a3a5f;
 }
 
 .timeline {
@@ -123,7 +125,7 @@
 .memory-title {
   font-size: 34rpx;
   color: #333;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .memory-story {
@@ -138,4 +140,8 @@
   color: #999;
   font-size: 30rpx;
   margin-top: 40rpx;
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 40rpx 24rpx;
+  box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.06);
 }

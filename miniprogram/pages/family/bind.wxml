@@ -1,0 +1,6 @@
+<view class="container">
+  <view class="title">请选择需要绑定的老人</view>
+  <view wx:for="{{elderList}}" wx:key="id" class="elder-item">
+    <button bindtap="bindElder" data-id="{{item.id}}">绑定 {{item.name}}</button>
+  </view>
+</view>

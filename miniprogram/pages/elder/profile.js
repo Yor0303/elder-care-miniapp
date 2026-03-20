@@ -1,4 +1,4 @@
-const { getElderInfoAPI, getMemoriesAPI } = require("../../api/user");
+﻿const { getElderInfoAPI, getMemoriesAPI } = require("../../api/user");
 
 Page({
   data: {
@@ -16,7 +16,10 @@ Page({
 
     try {
       const elder = await getElderInfoAPI();
-      const memories = await getMemoriesAPI({});
+      const memoriesRaw = await getMemoriesAPI({});
+      const memories = Array.isArray(memoriesRaw)
+        ? memoriesRaw
+        : (memoriesRaw && Array.isArray(memoriesRaw.data) ? memoriesRaw.data : []);
 
       const name = elder && elder.name ? elder.name.trim() : "";
       const selfKeys = ["本人", "自己", "我"];

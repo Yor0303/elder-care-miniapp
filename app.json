@@ -1,0 +1,13 @@
+{
+  "pages": [
+    "pages/family/home",
+    "pages/family/memory-edit"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "家属端",
+    "backgroundColor": "#eeeeee",
+    "backgroundTextStyle": "light"
+  }
+}

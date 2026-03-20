@@ -58,6 +58,18 @@
     <view class="arrow">›</view>
   </view>
 
+  <!-- 绑定老人 -->
+  <view class="card" bindtap="goToBindPage">
+    <view class="card-left">
+      <view class="icon">🔗</view>
+      <view class="card-content">
+        <view class="card-title">绑定老人</view>
+        <view class="card-desc">绑定老人信息</view>
+      </view>
+    </view>
+    <view class="arrow">›</view>
+  </view>
+
 </view>
 
 <!-- 提示信息 -->

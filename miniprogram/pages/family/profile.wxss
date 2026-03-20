@@ -65,17 +65,26 @@
 }
 
 .form-input {
+  display: block;
+  width: 100%;
+  height: 88rpx;
+  line-height: 88rpx;
   background: #F8F9FB;
-  padding: 22rpx 24rpx;
+  padding: 0 24rpx;
   border-radius: 16rpx;
   font-size: 30rpx;
+  color: #333;
+  box-sizing: border-box;
 }
 
 .form-textarea {
+  display: block;
   background: #F8F9FB;
   padding: 22rpx 24rpx;
   border-radius: 16rpx;
   font-size: 30rpx;
+  line-height: 1.6;
+  color: #333;
   width: 100%;
   height: 200rpx;
   box-sizing: border-box;
@@ -92,12 +101,14 @@
 
 .form-picker {
   background: #F8F9FB;
-  padding: 22rpx 24rpx;
+  min-height: 88rpx;
+  padding: 0 24rpx;
   border-radius: 16rpx;
   font-size: 30rpx;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  box-sizing: border-box;
 }
 
 .form-picker .placeholder {
