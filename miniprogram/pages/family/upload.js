@@ -1,5 +1,4 @@
-// pages/family/upload.js
-const { addMemoryAPI } = require("../../api/user");
+const { addMemoryAPI, getPersonListAPI } = require("../../api/user");
 
 Page({
   data: {
@@ -10,28 +9,42 @@ Page({
     story: "",
     year: "",
     person: "",
-    personOptions: ["本人", "家人"],
+    personOptions: [],
     personIndex: -1,
     uploading: false
   },
 
   onLoad() {
-    this.syncPersonIndex(this.data.person, this.data.personOptions);
+    this.loadPersons();
+  },
+
+  async loadPersons() {
+    try {
+      const persons = await getPersonListAPI();
+      const personOptions = Array.isArray(persons) ? persons.map((item) => item.name) : [];
+      this.setData({ personOptions });
+      this.syncPersonIndex(this.data.person, personOptions);
+    } catch (error) {
+      console.error("加载人物列表失败:", error);
+      wx.showToast({
+        title: "人物加载失败",
+        icon: "none"
+      });
+    }
   },
 
   syncPersonIndex(personValue, options = this.data.personOptions) {
     const person = (personValue || "").trim();
+
     if (!options || options.length === 0) {
       this.setData({ personIndex: -1 });
       return;
     }
 
-    let index = options.findIndex((name) => name === person);
-    if (person && index === -1) {
-      index = 0;
-    }
-
-    this.setData({ personIndex: person ? index : -1 });
+    const index = options.findIndex((name) => name === person);
+    this.setData({
+      personIndex: index
+    });
   },
 
   chooseImage() {
@@ -72,7 +85,10 @@ Page({
   onPersonChange(e) {
     const index = Number(e.detail.value);
     const person = this.data.personOptions[index] || "";
-    this.setData({ personIndex: index, person });
+    this.setData({
+      personIndex: index,
+      person
+    });
   },
 
   removeFile() {
@@ -104,10 +120,12 @@ Page({
       wx.showToast({ title: "请输入标题", icon: "none" });
       return;
     }
+
     if (!story.trim()) {
       wx.showToast({ title: "请输入回忆内容", icon: "none" });
       return;
     }
+
     if (uploading) {
       return;
     }

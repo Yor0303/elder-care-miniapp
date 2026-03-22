@@ -1,6 +1,6 @@
-// pages/family/memory-edit.js
 const {
   getMemoriesAPI,
+  getPersonListAPI,
   addMemoryAPI,
   updateMemoryAPI,
   deleteMemoryAPI
@@ -24,7 +24,7 @@ Page({
       daily: "日常"
     },
     showTypePicker: false,
-    personOptions: ["本人", "家人"],
+    personOptions: [],
     personIndex: -1,
     fileList: [],
     saving: false
@@ -32,13 +32,25 @@ Page({
 
   noop() {},
 
-  onLoad(options) {
-    this.syncPersonIndex(this.data.person, this.data.personOptions);
+  onLoad(options = {}) {
+    this.loadPersons();
 
     const memoryId = options.id || options.memoryId;
     if (memoryId) {
       this.setData({ isEdit: true, memoryId });
       this.loadMemoryDetail(memoryId);
+    }
+  },
+
+  async loadPersons() {
+    try {
+      const persons = await getPersonListAPI();
+      const personOptions = Array.isArray(persons) ? persons.map((item) => item.name) : [];
+      this.setData({ personOptions });
+      this.syncPersonIndex(this.data.person, personOptions);
+    } catch (error) {
+      console.error("加载人物列表失败:", error);
+      wx.showToast({ title: "人物加载失败", icon: "none" });
     }
   },
 
@@ -49,11 +61,7 @@ Page({
       return;
     }
 
-    let index = options.findIndex((name) => name === person);
-    if (person && index === -1) {
-      index = 0;
-    }
-
+    const index = options.findIndex((name) => name === person);
     this.setData({ personIndex: person ? index : -1 });
   },
 

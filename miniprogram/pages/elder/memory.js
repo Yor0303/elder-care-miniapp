@@ -1,73 +1,76 @@
-﻿const { getMemoriesAPI, getElderInfoAPI } = require("../../api/user");
+const { getMemoriesAPI } = require("../../api/user");
 
-// 回忆类型配置
-const MEMORY_TYPES = {
-  family: "family",
-  travel: "travel",
-  festival: "festival",
-  daily: "daily"
+const TYPE_LABELS = {
+  family: "家庭",
+  travel: "旅行",
+  festival: "节日",
+  daily: "日常",
+  medical: "医疗"
 };
 
 Page({
-
   data: {
     showFilter: false,
     showDecade: false,
     showType: false,
-
     showStory: false,
     currentMemory: {},
-
     memories: [],
     list: [],
-
+    decadeOptions: [],
+    typeOptions: [],
+    activeDecade: "",
+    activeType: "",
     loading: false,
-    errorMsg: ""
+    errorMsg: "",
+    queryPerson: ""
   },
 
-  onLoad(options) {
-    this.loadMemories(options);
+  onLoad(options = {}) {
+    this.setData({
+      queryPerson: options.person || ""
+    });
+    this.loadMemories();
   },
 
-  /**
-   * 从云端加载回忆数据
-   */
-  async loadMemories(options) {
+  async loadMemories() {
     this.setData({ loading: true, errorMsg: "" });
 
     try {
       const queryParams = {};
-      if (options.person) {
-        queryParams.person = options.person;
+      if (this.data.queryPerson) {
+        queryParams.person = this.data.queryPerson;
       }
 
-      const [elder, memoriesRaw] = await Promise.all([
-        getElderInfoAPI(),
-        getMemoriesAPI(queryParams)
-      ]);
-
+      const memoriesRaw = await getMemoriesAPI(queryParams);
       const memories = Array.isArray(memoriesRaw)
         ? memoriesRaw
         : (memoriesRaw && Array.isArray(memoriesRaw.data) ? memoriesRaw.data : []);
 
-      const name = elder && elder.name ? elder.name.trim() : "";
-      const selfKeys = ["本人", "自己", "我"];
-      const isSelfMemory = (item) => {
-        const person = (item && item.person ? item.person : "").trim();
-        if (!person) return false;
-        if (selfKeys.includes(person)) return true;
-        if (name && person === name) return true;
-        return false;
-      };
+      const normalized = memories
+        .map((item) => ({
+          ...item,
+          year: item.year || "",
+          decade: item.decade || "",
+          type: item.type || "daily",
+          typeLabel: TYPE_LABELS[item.type] || "其他",
+          img: item.img || "/assets/images/family.jpg",
+          title: item.title || "未命名回忆",
+          story: item.story || "暂无故事内容",
+          person: item.person || "未标注人物"
+        }))
+        .sort((a, b) => Number(b.year || 0) - Number(a.year || 0));
 
-      const filtered = (memories || []).filter((item) => !isSelfMemory(item));
+      const decadeOptions = [...new Set(normalized.map((item) => item.decade).filter(Boolean))];
+      const typeOptions = [...new Set(normalized.map((item) => item.type).filter(Boolean))];
 
       this.setData({
-        memories: filtered,
-        list: filtered,
+        memories: normalized,
+        list: this.applyFilters(normalized, this.data.activeDecade, this.data.activeType),
+        decadeOptions,
+        typeOptions,
         loading: false
       });
-
     } catch (error) {
       console.error("加载回忆数据失败:", error);
       this.setData({
@@ -82,30 +85,38 @@ Page({
     }
   },
 
-  /**
-   * 下拉刷新
-   */
+  applyFilters(memories, decade, type) {
+    return (memories || []).filter((item) => {
+      if (decade && item.decade !== decade) {
+        return false;
+      }
+      if (type && item.type !== type) {
+        return false;
+      }
+      return true;
+    });
+  },
+
   async onPullDownRefresh() {
-    await this.loadMemories({});
+    await this.loadMemories();
     wx.stopPullDownRefresh();
   },
 
-  // 打开故事卡片
   openMemory(e) {
     const item = e.currentTarget.dataset.item;
     this.setData({
       showStory: true,
-      currentMemory: item
+      currentMemory: item || {}
     });
   },
 
   closeStory() {
     this.setData({
-      showStory: false
+      showStory: false,
+      currentMemory: {}
     });
   },
 
-  // 打开筛选
   openFilter() {
     this.setData({
       showFilter: true
@@ -114,7 +125,9 @@ Page({
 
   closeFilter() {
     this.setData({
-      showFilter: false
+      showFilter: false,
+      showDecade: false,
+      showType: false
     });
   },
 
@@ -132,63 +145,71 @@ Page({
     });
   },
 
-  /**
-   * 按年代筛选
-   */
   filterDecade(e) {
-    const value = e.currentTarget.dataset.value;
-    const result = this.data.memories.filter(item => item.decade === value);
-
+    const value = e.currentTarget.dataset.value || "";
     this.setData({
-      list: result,
-      showFilter: false
+      activeDecade: value,
+      list: this.applyFilters(this.data.memories, value, this.data.activeType),
+      showFilter: false,
+      showDecade: false
     });
   },
 
-  /**
-   * 按类型筛选
-   */
   filterType(e) {
-    const value = e.currentTarget.dataset.value;
-    const result = this.data.memories.filter(item => item.type === value);
-
+    const value = e.currentTarget.dataset.value || "";
     this.setData({
-      list: result,
-      showFilter: false
+      activeType: value,
+      list: this.applyFilters(this.data.memories, this.data.activeDecade, value),
+      showFilter: false,
+      showType: false
     });
   },
 
   resetFilter() {
     this.setData({
+      activeDecade: "",
+      activeType: "",
       list: this.data.memories,
-      showFilter: false
+      showFilter: false,
+      showDecade: false,
+      showType: false
     });
   },
 
   startStory() {
-    let index = 0;
+    if (!this.data.list.length) {
+      wx.showToast({
+        title: "暂无回忆可播放",
+        icon: "none"
+      });
+      return;
+    }
 
-    const timer = setInterval(() => {
+    let index = 0;
+    if (this.timer) {
+      clearInterval(this.timer);
+    }
+
+    this.timer = setInterval(() => {
       if (index >= this.data.list.length) {
-        clearInterval(timer);
+        clearInterval(this.timer);
+        this.timer = null;
         return;
       }
 
       wx.pageScrollTo({
-        scrollTop: index * 350,
+        scrollTop: index * 360,
         duration: 800
       });
 
-      index++;
+      index += 1;
     }, 4000);
-    this.timer = timer;
   },
 
   onUnload() {
     if (this.timer) {
       clearInterval(this.timer);
-      console.log("Timer cleared on page unload.");
+      this.timer = null;
     }
   }
-
 });

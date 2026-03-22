@@ -2,10 +2,20 @@ const FUNCTION_NAME = "yizhanService";
 const FAMILY_ELDER_ACTIONS = new Set([
   "getElderInfo",
   "updateElderInfo",
+  "getPersonList",
+  "getPersonDetail",
+  "addPerson",
+  "updatePerson",
+  "deletePerson",
   "getMemories",
   "addMemory",
   "updateMemory",
-  "deleteMemory"
+  "deleteMemory",
+  "getHealthInfo",
+  "addMedicalHistory",
+  "addMedication",
+  "updateTodayHealth",
+  "deleteHealthRecord"
 ]);
 
 function callService(action, data = {}) {
