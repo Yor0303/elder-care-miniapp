@@ -1,0 +1,37 @@
+<view class="page">
+  <view class="segment">
+    <view class="seg-btn {{mode==='image'?'active':''}}" bindtap="switchToImage">图片</view>
+    <view class="seg-btn {{mode==='text'?'active':''}}" bindtap="switchToText">文字</view>
+  </view>
+
+  <view wx:if="{{mode==='image'}}" class="card">
+    <view class="hint">选择一张照片</view>
+    <view class="image-picker" bindtap="chooseImage">
+      <image wx:if="{{fileUrl}}" class="picked" src="{{fileUrl}}" mode="aspectFill" />
+      <view wx:else class="placeholder">点击选择</view>
+    </view>
+    <view class="form-item">
+      <view class="label">拍摄/发生日期</view>
+      <picker mode="date" value="{{date}}" bindchange="onDateChange">
+        <view class="picker">{{date || '选择日期'}}</view>
+      </picker>
+    </view>
+  </view>
+
+  <view wx:if="{{mode==='text'}}" class="card">
+    <view class="form-item">
+      <view class="label">文字内容</view>
+      <textarea class="textarea" placeholder="写下这段回忆..." value="{{text}}" bindinput="onTextInput" maxlength="500" />
+    </view>
+    <view class="form-item">
+      <view class="label">发生日期</view>
+      <picker mode="date" value="{{date}}" bindchange="onDateChange">
+        <view class="picker">{{date || '选择日期'}}</view>
+      </picker>
+    </view>
+  </view>
+
+  <button class="submit" bindtap="submit" disabled="{{submitting}}">
+    {{submitting ? '保存中...' : '保存回忆'}}
+  </button>
+</view>

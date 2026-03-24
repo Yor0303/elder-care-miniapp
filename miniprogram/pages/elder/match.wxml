@@ -1,0 +1,29 @@
+<view class="page">
+  <view class="header">
+    <view class="title">匹配头像与名字</view>
+    <button class="retry" bindtap="resetGame">重新开始</button>
+  </view>
+
+  <view wx:if="{{cards.length === 0}}" class="empty">
+    暂无配对图片，请家属在“上传回忆-配对上传”添加
+  </view>
+
+  <view wx:else class="grid">
+    <block wx:for="{{cards}}" wx:key="id">
+      <view class="card {{item.flipped || item.matched ? 'flipped' : ''}} {{item.matched ? 'matched' : ''}}" bindtap="tapCard" data-index="{{index}}">
+        <view class="face back">?</view>
+        <view class="face front">
+          <image wx:if="{{item.type==='img'}}" class="photo" src="{{item.img}}" mode="aspectFill" />
+          <view wx:elif="{{item.type==='name'}}" class="name">{{item.text}}</view>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <view wx:if="{{win}}" class="win-mask" bindtap="resetGame">
+    <view class="win-box">
+      <view class="win-title">完成匹配！</view>
+      <view class="win-sub">点击任意处重新开始</view>
+    </view>
+  </view>
+</view>

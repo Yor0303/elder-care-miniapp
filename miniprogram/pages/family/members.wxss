@@ -1,0 +1,143 @@
+/* pages/family/members.wxss */
+.page {
+  padding: 40rpx;
+  background: #F8F9FB;
+  min-height: 100vh;
+}
+
+.title {
+  font-size: 44rpx;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 40rpx;
+  color: #1a3a5f;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  padding: 100rpx 0;
+}
+
+.loading {
+  font-size: 30rpx;
+  color: #999;
+}
+
+/* 成员列表 */
+.member-list {
+  margin-bottom: 30rpx;
+}
+
+.member-card {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+  border-radius: 24rpx;
+  box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.06);
+}
+
+.avatar {
+  width: 108rpx;
+  height: 108rpx;
+  border-radius: 24rpx;
+  margin-right: 25rpx;
+  background: #f0f0f0;
+}
+
+.avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22rpx;
+  color: #9aa6b2;
+  background: #eef2f6;
+  border: 1rpx dashed #cfd8e3;
+}
+
+.info {
+  flex: 1;
+}
+
+.name {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #333;
+}
+
+.meta {
+  margin-top: 10rpx;
+}
+
+.relation {
+  font-size: 28rpx;
+  color: #4A90E2;
+  margin-right: 20rpx;
+}
+
+.age {
+  font-size: 28rpx;
+  color: #999;
+}
+
+.desc {
+  font-size: 26rpx;
+  color: #999;
+  margin-top: 10rpx;
+}
+
+.arrow {
+  font-size: 40rpx;
+  color: #ccc;
+}
+
+.edit-btn {
+  font-size: 26rpx;
+  color: #4A90E2;
+  padding: 10rpx 20rpx;
+  border: 1rpx solid #4A90E2;
+  border-radius: 999rpx;
+  background: #f8fbff;
+}
+
+/* 空状态 */
+.empty-state {
+  text-align: center;
+  padding: 100rpx 24rpx;
+  background: #fff;
+  border-radius: 24rpx;
+  box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.06);
+}
+
+.empty-icon {
+  font-size: 44rpx;
+  color: #4A90E2;
+  font-weight: 700;
+  margin-bottom: 20rpx;
+}
+
+.empty-text {
+  font-size: 30rpx;
+  color: #999;
+}
+
+/* 添加按钮 */
+.add-member-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  padding: 35rpx;
+  border-radius: 24rpx;
+  border: 2rpx dashed #4A90E2;
+  color: #4A90E2;
+  font-size: 32rpx;
+  box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.06);
+}
+
+.add-icon {
+  font-size: 40rpx;
+  margin-right: 10rpx;
+}

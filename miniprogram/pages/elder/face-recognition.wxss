@@ -1,0 +1,201 @@
+/* pages/elder/face-recognition.wxss */
+.page {
+  min-height: 100vh;
+  background: #F8F9FB;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  padding: 40rpx;
+  text-align: center;
+  background: #fff;
+}
+
+.title {
+  font-size: 44rpx;
+  font-weight: bold;
+  color: #1A3A5F;
+}
+
+.subtitle {
+  font-size: 28rpx;
+  color: #888;
+  margin-top: 10rpx;
+}
+
+/* 摄像头区域 */
+.camera-container {
+  flex: 1;
+  position: relative;
+  margin: 30rpx;
+  border-radius: 30rpx;
+  overflow: hidden;
+  background: #000;
+  min-height: 500rpx;
+}
+
+.camera {
+  width: 100%;
+  height: 100%;
+}
+
+/* 人脸框引导 */
+.face-guide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.face-frame {
+  width: 350rpx;
+  height: 450rpx;
+  border: 4rpx solid rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  background: transparent;
+}
+
+.guide-text {
+  color: #fff;
+  font-size: 28rpx;
+  margin-top: 30rpx;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 10rpx 30rpx;
+  border-radius: 30rpx;
+}
+
+/* 未授权提示 */
+.auth-prompt {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f5;
+}
+
+.auth-icon {
+  font-size: 100rpx;
+  margin-bottom: 30rpx;
+}
+
+.auth-text {
+  font-size: 32rpx;
+  color: #666;
+  margin-bottom: 40rpx;
+}
+
+.auth-btn {
+  background: #4A90E2;
+  color: #fff;
+  font-size: 30rpx;
+  padding: 20rpx 60rpx;
+  border-radius: 50rpx;
+}
+
+/* 识别结果 */
+.result-section {
+  padding: 30rpx;
+}
+
+.result-card {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  padding: 30rpx;
+  border-radius: 20rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+}
+
+.result-avatar {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  margin-right: 30rpx;
+  background: #f0f0f0;
+}
+
+.result-info {
+  flex: 1;
+}
+
+.result-name {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.result-relation {
+  font-size: 28rpx;
+  color: #4A90E2;
+  margin-top: 8rpx;
+}
+
+.result-desc {
+  font-size: 26rpx;
+  color: #999;
+  margin-top: 10rpx;
+}
+
+/* 识别状态 */
+.status-section {
+  padding: 20rpx;
+  text-align: center;
+}
+
+.status-text {
+  font-size: 30rpx;
+  color: #4A90E2;
+}
+
+.status-text.no-match {
+  color: #ff6b6b;
+}
+
+.retry-btn {
+  margin-top: 20rpx;
+  background: #4A90E2;
+  color: #fff;
+  font-size: 28rpx;
+  padding: 15rpx 40rpx;
+  border-radius: 40rpx;
+}
+
+/* 操作按钮 */
+.action-section {
+  padding: 30rpx;
+  padding-bottom: 60rpx;
+}
+
+.capture-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100rpx;
+  background: linear-gradient(135deg, #4A90E2 0%, #1A3A5F 100%);
+  color: #fff;
+  font-size: 34rpx;
+  border-radius: 50rpx;
+  box-shadow: 0 10rpx 30rpx rgba(74, 144, 226, 0.3);
+}
+
+.capture-btn[disabled] {
+  background: #ccc;
+  box-shadow: none;
+}
+
+.btn-icon {
+  font-size: 40rpx;
+  margin-right: 15rpx;
+}

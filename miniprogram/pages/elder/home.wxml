@@ -1,0 +1,90 @@
+<view class="page">
+
+<view class="logo">忆站</view>
+<view class="subtitle">帮助记住家人与回忆</view>
+
+<!-- 历史上的今天 -->
+<view wx:if="{{onThisDay}}" class="card today-card">
+  <view class="today-header">历史上的今天</view>
+  <view class="today-body">
+    <image
+      wx:if="{{onThisDay.img}}"
+      class="today-image"
+      src="{{onThisDay.img}}"
+      mode="aspectFill"
+      bindtap="openPreview"
+    />
+    <view wx:if="{{onThisDay.title}}" class="today-title">{{onThisDay.title}}</view>
+    <view wx:if="{{onThisDay.content}}" class="today-desc">{{onThisDay.content}}</view>
+  </view>
+  <!-- 去掉“我来上传一段回忆”入口 -->
+ </view>
+
+<!-- 功能按钮：看家人 -->
+<view class="card feature" bindtap="goToFamily">
+  <view class="icon">👨‍👩‍👧‍👦</view>
+  <view class="info">
+    <view class="title">看家人</view>
+    <view class="desc">查看家属头像列表</view>
+  </view>
+</view>
+
+<!-- 功能按钮：看过去 -->
+<view class="card feature" bindtap="goToMemory">
+  <view class="icon">🕰</view>
+  <view class="info">
+    <view class="title">看过去</view>
+    <view class="desc">浏览回忆时间</view>
+  </view>
+</view>
+
+<!-- 功能按钮：回忆上传 -->
+<view class="card feature" bindtap="goToUpload">
+  <view class="icon">📝</view>
+  <view class="info">
+    <view class="title">回忆上传</view>
+    <view class="desc">图片或文字，记录今天</view>
+  </view>
+</view>
+
+<!-- 功能按钮：今日健康 -->
+<view class="card feature" bindtap="goToHealth">
+  <view class="icon">❤️</view>
+  <view class="info">
+    <view class="title">今日健康</view>
+    <view class="desc">查看血压、血糖等健康信息</view>
+  </view>
+</view>
+
+<!-- 功能按钮：卡片游戏 -->
+<view class="card feature" bindtap="goToMatch">
+  <view class="icon">🃏</view>
+  <view class="info">
+    <view class="title">卡片游戏</view>
+    <view class="desc">匹配家人头像与名字</view>
+  </view>
+</view>
+
+<!-- 功能按钮：我的资料 -->
+<view class="card feature" bindtap="goToProfile">
+  <view class="icon">👴</view>
+  <view class="info">
+    <view class="title">我的资料</view>
+    <view class="desc">身份卡与我的故事轴</view>
+  </view>
+</view>
+
+<!-- 人脸识别悬浮按钮 -->
+<view class="floating-buttons">
+  <view class="floating-btn face-btn" bindtap="goToFaceRecognition">
+    <view class="btn-icon">👤</view>
+    <view class="btn-text">人脸识别</view>
+  </view>
+</view>
+
+<!-- 全屏预览 -->
+<view wx:if="{{previewVisible}}" class="preview-mask" bindtap="closePreview">
+  <image class="preview-full" src="{{previewImg}}" mode="aspectFit" />
+</view>
+
+</view>

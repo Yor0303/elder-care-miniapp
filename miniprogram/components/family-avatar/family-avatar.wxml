@@ -1,0 +1,4 @@
+<view class="family-avatar">
+  <image class="avatar" src="{{avatar}}" mode="aspectFill"></image>
+  <view class="name">{{name}}</view>
+</view>

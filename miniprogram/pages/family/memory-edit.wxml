@@ -1,0 +1,101 @@
+<!-- pages/family/memory-edit.wxml -->
+<view class="page">
+  <view class="title">{{isEdit ? "编辑回忆" : "新增回忆"}}</view>
+
+  <view class="form">
+    <view class="form-item">
+      <view class="form-label">标题 *</view>
+      <input
+        class="form-input"
+        placeholder="给这段回忆起个名字"
+        value="{{title}}"
+        bindinput="onTitleInput"
+        maxlength="50"
+      />
+    </view>
+
+    <view class="form-item">
+      <view class="form-label">故事内容 *</view>
+      <textarea
+        class="form-textarea"
+        placeholder="写下这段回忆的故事..."
+        value="{{story}}"
+        bindinput="onStoryInput"
+        maxlength="500"
+      />
+    </view>
+
+    <view class="form-item">
+      <view class="form-label">年份</view>
+      <input
+        class="form-input"
+        type="number"
+        placeholder="如：2026"
+        value="{{year}}"
+        bindinput="onYearInput"
+      />
+    </view>
+
+    <view class="form-item">
+      <view class="form-label">相关人物</view>
+      <picker
+        mode="selector"
+        range="{{personOptions}}"
+        value="{{personIndex < 0 ? 0 : personIndex}}"
+        bindchange="onPersonChange"
+      >
+        <view class="form-picker">
+          <text class="{{personIndex < 0 ? 'placeholder' : ''}}">
+            {{personIndex < 0 ? "请选择人物" : personOptions[personIndex]}}
+          </text>
+          <text class="arrow">></text>
+        </view>
+      </picker>
+    </view>
+
+    <view class="form-item" bindtap="showTypePicker">
+      <view class="form-label">类型</view>
+      <view class="form-picker">
+        <text class="{{type ? '' : 'placeholder'}}">{{typeLabels[type] || "请选择类型"}}</text>
+        <text class="arrow">></text>
+      </view>
+    </view>
+
+    <view class="form-item">
+      <view class="form-label">照片</view>
+      <view class="image-section">
+        <view wx:if="{{fileList.length > 0}}" class="image-preview">
+          <image src="{{fileList[0].url}}" mode="aspectFill" class="preview-img"></image>
+          <view class="remove-btn" catchtap="removeImage">X</view>
+        </view>
+        <view wx:else class="image-upload" bindtap="chooseImage">
+          <text class="upload-icon">+</text>
+          <text class="upload-text">添加照片</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <button class="save-btn" bindtap="save" disabled="{{saving}}">
+    {{saving ? "保存中..." : "保存"}}
+  </button>
+
+  <button wx:if="{{isEdit}}" class="delete-btn" bindtap="delete">删除回忆</button>
+
+  <view class="picker-mask" wx:if="{{showTypePicker}}" bindtap="hideTypePicker">
+    <view class="picker-content" catchtap="noop">
+      <view class="picker-title">选择类型</view>
+      <view class="picker-list">
+        <view
+          wx:for="{{typeOptions}}"
+          wx:key="*this"
+          class="picker-item {{type === item ? 'active' : ''}}"
+          bindtap="onTypeSelect"
+          data-type="{{item}}"
+        >
+          {{typeLabels[item]}}
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

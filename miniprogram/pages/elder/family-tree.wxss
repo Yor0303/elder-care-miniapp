@@ -1,0 +1,148 @@
+/* pages/elder/family-tree.wxss */
+:root {
+  --paper: #fff8ec;
+  --ink: #1a2b3c;
+  --accent: #c07a3f;
+  --shadow: rgba(18, 32, 46, 0.18);
+}
+
+.page {
+  min-height: 100vh;
+  background: radial-gradient(circle at 15% 10%, #fff3e0 0%, #f5f1ea 40%, #eef2f5 100%);
+  padding: 40rpx 30rpx 80rpx;
+  box-sizing: border-box;
+}
+
+.title {
+  text-align: center;
+  font-size: 46rpx;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 4rpx;
+  margin-bottom: 40rpx;
+}
+
+.album {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.book {
+  position: relative;
+  width: 600rpx;
+  height: 820rpx;
+  perspective: 2000rpx;
+}
+
+.page-sheet {
+  position: absolute;
+  inset: 0;
+  border-radius: 26rpx;
+  background: var(--paper);
+  box-shadow: 0 20rpx 60rpx var(--shadow);
+  overflow: hidden;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+  transition: transform 0.6s ease;
+}
+
+.page-front {
+  transform: rotateY(0deg);
+  transform-origin: left center;
+  z-index: 2;
+}
+
+.page-back {
+  transform: rotateY(180deg);
+  transform-origin: left center;
+}
+
+.book.flip-next .page-front {
+  transform: rotateY(-180deg);
+}
+
+.book.flip-next .page-back {
+  transform: rotateY(0deg);
+}
+
+.book.flip-prev .page-front {
+  transform-origin: right center;
+  transform: rotateY(180deg);
+}
+
+.book.flip-prev .page-back {
+  transform-origin: right center;
+  transform: rotateY(0deg);
+}
+
+.photo {
+  width: 100%;
+  height: 520rpx;
+  object-fit: cover;
+  border-bottom: 8rpx solid #e6d8c6;
+}
+
+.caption {
+  padding: 28rpx 36rpx 0;
+  color: var(--ink);
+}
+
+.name {
+  font-size: 40rpx;
+  font-weight: 700;
+  margin-bottom: 8rpx;
+}
+
+.relation {
+  font-size: 30rpx;
+  color: var(--accent);
+  margin-bottom: 10rpx;
+}
+
+.desc {
+  font-size: 26rpx;
+  color: #5c636b;
+  line-height: 1.6;
+}
+
+.empty {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8b8b8b;
+  font-size: 30rpx;
+}
+
+.nav {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 36rpx;
+}
+
+.nav-btn {
+  width: 200rpx;
+  height: 80rpx;
+  border-radius: 40rpx;
+  background: #1a2b3c;
+  color: #fff;
+  font-size: 30rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-indicator {
+  font-size: 28rpx;
+  color: #5c636b;
+}
+
+@media (max-width: 375px) {
+  .book {
+    width: 540rpx;
+    height: 760rpx;
+  }
+}

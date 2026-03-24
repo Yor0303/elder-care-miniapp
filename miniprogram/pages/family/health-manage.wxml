@@ -1,0 +1,167 @@
+<!-- pages/family/health-manage.wxml -->
+<view class="page">
+  <view class="title">健康数据管理</view>
+
+  <view wx:if="{{loading}}" class="loading-container">
+    <view class="loading">加载中...</view>
+  </view>
+
+  <view wx:else>
+    <view class="section">
+      <view class="section-header">
+        <view class="section-title">今日健康</view>
+        <text class="tip">点击卡片可编辑</text>
+      </view>
+
+      <view class="card" bindtap="editTodayHealth">
+        <view class="label">血压</view>
+        <view class="value">{{todayHealth.bloodPressure || "--/--"}}</view>
+        <view class="edit-icon">编辑</view>
+      </view>
+
+      <view class="card" bindtap="editHeartRate">
+        <view class="label">心率</view>
+        <view class="value">{{todayHealth.heartRate || "--"}} 次/分钟</view>
+        <view class="edit-icon">编辑</view>
+      </view>
+
+      <view class="card" bindtap="editBloodSugar">
+        <view class="label">血糖</view>
+        <view class="value">{{todayHealth.bloodSugar || "--"}} mmol/L</view>
+        <view class="edit-icon">编辑</view>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-header">
+        <view class="section-title">既往病史</view>
+        <view class="add-btn" bindtap="showAddHistory">+ 添加</view>
+      </view>
+
+      <view wx:if="{{medicalHistory.length === 0}}" class="empty-tip">
+        暂无病史记录，点击右上角添加
+      </view>
+
+      <view wx:for="{{medicalHistory}}" wx:key="id" class="card record-card">
+        <view class="record-info">
+          <view class="record-name">{{item.name}}</view>
+          <view class="record-meta">{{item.diagnoseYear}} 年确诊</view>
+          <view wx:if="{{item.notes}}" class="record-notes">{{item.notes}}</view>
+        </view>
+        <view class="delete-btn" catchtap="deleteRecord" data-id="{{item.id}}">删除</view>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-header">
+        <view class="section-title">当前用药</view>
+        <view class="add-btn" bindtap="showAddMedication">+ 添加</view>
+      </view>
+
+      <view wx:if="{{medications.length === 0}}" class="empty-tip">
+        暂无用药记录，点击右上角添加
+      </view>
+
+      <view wx:for="{{medications}}" wx:key="id" class="card record-card">
+        <view class="record-info">
+          <view class="record-name">{{item.name}}</view>
+          <view class="record-meta">{{item.frequency || "未填写频率"}}</view>
+          <view wx:if="{{item.dosage}}" class="record-notes">剂量：{{item.dosage}}</view>
+          <view wx:if="{{item.time}}" class="record-notes">服用时间：{{item.time}}</view>
+          <view wx:if="{{item.notes}}" class="record-notes">备注：{{item.notes}}</view>
+        </view>
+        <view class="delete-btn" catchtap="deleteRecord" data-id="{{item.id}}">删除</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="modal-mask" wx:if="{{showAddModal}}" bindtap="closeModal">
+    <view class="modal-content" catchtap="noop">
+      <view class="modal-title">{{addType === "history" ? "添加病史" : "添加用药"}}</view>
+
+      <view wx:if="{{addType === 'history'}}">
+        <view class="modal-item">
+          <input
+            class="modal-input"
+            placeholder="病史名称，如：高血压"
+            data-field="name"
+            value="{{newRecord.name}}"
+            bindinput="onInputChange"
+          />
+        </view>
+        <view class="modal-item">
+          <input
+            class="modal-input"
+            type="number"
+            placeholder="确诊年份，如：2020"
+            data-field="diagnoseYear"
+            value="{{newRecord.diagnoseYear}}"
+            bindinput="onInputChange"
+          />
+        </view>
+        <view class="modal-item">
+          <input
+            class="modal-input"
+            placeholder="备注，可选"
+            data-field="notes"
+            value="{{newRecord.notes}}"
+            bindinput="onInputChange"
+          />
+        </view>
+      </view>
+
+      <view wx:if="{{addType === 'medication'}}">
+        <view class="modal-item">
+          <input
+            class="modal-input"
+            placeholder="药物名称，如：降压药"
+            data-field="name"
+            value="{{newRecord.name}}"
+            bindinput="onInputChange"
+          />
+        </view>
+        <view class="modal-item">
+          <input
+            class="modal-input"
+            placeholder="服用频率，如：每日 1 次"
+            data-field="frequency"
+            value="{{newRecord.frequency}}"
+            bindinput="onInputChange"
+          />
+        </view>
+        <view class="modal-item">
+          <input
+            class="modal-input"
+            placeholder="剂量，如：1 片"
+            data-field="dosage"
+            value="{{newRecord.dosage}}"
+            bindinput="onInputChange"
+          />
+        </view>
+        <view class="modal-item">
+          <input
+            class="modal-input"
+            placeholder="服用时间，如：早餐后"
+            data-field="time"
+            value="{{newRecord.time}}"
+            bindinput="onInputChange"
+          />
+        </view>
+        <view class="modal-item">
+          <input
+            class="modal-input"
+            placeholder="备注，可选"
+            data-field="notes"
+            value="{{newRecord.notes}}"
+            bindinput="onInputChange"
+          />
+        </view>
+      </view>
+
+      <view class="modal-actions">
+        <button class="modal-btn cancel" bindtap="closeModal">取消</button>
+        <button class="modal-btn confirm" bindtap="submitNewRecord">确定</button>
+      </view>
+    </view>
+  </view>
+</view>

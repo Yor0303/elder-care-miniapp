@@ -1,0 +1,38 @@
+<!-- pages/elder/family-tree.wxml -->
+<view class="page">
+  <view class="title">相片薄</view>
+
+  <view class="album">
+    <view class="book {{flipClass}}" bindtap="handleNext">
+      <view class="page-sheet page-back">
+        <block wx:if="{{flipPerson}}">
+          <image class="photo" src="{{flipPerson.facePhoto || flipPerson.avatar}}" mode="aspectFill"></image>
+          <view class="caption">
+            <view class="name">{{flipPerson.name}}</view>
+            <view class="relation">{{flipPerson.relation}}</view>
+            <view class="desc" wx:if="{{flipPerson.description}}">{{flipPerson.description}}</view>
+          </view>
+        </block>
+        <view class="empty" wx:else>暂无可翻页面</view>
+      </view>
+
+      <view class="page-sheet page-front">
+        <block wx:if="{{currentPerson}}">
+          <image class="photo" src="{{currentPerson.facePhoto || currentPerson.avatar}}" mode="aspectFill"></image>
+          <view class="caption">
+            <view class="name">{{currentPerson.name}}</view>
+            <view class="relation">{{currentPerson.relation}}</view>
+            <view class="desc" wx:if="{{currentPerson.description}}">{{currentPerson.description}}</view>
+          </view>
+        </block>
+        <view class="empty" wx:else>暂无家人照片，请在“回忆管理-上传回忆”添加</view>
+      </view>
+    </view>
+
+    <view class="nav">
+      <button class="nav-btn" bindtap="handlePrev">上一页</button>
+      <view class="page-indicator">{{currentIndex + 1}} / {{persons.length || 0}}</view>
+      <button class="nav-btn" bindtap="handleNext">下一页</button>
+    </view>
+  </view>
+</view>

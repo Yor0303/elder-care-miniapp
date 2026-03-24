@@ -1,0 +1,60 @@
+﻿<view class="page">
+  <view class="header">
+    <view class="title">人脸识别</view>
+    <view class="subtitle">对准摄像头，识别家人</view>
+  </view>
+
+  <view class="camera-container">
+    <camera
+      wx:if="{{cameraAuthorized}}"
+      class="camera"
+      device-position="front"
+      flash="off"
+      binderror="onCameraError"
+    >
+      <cover-view class="face-guide">
+        <cover-view class="face-frame"></cover-view>
+        <cover-view class="guide-text">请将人脸置于框内</cover-view>
+      </cover-view>
+    </camera>
+
+    <view wx:else class="auth-prompt">
+      <view class="auth-icon">CAM</view>
+      <view class="auth-text">需要摄像头权限</view>
+      <button class="auth-btn" bindtap="requestCameraAuth">授权摄像头</button>
+    </view>
+  </view>
+
+  <view class="result-section" wx:if="{{recognizedPerson}}">
+    <view class="result-card">
+      <image class="result-avatar" src="{{displayAvatar}}" mode="aspectFill"></image>
+      <view class="result-info">
+        <view class="result-name">{{recognizedPerson.name}}</view>
+        <view class="result-relation">{{recognizedPerson.relation}}</view>
+        <view class="result-desc" wx:if="{{recognizedPerson.description}}">{{recognizedPerson.description}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="status-section" wx:if="{{recognizing}}">
+    <view class="status-text">正在识别中...</view>
+  </view>
+  <view class="status-section" wx:elif="{{noMatch}}">
+    <view class="status-text no-match">{{errorMessage}}</view>
+    <button class="retry-btn" bindtap="retry">重新识别</button>
+  </view>
+
+  <view class="action-section" wx:if="{{!recognizedPerson && !noMatch}}">
+    <button class="capture-btn" bindtap="takePhoto" disabled="{{recognizing || !cameraAuthorized}}">
+      <text class="btn-icon">CAM</text>
+      <text>开始识别</text>
+    </button>
+  </view>
+
+  <view class="action-section" wx:if="{{recognizedPerson}}">
+    <button class="capture-btn" bindtap="retry">
+      <text class="btn-icon">RE</text>
+      <text>继续识别</text>
+    </button>
+  </view>
+</view>

@@ -1,0 +1,48 @@
+<!-- pages/memories/index.wxml -->
+<view class="page">
+  <view class="header">
+    <view class="title">回忆管理</view>
+    <view class="subtitle">按时间线查看并管理家属上传的回忆</view>
+  </view>
+
+  <view class="filter-bar">
+    <view class="filter-btn {{filterType==='all' ? 'active' : ''}}" bindtap="setFilterAll">全部</view>
+    <view class="filter-btn {{filterType==='self' ? 'active' : ''}}" bindtap="setFilterSelf">本人回忆</view>
+    <view class="filter-btn {{filterType==='other' ? 'active' : ''}}" bindtap="setFilterOther">家人回忆</view>
+  </view>
+
+  <view wx:if="{{loading}}" class="loading">加载中...</view>
+
+  <view wx:else class="timeline">
+    <block wx:for="{{list}}" wx:key="id">
+      <view class="timeline-item">
+        <view class="year">{{item.year}}</view>
+        <view class="memory-card">
+          <view wx:if="{{item.img}}">
+            <image class="memory-img" src="{{item.img}}" mode="aspectFill"></image>
+          </view>
+          <view wx:else class="memory-img placeholder">暂无图片</view>
+
+          <view class="memory-title-row">
+            <view class="memory-title">{{item.title}}</view>
+            <view class="tag {{item.isSelf ? 'tag-self' : 'tag-other'}}">{{item.isSelf ? '本人' : '家人'}}</view>
+          </view>
+
+          <view class="memory-story" wx:if="{{item.story}}">{{item.story}}</view>
+
+          <view class="memory-meta">
+            <text class="memory-person">{{item.person || "未填写人物"}}</text>
+            <view class="edit-btn" bindtap="editMemory" data-id="{{item.id}}">编辑</view>
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <view wx:if="{{list.length === 0}}" class="empty">暂无回忆</view>
+  </view>
+
+  <view class="floating-btn" bindtap="uploadMemory">
+    <text class="plus">+</text>
+    <text class="label">上传回忆</text>
+  </view>
+</view>

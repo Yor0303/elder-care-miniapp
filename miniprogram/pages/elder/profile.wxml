@@ -1,0 +1,67 @@
+<!-- pages/elder/profile.wxml -->
+<view class="page">
+  <view wx:if="{{loading}}" class="loading">加载中...</view>
+
+  <view wx:elif="{{elder}}">
+    <view class="identity-card">
+      <image class="avatar" src="{{elder.avatar || '/assets/images/avatar1.png'}}" mode="aspectFill"></image>
+      <view class="name">{{elder.name || "未填写姓名"}}</view>
+
+      <view class="basic-row">
+        <view class="pill">{{elder.gender || "性别未填"}}</view>
+        <view class="pill">{{elder.age ? elder.age + "岁" : "年龄未填"}}</view>
+      </view>
+
+      <view class="info-grid">
+        <view class="info-item">
+          <view class="label">出生年份</view>
+          <view class="value">{{elder.birthYear || "未填写"}}</view>
+        </view>
+        <view class="info-item">
+          <view class="label">籍贯</view>
+          <view class="value">{{elder.hometown || "未填写"}}</view>
+        </view>
+        <view class="info-item">
+          <view class="label">常住地址</view>
+          <view class="value">{{elder.address || "未填写"}}</view>
+        </view>
+        <view class="info-item">
+          <view class="label">紧急联系人</view>
+          <view class="value">{{elder.emergencyContactName || "未填写"}}</view>
+        </view>
+        <view class="info-item">
+          <view class="label">联系电话</view>
+          <view class="value">{{elder.emergencyContactPhone || "未填写"}}</view>
+        </view>
+        <view class="info-item">
+          <view class="label">过敏史</view>
+          <view class="value">{{elder.allergies || "未填写"}}</view>
+        </view>
+        <view class="info-item">
+          <view class="label">常用药</view>
+          <view class="value">{{elder.medications || "未填写"}}</view>
+        </view>
+        <view class="info-item">
+          <view class="label">备注</view>
+          <view class="value">{{elder.notes || "未填写"}}</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="section-title">我的故事轴</view>
+    <view class="timeline">
+      <block wx:for="{{selfMemories}}" wx:key="id">
+        <view class="timeline-item">
+          <view class="year">{{item.year}}</view>
+          <view class="memory-card">
+            <view class="memory-title">{{item.title}}</view>
+            <view class="memory-story">{{item.story}}</view>
+          </view>
+        </view>
+      </block>
+      <view wx:if="{{selfMemories.length === 0}}" class="empty">暂无本人的回忆</view>
+    </view>
+  </view>
+
+  <view wx:else class="empty">暂无老人信息</view>
+</view>

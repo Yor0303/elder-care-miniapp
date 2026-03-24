@@ -1,0 +1,83 @@
+<!--pages/family/home.wxml-->
+<view class="page">
+
+<!-- 欢迎语 -->
+<view class="header">
+  <view class="welcome">欢迎回来！</view>
+  <view class="subtitle">您可以在这里为 {{elderName}} 上传和管理信息</view>
+</view>
+
+<!-- 功能入口 -->
+<view class="menu-section">
+
+  <!-- 老人资料 -->
+  <view class="card" bindtap="goToProfile">
+    <view class="card-left">
+      <view class="icon">🪪</view>
+      <view class="card-content">
+        <view class="card-title">老人资料</view>
+        <view class="card-desc">完善身份信息与紧急联系人</view>
+      </view>
+    </view>
+    <view class="arrow">›</view>
+  </view>
+
+  <!-- 回忆管理 -->
+  <view class="card" bindtap="goToMemoryManage">
+    <view class="card-left">
+      <view class="icon">🗂️</view>
+      <view class="card-content">
+        <view class="card-title">回忆管理</view>
+        <view class="card-desc">像时间线一样查看与修改</view>
+      </view>
+    </view>
+    <view class="arrow">›</view>
+  </view>
+
+  <!-- 健康管理 -->
+  <view class="card" bindtap="goToHealthManage">
+    <view class="card-left">
+      <view class="icon">💊</view>
+      <view class="card-content">
+        <view class="card-title">健康管理</view>
+        <view class="card-desc">健康数据、病史、用药</view>
+      </view>
+    </view>
+    <view class="arrow">›</view>
+  </view>
+
+  <!-- 家庭成员 -->
+  <view class="card" bindtap="goToMembers">
+    <view class="card-left">
+      <view class="icon">👨‍👩‍👧‍👦</view>
+      <view class="card-content">
+        <view class="card-title">家庭成员</view>
+        <view class="card-desc">查看和管理家人信息</view>
+      </view>
+    </view>
+    <view class="arrow">›</view>
+  </view>
+
+  <!-- 绑定老人 -->
+  <view class="card" bindtap="goToBindPage">
+    <view class="card-left">
+      <view class="icon">🔗</view>
+      <view class="card-content">
+        <view class="card-title">绑定老人</view>
+        <view class="card-desc">绑定老人信息</view>
+      </view>
+    </view>
+    <view class="arrow">›</view>
+  </view>
+
+</view>
+
+<!-- 提示信息 -->
+<view class="tips">
+  <view class="tips-title">💡 温馨提示</view>
+  <view class="tips-content">
+    上传的内容将同步显示在老人端小程序中，方便老人随时查看家人的关爱。
+  </view>
+</view>
+
+</view>
