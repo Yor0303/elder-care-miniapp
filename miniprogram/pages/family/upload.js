@@ -1,4 +1,43 @@
-const { addMemoryAPI, getPersonListAPI, createMemoryPairAPI } = require("../../api/user");
+const {
+  addMemoryAPI,
+  getPersonListAPI,
+  getElderInfoAPI,
+  createMemoryPairAPI
+} = require("../../api/user");
+
+function inferPersonRole(person, role) {
+  if (role === "self" || role === "family") {
+    return role;
+  }
+
+  const normalizedPerson = (person || "").trim();
+  return ["本人", "自己", "我"].includes(normalizedPerson) ? "self" : (normalizedPerson ? "family" : "");
+}
+
+function buildPersonOptions(persons, elderName) {
+  const options = [
+    {
+      label: elderName ? `本人（${elderName}）` : "本人",
+      value: "本人",
+      role: "self"
+    }
+  ];
+
+  (Array.isArray(persons) ? persons : []).forEach((item) => {
+    const name = item && item.name ? item.name.trim() : "";
+    if (!name || name === "本人") {
+      return;
+    }
+
+    options.push({
+      label: name,
+      value: name,
+      role: "family"
+    });
+  });
+
+  return options;
+}
 
 Page({
   data: {
@@ -8,12 +47,12 @@ Page({
     type: "",
     title: "",
     story: "",
-    year: "",
+    eventDate: "",
     person: "",
+    personRole: "",
     personOptions: [],
     personIndex: -1,
     uploading: false,
-    // pair
     leftFileUrl: "",
     rightFileUrl: "",
     leftLabel: "",
@@ -36,10 +75,11 @@ Page({
 
   async loadPersons() {
     try {
-      const persons = await getPersonListAPI();
-      const personOptions = Array.isArray(persons) ? persons.map((item) => item.name) : [];
+      const [persons, elder] = await Promise.all([getPersonListAPI(), getElderInfoAPI()]);
+      const elderName = elder && elder.name ? elder.name.trim() : "";
+      const personOptions = buildPersonOptions(persons, elderName);
       this.setData({ personOptions });
-      this.syncPersonIndex(this.data.person, personOptions);
+      this.syncPersonIndex(this.data.person, this.data.personRole, personOptions);
     } catch (error) {
       console.error("加载人物列表失败:", error);
       wx.showToast({
@@ -49,18 +89,17 @@ Page({
     }
   },
 
-  syncPersonIndex(personValue, options = this.data.personOptions) {
+  syncPersonIndex(personValue, personRole = this.data.personRole, options = this.data.personOptions) {
     const person = (personValue || "").trim();
+    const role = inferPersonRole(person, personRole);
 
     if (!options || options.length === 0) {
       this.setData({ personIndex: -1 });
       return;
     }
 
-    const index = options.findIndex((name) => name === person);
-    this.setData({
-      personIndex: index
-    });
+    const index = options.findIndex((item) => item.value === person && item.role === role);
+    this.setData({ personIndex: index });
   },
 
   chooseImage() {
@@ -112,16 +151,17 @@ Page({
     this.setData({ story: e.detail.value });
   },
 
-  onYearChange(e) {
-    this.setData({ year: e.detail.value });
+  onDateChange(e) {
+    this.setData({ eventDate: e.detail.value });
   },
 
   onPersonChange(e) {
     const index = Number(e.detail.value);
-    const person = this.data.personOptions[index] || "";
+    const target = this.data.personOptions[index];
     this.setData({
       personIndex: index,
-      person
+      person: target ? target.value : "",
+      personRole: target ? target.role : ""
     });
   },
 
@@ -162,7 +202,7 @@ Page({
   },
 
   async submitMemory() {
-    const { title, story, year, person, fileUrl, type, uploading } = this.data;
+    const { title, story, eventDate, person, personRole, fileUrl, type, uploading } = this.data;
 
     if (!title.trim()) {
       wx.showToast({ title: "请输入标题", icon: "none" });
@@ -171,6 +211,11 @@ Page({
 
     if (!story.trim()) {
       wx.showToast({ title: "请输入回忆内容", icon: "none" });
+      return;
+    }
+
+    if (!eventDate) {
+      wx.showToast({ title: "请选择回忆日期", icon: "none" });
       return;
     }
 
@@ -193,8 +238,10 @@ Page({
       await addMemoryAPI({
         title: title.trim(),
         story: story.trim(),
-        year: parseInt(year, 10) || new Date().getFullYear(),
+        eventDate,
+        year: Number(eventDate.slice(0, 4)),
         person: person.trim(),
+        personRole: inferPersonRole(person.trim(), personRole),
         type: type || "daily",
         img: cloudUrl || ""
       });
@@ -208,8 +255,9 @@ Page({
         type: "",
         title: "",
         story: "",
-        year: "",
+        eventDate: "",
         person: "",
+        personRole: "",
         personIndex: -1,
         uploading: false
       });
@@ -227,9 +275,11 @@ Page({
   onLeftLabelInput(e) {
     this.setData({ leftLabel: e.detail.value });
   },
+
   onRightLabelInput(e) {
     this.setData({ rightLabel: e.detail.value });
   },
+
   onNotesInput(e) {
     this.setData({ notes: e.detail.value });
   },

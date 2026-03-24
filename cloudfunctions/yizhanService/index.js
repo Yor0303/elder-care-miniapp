@@ -1,4 +1,8 @@
 const cloud = require("wx-server-sdk");
+const { iai } = require("tencentcloud-sdk-nodejs");
+const demoData = require("./demo-data.json");
+
+const IaiClient = iai.v20200303.Client;
 
 cloud.init({
   env: cloud.DYNAMIC_CURRENT_ENV
@@ -13,8 +17,178 @@ const COLLECTION_NAMES = {
   memories: "memories",
   healthRecords: "healthRecords",
   elderUploads: "elder_uploads",
-  memoryPairs: "memory_pairs"
+  memoryPairs: "memory_pairs",
+  voiceMessages: "voice_messages",
+  lifeGuides: "life_guides"
 };
+
+const FACE_MODEL_VERSION = "3.0";
+const DEFAULT_FACE_SCORE_THRESHOLD = 85;
+const DEMO_ELDER_ID = "elder_demo_001";
+
+function getFaceRecognitionConfig() {
+  const secretId = process.env.TENCENTCLOUD_SECRET_ID || "";
+  const secretKey = process.env.TENCENTCLOUD_SECRET_KEY || "";
+  const region = process.env.TENCENTCLOUD_REGION || "ap-shanghai";
+  const scoreThreshold = Number(process.env.FACE_SCORE_THRESHOLD || DEFAULT_FACE_SCORE_THRESHOLD);
+
+  return {
+    secretId,
+    secretKey,
+    region,
+    scoreThreshold: Number.isFinite(scoreThreshold) ? scoreThreshold : DEFAULT_FACE_SCORE_THRESHOLD
+  };
+}
+
+function assertFaceRecognitionConfigured() {
+  const config = getFaceRecognitionConfig();
+  if (!config.secretId || !config.secretKey) {
+    throw new Error("请先在云函数环境变量中配置 TENCENTCLOUD_SECRET_ID 和 TENCENTCLOUD_SECRET_KEY");
+  }
+  return config;
+}
+
+function createIaiClient() {
+  const config = assertFaceRecognitionConfigured();
+  return new IaiClient({
+    credential: {
+      secretId: config.secretId,
+      secretKey: config.secretKey
+    },
+    region: config.region,
+    profile: {
+      signMethod: "TC3-HMAC-SHA256"
+    }
+  });
+}
+
+function sanitizeIaiId(prefix, rawValue) {
+  const normalized = String(rawValue || "")
+    .replace(/[^A-Za-z0-9\-_%@#&]/g, "_")
+    .slice(0, 48);
+  return `${prefix}_${normalized}`.slice(0, 64);
+}
+
+function getIaiGroupId(elderId) {
+  return sanitizeIaiId("elder", elderId);
+}
+
+function getIaiPersonId(personId) {
+  return sanitizeIaiId("person", personId);
+}
+
+function mapGenderToIai(gender) {
+  if (gender === "男") return 1;
+  if (gender === "女") return 2;
+  return 0;
+}
+
+async function downloadCloudFileAsBase64(fileID) {
+  if (!fileID) {
+    throw new Error("缺少图片文件");
+  }
+
+  const downloadRes = await cloud.downloadFile({ fileID });
+  const fileContent = downloadRes && downloadRes.fileContent;
+  if (!fileContent) {
+    throw new Error("图片下载失败");
+  }
+
+  return Buffer.from(fileContent).toString("base64");
+}
+
+async function ensureIaiGroup(client, elderId) {
+  const groupId = getIaiGroupId(elderId);
+
+  try {
+    await client.GetGroupInfo({ GroupId: groupId });
+    return groupId;
+  } catch (_) {
+    await client.CreateGroup({
+      GroupId: groupId,
+      GroupName: `家庭成员库-${String(elderId).slice(-6)}`,
+      GroupExDescriptions: ["relation", "personId"],
+      Tag: "elder-care-miniapp",
+      FaceModelVersion: FACE_MODEL_VERSION
+    });
+    return groupId;
+  }
+}
+
+async function removeIaiPersonIfExists(client, personId) {
+  try {
+    await client.DeletePerson({ PersonId: getIaiPersonId(personId) });
+  } catch (_) {
+    // Ignore not-found and cleanup failures here. Re-create will be attempted next.
+  }
+}
+
+async function syncPersonFaceToIai(personDoc) {
+  const facePhoto = personDoc && (personDoc.facePhoto || personDoc.avatar);
+  if (!facePhoto) {
+    return {
+      synced: false,
+      reason: "missing_face_photo"
+    };
+  }
+
+  const client = createIaiClient();
+  const groupId = await ensureIaiGroup(client, personDoc.elderId);
+  const personId = getIaiPersonId(personDoc._id);
+  const imageBase64 = await downloadCloudFileAsBase64(facePhoto);
+
+  await removeIaiPersonIfExists(client, personDoc._id);
+
+  await client.CreatePerson({
+    GroupId: groupId,
+    PersonName: personDoc.name || "未命名成员",
+    PersonId: personId,
+    Gender: mapGenderToIai(personDoc.gender),
+    Image: imageBase64,
+    FaceModelVersion: FACE_MODEL_VERSION,
+    NeedRotateDetection: 1,
+    PersonExDescriptionInfos: [
+      {
+        Desc: "relation",
+        Value: personDoc.relation || ""
+      },
+      {
+        Desc: "personId",
+        Value: personDoc._id
+      }
+    ]
+  });
+
+  await db.collection(COLLECTION_NAMES.persons).doc(personDoc._id).update({
+    data: {
+      iaiGroupId: groupId,
+      iaiPersonId: personId,
+      faceSyncStatus: "synced",
+      faceSyncedAt: new Date().toISOString(),
+      faceSyncError: ""
+    }
+  });
+
+  return {
+    synced: true,
+    groupId,
+    personId
+  };
+}
+
+async function markPersonFaceSyncFailed(personId, error) {
+  const message = (error && error.message) || "人脸同步失败";
+
+  await db.collection(COLLECTION_NAMES.persons).doc(personId).update({
+    data: {
+      faceSyncStatus: "failed",
+      faceSyncError: message,
+      faceSyncFailedAt: new Date().toISOString()
+    }
+  });
+
+  return message;
+}
 
 /**
  * 纭繚闆嗗悎瀛樺湪
@@ -49,6 +223,69 @@ function formatMonthDay(dateStr) {
   } catch (_) {
     return null;
   }
+}
+
+function normalizeDateOnly(value) {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      return trimmed;
+    }
+
+    if (trimmed) {
+      const parsed = new Date(trimmed);
+      if (!Number.isNaN(parsed.getTime())) {
+        return `${parsed.getFullYear()}-${pad2(parsed.getMonth() + 1)}-${pad2(parsed.getDate())}`;
+      }
+    }
+  }
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return `${value.getFullYear()}-${pad2(value.getMonth() + 1)}-${pad2(value.getDate())}`;
+  }
+
+  return "";
+}
+
+function resolveMemoryEventDate(event = {}) {
+  const normalized = normalizeDateOnly(event.eventDate);
+  if (normalized) {
+    return normalized;
+  }
+
+  const year = Number.parseInt(event.year, 10);
+  if (Number.isFinite(year)) {
+    return `${year}-01-01`;
+  }
+
+  return normalizeDateOnly(new Date());
+}
+
+function resolveMemoryYear(eventDate, fallbackYear) {
+  const fromDate = normalizeDateOnly(eventDate);
+  if (fromDate) {
+    return Number.parseInt(fromDate.slice(0, 4), 10);
+  }
+
+  const parsedYear = Number.parseInt(fallbackYear, 10);
+  if (Number.isFinite(parsedYear)) {
+    return parsedYear;
+  }
+
+  return new Date().getFullYear();
+}
+
+function normalizeMemoryPersonRole(role, person) {
+  if (role === "self" || role === "family") {
+    return role;
+  }
+
+  const normalizedPerson = (person || "").trim();
+  if (["本人", "自己", "我"].includes(normalizedPerson)) {
+    return "self";
+  }
+
+  return normalizedPerson ? "family" : "";
 }
 
 /**
@@ -217,6 +454,7 @@ async function getPersonList() {
     id: person._id,
     name: person.name,
     avatar: person.avatar,
+    facePhoto: person.facePhoto || person.avatar || "",
     relation: person.relation,
     age: person.age,
     description: person.description
@@ -310,9 +548,11 @@ async function getPersonDetail(event) {
     id: person._id,
     name: person.name,
     avatar: person.avatar,
+    facePhoto: person.facePhoto || person.avatar || "",
     relation: person.relation,
     age: person.age,
     gender: person.gender,
+    health: person.health || "",
     healthStatus: person.healthStatus,
     description: person.description,
     memories: person.memories || []
@@ -389,6 +629,7 @@ async function addPerson(event) {
       elderId: elderId,
       name: event.name,
       avatar: event.avatar || "",
+      facePhoto: event.facePhoto || event.avatar || "",
       relation: event.relation || "",
       age: event.age || null,
       gender: event.gender || "",
@@ -401,7 +642,26 @@ async function addPerson(event) {
     }
   });
 
-  return { id: result._id, success: true };
+  const personDoc = {
+    _id: result._id,
+    elderId,
+    name: event.name,
+    avatar: event.avatar || "",
+    facePhoto: event.facePhoto || event.avatar || "",
+    relation: event.relation || "",
+    gender: event.gender || ""
+  };
+
+  let faceSyncWarning = "";
+  if (personDoc.facePhoto) {
+    try {
+      await syncPersonFaceToIai(personDoc);
+    } catch (error) {
+      faceSyncWarning = await markPersonFaceSyncFailed(result._id, error);
+    }
+  }
+
+  return { id: result._id, success: true, faceSyncWarning };
 }
 
 /**
@@ -423,6 +683,14 @@ async function updatePerson(event) {
   const updateData = { updatedAt: new Date().toISOString() };
   if (event.name !== undefined) updateData.name = event.name;
   if (event.avatar !== undefined) updateData.avatar = event.avatar;
+  if (event.facePhoto !== undefined) {
+    updateData.facePhoto = event.facePhoto;
+  } else if (
+    event.avatar !== undefined &&
+    (!person.data.facePhoto || person.data.facePhoto === person.data.avatar)
+  ) {
+    updateData.facePhoto = event.avatar;
+  }
   if (event.relation !== undefined) updateData.relation = event.relation;
   if (event.age !== undefined) updateData.age = event.age;
   if (event.gender !== undefined) updateData.gender = event.gender;
@@ -435,7 +703,32 @@ async function updatePerson(event) {
     data: updateData
   });
 
-  return { success: true };
+  const nextPerson = {
+    ...person.data,
+    ...updateData,
+    _id: person.data._id || event.personId
+  };
+
+  const shouldSyncFace =
+    nextPerson.facePhoto &&
+    (
+      event.facePhoto !== undefined ||
+      event.avatar !== undefined ||
+      event.name !== undefined ||
+      event.gender !== undefined ||
+      event.relation !== undefined
+    );
+
+  let faceSyncWarning = "";
+  if (shouldSyncFace) {
+    try {
+      await syncPersonFaceToIai(nextPerson);
+    } catch (error) {
+      faceSyncWarning = await markPersonFaceSyncFailed(event.personId, error);
+    }
+  }
+
+  return { success: true, faceSyncWarning };
 }
 
 /**
@@ -452,6 +745,13 @@ async function deletePerson(event) {
   const person = await db.collection(COLLECTION_NAMES.persons).doc(event.personId).get();
   if (!person.data || person.data.elderId !== elderId) {
     throw new Error("成员不存在或无权限删除");
+  }
+
+  try {
+    const client = createIaiClient();
+    await removeIaiPersonIfExists(client, event.personId);
+  } catch (_) {
+    // 数据库删除不应因为外部人脸库清理失败而中断。
   }
 
   await db.collection(COLLECTION_NAMES.persons).doc(event.personId).remove();
@@ -489,6 +789,9 @@ async function getMemories(event = {}) {
     img: memory.img,
     story: memory.story,
     person: memory.person,
+    personRole: memory.personRole || "",
+    eventDate: memory.eventDate || "",
+    eventMonthDay: memory.eventMonthDay || "",
     createdAt: memory.createdAt
   }));
 }
@@ -501,10 +804,12 @@ async function addMemory(event = {}) {
   const user = await getCurrentUser();
   const elderId = await resolveElderIdForEvent(user, event);
 
-  const year = event.year || new Date().getFullYear();
+  const eventDate = resolveMemoryEventDate(event);
+  const year = resolveMemoryYear(eventDate, event.year);
   const decade = Math.floor(year / 10) % 100 + "0";
-  const eventDate = event.eventDate || new Date().toISOString();
   const eventMonthDay = formatMonthDay(eventDate);
+  const person = (event.person || "").trim();
+  const personRole = normalizeMemoryPersonRole(event.personRole, person);
 
   const result = await db.collection(COLLECTION_NAMES.memories).add({
     data: {
@@ -515,7 +820,8 @@ async function addMemory(event = {}) {
       title: event.title,
       img: event.img || "",
       story: event.story,
-      person: event.person || "",
+      person,
+      personRole,
       eventDate: eventDate,
       eventMonthDay: eventMonthDay,
       createdAt: new Date().toISOString()
@@ -542,20 +848,27 @@ async function updateMemory(event = {}) {
   }
 
   const updateData = {};
-  if (event.title) updateData.title = event.title;
-  if (event.story) updateData.story = event.story;
-  if (event.img) updateData.img = event.img;
-  if (event.person) updateData.person = event.person;
-  if (event.type) updateData.type = event.type;
-  if (event.year) {
-    updateData.year = event.year;
-    updateData.decade = Math.floor(event.year / 10) % 100 + "0";
+  if (event.title !== undefined) updateData.title = event.title;
+  if (event.story !== undefined) updateData.story = event.story;
+  if (event.img !== undefined) updateData.img = event.img;
+  if (event.person !== undefined) updateData.person = (event.person || "").trim();
+  if (event.type !== undefined) updateData.type = event.type;
+  if (event.person !== undefined || event.personRole !== undefined) {
+    const nextPerson = event.person !== undefined ? event.person : memory.data.person;
+    const nextRole = event.personRole !== undefined ? event.personRole : memory.data.personRole;
+    updateData.personRole = normalizeMemoryPersonRole(nextRole, nextPerson);
   }
-   if (event.eventDate) {
-     updateData.eventDate = event.eventDate;
-     const md = formatMonthDay(event.eventDate);
-     if (md) updateData.eventMonthDay = md;
-   }
+  if (event.eventDate !== undefined) {
+    const eventDate = resolveMemoryEventDate(event);
+    updateData.eventDate = eventDate;
+    updateData.year = resolveMemoryYear(eventDate, event.year);
+    updateData.decade = Math.floor(updateData.year / 10) % 100 + "0";
+    const md = formatMonthDay(eventDate);
+    if (md) updateData.eventMonthDay = md;
+  } else if (event.year !== undefined) {
+    updateData.year = resolveMemoryYear("", event.year);
+    updateData.decade = Math.floor(updateData.year / 10) % 100 + "0";
+  }
   updateData.updatedAt = new Date().toISOString();
 
   await db.collection(COLLECTION_NAMES.memories).doc(event.memoryId).update({
@@ -583,6 +896,128 @@ async function deleteMemory(event = {}) {
   return { success: true };
 }
 
+function parseBloodPressure(value) {
+  const text = String(value || "").trim();
+  const matched = text.match(/(\d{2,3})\s*\/\s*(\d{2,3})/);
+  if (!matched) return { systolic: null, diastolic: null };
+  return {
+    systolic: Number.parseInt(matched[1], 10),
+    diastolic: Number.parseInt(matched[2], 10)
+  };
+}
+
+function parseHealthNumber(value) {
+  const num = Number.parseFloat(value);
+  return Number.isFinite(num) ? num : null;
+}
+
+function formatHealthLabel(date) {
+  const normalized = normalizeDateOnly(date);
+  return normalized ? normalized.slice(5) : "";
+}
+
+function getHealthAlerts(measurement = {}) {
+  const alerts = [];
+  const pressure = parseBloodPressure(measurement.bloodPressure);
+  const heartRate = parseHealthNumber(measurement.heartRate);
+  const bloodSugar = parseHealthNumber(measurement.bloodSugar);
+
+  if (pressure.systolic && pressure.diastolic) {
+    if (pressure.systolic >= 140 || pressure.diastolic >= 90) {
+      alerts.push({ metric: "bloodPressure", level: "high", text: "血压偏高，请留意休息和复测" });
+    } else if (pressure.systolic < 90 || pressure.diastolic < 60) {
+      alerts.push({ metric: "bloodPressure", level: "low", text: "血压偏低，请关注头晕乏力情况" });
+    }
+  }
+
+  if (heartRate !== null) {
+    if (heartRate > 100) {
+      alerts.push({ metric: "heartRate", level: "high", text: "心率偏快，建议安静休息后复测" });
+    } else if (heartRate < 50) {
+      alerts.push({ metric: "heartRate", level: "low", text: "心率偏慢，如有不适请尽快关注" });
+    }
+  }
+
+  if (bloodSugar !== null) {
+    if (bloodSugar > 7.8) {
+      alerts.push({ metric: "bloodSugar", level: "high", text: "血糖偏高，建议关注饮食和后续复测" });
+    } else if (bloodSugar < 3.9) {
+      alerts.push({ metric: "bloodSugar", level: "low", text: "血糖偏低，请及时补充食物并观察状态" });
+    }
+  }
+
+  return alerts;
+}
+
+function pickLatestHealthMeasurement(records = []) {
+  if (!records.length) return null;
+  return records
+    .slice()
+    .sort((a, b) => {
+      const aKey = `${a.recordDate || ""}-${a.createdAt || ""}`;
+      const bKey = `${b.recordDate || ""}-${b.createdAt || ""}`;
+      return bKey.localeCompare(aKey);
+    })[0];
+}
+
+function buildHealthTrend(records = []) {
+  const byDate = new Map();
+
+  records.forEach((item) => {
+    const date = normalizeDateOnly(item.recordDate || item.createdAt);
+    if (!date) return;
+    const existing = byDate.get(date);
+    const currentKey = `${date}-${item.createdAt || ""}`;
+    const existingKey = existing ? `${date}-${existing.createdAt || ""}` : "";
+    if (!existing || currentKey > existingKey) {
+      byDate.set(date, item);
+    }
+  });
+
+  const latestSeven = [...byDate.entries()]
+    .sort((a, b) => b[0].localeCompare(a[0]))
+    .slice(0, 7)
+    .reverse()
+    .map(([, item]) => item);
+
+  return {
+    bloodPressure: latestSeven
+      .map((item) => {
+        const pressure = parseBloodPressure(item.bloodPressure);
+        if (!pressure.systolic || !pressure.diastolic) return null;
+        return {
+          date: item.recordDate || "",
+          label: formatHealthLabel(item.recordDate || item.createdAt),
+          systolic: pressure.systolic,
+          diastolic: pressure.diastolic
+        };
+      })
+      .filter(Boolean),
+    bloodSugar: latestSeven
+      .map((item) => {
+        const value = parseHealthNumber(item.bloodSugar);
+        if (value === null) return null;
+        return {
+          date: item.recordDate || "",
+          label: formatHealthLabel(item.recordDate || item.createdAt),
+          value
+        };
+      })
+      .filter(Boolean),
+    heartRate: latestSeven
+      .map((item) => {
+        const value = parseHealthNumber(item.heartRate);
+        if (value === null) return null;
+        return {
+          date: item.recordDate || "",
+          label: formatHealthLabel(item.recordDate || item.createdAt),
+          value
+        };
+      })
+      .filter(Boolean)
+  };
+}
+
 async function getHealthInfo(event = {}) {
   const user = await getCurrentUser();
   const elderId = await resolveElderIdForEvent(user, event);
@@ -598,12 +1033,59 @@ async function getHealthInfo(event = {}) {
     .where({ elderId, type: "medication" })
     .get();
 
+  const measurementResult = await db
+    .collection(COLLECTION_NAMES.healthRecords)
+    .where({ elderId, type: "dailyHealth" })
+    .get();
+
+  const measurements = measurementResult.data || [];
+  const latestMeasurement = pickLatestHealthMeasurement(measurements);
+  const currentHealth = (elder && elder.healthStatus) || {};
+  const todayHealth = {
+    bloodPressure: currentHealth.bloodPressure || (latestMeasurement && latestMeasurement.bloodPressure) || "",
+    heartRate: currentHealth.heartRate || (latestMeasurement && latestMeasurement.heartRate) || null,
+    bloodSugar: currentHealth.bloodSugar || (latestMeasurement && latestMeasurement.bloodSugar) || ""
+  };
+  const healthTrend = buildHealthTrend(measurements);
+  const healthAlerts = getHealthAlerts({
+    bloodPressure: todayHealth.bloodPressure,
+    heartRate: todayHealth.heartRate,
+    bloodSugar: todayHealth.bloodSugar
+  });
+
   return {
-    todayHealth: (elder && elder.healthStatus) || {
-      bloodPressure: "",
-      heartRate: null,
-      bloodSugar: ""
-    },
+    todayHealth,
+    latestMeasurement: latestMeasurement
+      ? {
+          id: latestMeasurement._id,
+          recordDate: latestMeasurement.recordDate || "",
+          bloodPressure: latestMeasurement.bloodPressure || "",
+          heartRate: latestMeasurement.heartRate || null,
+          bloodSugar: latestMeasurement.bloodSugar || "",
+          notes: latestMeasurement.notes || "",
+          recorderRole: latestMeasurement.recorderRole || "",
+          createdAt: latestMeasurement.createdAt || ""
+        }
+      : null,
+    healthTrend,
+    healthAlerts,
+    measurementHistory: measurements
+      .slice()
+      .sort((a, b) => {
+        const aKey = `${a.recordDate || ""}-${a.createdAt || ""}`;
+        const bKey = `${b.recordDate || ""}-${b.createdAt || ""}`;
+        return bKey.localeCompare(aKey);
+      })
+      .map((item) => ({
+        id: item._id,
+        recordDate: item.recordDate || "",
+        bloodPressure: item.bloodPressure || "",
+        heartRate: item.heartRate || null,
+        bloodSugar: item.bloodSugar || "",
+        notes: item.notes || "",
+        recorderRole: item.recorderRole || "",
+        createdAt: item.createdAt || ""
+      })),
     medicalHistory: historyResult.data.map((item) => ({
       id: item._id,
       name: item.name,
@@ -663,6 +1145,54 @@ async function addMedication(event = {}) {
       createdAt: new Date().toISOString()
     }
   });
+
+  return { id: result._id, success: true };
+}
+
+async function addHealthMeasurement(event = {}) {
+  const user = await getCurrentUser();
+  const elderId = await resolveElderIdForEvent(user, event);
+  const recordDate = normalizeDateOnly(event.recordDate) || normalizeDateOnly(new Date());
+  const bloodPressure = (event.bloodPressure || "").trim();
+  const heartRate = event.heartRate === undefined || event.heartRate === null || event.heartRate === ""
+    ? null
+    : Number.parseInt(event.heartRate, 10);
+  const bloodSugar = event.bloodSugar === undefined || event.bloodSugar === null
+    ? ""
+    : String(event.bloodSugar).trim();
+  const notes = (event.notes || "").trim();
+
+  if (!bloodPressure && !Number.isFinite(heartRate) && !bloodSugar) {
+    throw new Error("请至少填写一项健康数据");
+  }
+
+  const result = await db.collection(COLLECTION_NAMES.healthRecords).add({
+    data: {
+      elderId,
+      type: "dailyHealth",
+      recordDate,
+      bloodPressure,
+      heartRate: Number.isFinite(heartRate) ? heartRate : null,
+      bloodSugar,
+      notes,
+      recorderRole: normalizeUserType(user),
+      createdAt: new Date().toISOString()
+    }
+  });
+
+  const today = normalizeDateOnly(new Date());
+  if (recordDate === today) {
+    const updateData = {};
+    if (bloodPressure) updateData["healthStatus.bloodPressure"] = bloodPressure;
+    if (Number.isFinite(heartRate)) updateData["healthStatus.heartRate"] = heartRate;
+    if (bloodSugar) updateData["healthStatus.bloodSugar"] = bloodSugar;
+
+    if (Object.keys(updateData).length > 0) {
+      await db.collection(COLLECTION_NAMES.users).doc(elderId).update({
+        data: updateData
+      });
+    }
+  }
 
   return { id: result._id, success: true };
 }
@@ -790,6 +1320,354 @@ async function getOnThisDayMemory(event = {}) {
 
 // ==================== 配对素材 ====================
 
+function normalizeLifeGuideSteps(steps = [], fallback = {}) {
+  if (Array.isArray(steps) && steps.length) {
+    return steps
+      .map((step, index) => ({
+        image: typeof step.image === "string" ? step.image.trim() : "",
+        text: typeof step.text === "string" ? step.text.trim() : "",
+        order: Number.isFinite(step.order) ? step.order : index
+      }))
+      .filter((step) => step.image || step.text);
+  }
+
+  const legacyImage = typeof fallback.coverImage === "string" ? fallback.coverImage.trim() : "";
+  const legacyText = typeof fallback.content === "string" ? fallback.content.trim() : "";
+  if (!legacyImage && !legacyText) {
+    return [];
+  }
+
+  return [
+    {
+      image: legacyImage,
+      text: legacyText,
+      order: 0
+    }
+  ];
+}
+
+function mapLifeGuideItem(item) {
+  const steps = normalizeLifeGuideSteps(item.steps, item);
+  const firstStep = steps[0] || {};
+  return {
+    id: item._id,
+    title: item.title || "",
+    itemName: item.itemName || "",
+    coverImage: firstStep.image || "",
+    content: firstStep.text || "",
+    steps,
+    stepCount: steps.length,
+    videoFileID: item.videoFileID || "",
+    hasVideo: !!item.videoFileID,
+    createdAt: item.createdAt || "",
+    updatedAt: item.updatedAt || item.createdAt || ""
+  };
+}
+
+async function getLifeGuides(event = {}) {
+  await ensureCollections();
+
+  const user = await getCurrentUser();
+  const elderId = await resolveElderIdForEvent(user, event);
+  const res = await db
+    .collection(COLLECTION_NAMES.lifeGuides)
+    .where({ elderId })
+    .orderBy("updatedAt", "desc")
+    .get();
+
+  return (res.data || []).map(mapLifeGuideItem);
+}
+
+async function getLifeGuideDetail(event = {}) {
+  if (!event.guideId) {
+    throw new Error("缂哄皯鏁欑▼ID");
+  }
+
+  await ensureCollections();
+
+  const user = await getCurrentUser();
+  const elderId = await resolveElderIdForEvent(user, event);
+  const res = await db.collection(COLLECTION_NAMES.lifeGuides).doc(event.guideId).get();
+  const guide = res.data;
+
+  if (!guide || guide.elderId !== elderId) {
+    throw new Error("鏁欑▼涓嶅瓨鍦ㄦ垨鏃犳潈璁块棶");
+  }
+
+  return mapLifeGuideItem(guide);
+}
+
+async function addLifeGuide(event = {}) {
+  if (!event.title) {
+    throw new Error("鏁欑▼鏍囬涓嶈兘涓虹┖");
+  }
+  if (!event.itemName) {
+    throw new Error("璇疯緭鍏ラ€傜敤鐗╁搧");
+  }
+  const steps = normalizeLifeGuideSteps(event.steps);
+  if (!steps.length) {
+    throw new Error("璇疯嚦灏戞坊鍔犱竴姝ュ浘鏂囨暀绋?");
+  }
+
+  await ensureCollections();
+
+  const user = await getCurrentUser();
+  const elderId = await resolveElderIdForEvent(user, event);
+  const now = new Date().toISOString();
+  const res = await db.collection(COLLECTION_NAMES.lifeGuides).add({
+    data: {
+      elderId,
+      title: String(event.title).trim(),
+      itemName: String(event.itemName).trim(),
+      steps,
+      videoFileID: event.videoFileID ? String(event.videoFileID).trim() : "",
+      createdAt: now,
+      updatedAt: now,
+      createdBy: user._id
+    }
+  });
+
+  return { id: res._id, success: true };
+}
+
+async function updateLifeGuide(event = {}) {
+  if (!event.guideId) {
+    throw new Error("缂哄皯鏁欑▼ID");
+  }
+
+  await ensureCollections();
+
+  const user = await getCurrentUser();
+  const elderId = await resolveElderIdForEvent(user, event);
+  const res = await db.collection(COLLECTION_NAMES.lifeGuides).doc(event.guideId).get();
+  const guide = res.data;
+
+  if (!guide || guide.elderId !== elderId) {
+    throw new Error("鏁欑▼涓嶅瓨鍦ㄦ垨鏃犳潈淇敼");
+  }
+
+  const updateData = {
+    updatedAt: new Date().toISOString()
+  };
+
+  const nextSteps = event.steps !== undefined
+    ? normalizeLifeGuideSteps(event.steps)
+    : normalizeLifeGuideSteps(guide.steps, guide);
+
+  if (event.title !== undefined) updateData.title = String(event.title || "").trim();
+  if (event.itemName !== undefined) updateData.itemName = String(event.itemName || "").trim();
+  if (event.steps !== undefined) updateData.steps = nextSteps;
+  if (event.videoFileID !== undefined) updateData.videoFileID = String(event.videoFileID || "").trim();
+
+  const finalTitle = updateData.title !== undefined ? updateData.title : (guide.title || "");
+  const finalItemName = updateData.itemName !== undefined ? updateData.itemName : (guide.itemName || "");
+  const finalSteps = updateData.steps !== undefined ? updateData.steps : nextSteps;
+
+  if (!finalTitle) {
+    throw new Error("鏁欑▼鏍囬涓嶈兘涓虹┖");
+  }
+  if (!finalItemName) {
+    throw new Error("璇疯緭鍏ラ€傜敤鐗╁搧");
+  }
+  if (!finalSteps.length) {
+    throw new Error("璇疯嚦灏戜繚鐣欎竴姝ュ浘鏂囨暀绋?");
+  }
+
+  await db.collection(COLLECTION_NAMES.lifeGuides).doc(event.guideId).update({
+    data: updateData
+  });
+
+  return { success: true };
+}
+
+async function deleteLifeGuide(event = {}) {
+  if (!event.guideId) {
+    throw new Error("缂哄皯鏁欑▼ID");
+  }
+
+  await ensureCollections();
+
+  const user = await getCurrentUser();
+  const elderId = await resolveElderIdForEvent(user, event);
+  const res = await db.collection(COLLECTION_NAMES.lifeGuides).doc(event.guideId).get();
+  const guide = res.data;
+
+  if (!guide || guide.elderId !== elderId) {
+    throw new Error("鏁欑▼涓嶅瓨鍦ㄦ垨鏃犳潈鍒犻櫎");
+  }
+
+  await db.collection(COLLECTION_NAMES.lifeGuides).doc(event.guideId).remove();
+  return { success: true };
+}
+
+async function importDemoData(event = {}) {
+  await ensureCollections();
+
+  if (event.confirm !== "IMPORT_DEMO_DATA") {
+    throw new Error("璇蜂紶鍏?confirm=IMPORT_DEMO_DATA 鍚庡啀鎵ц瀵煎叆");
+  }
+
+  const collectionMap = {
+    users: COLLECTION_NAMES.users,
+    persons: COLLECTION_NAMES.persons,
+    memories: COLLECTION_NAMES.memories,
+    healthRecords: COLLECTION_NAMES.healthRecords,
+    voiceMessages: COLLECTION_NAMES.voiceMessages,
+    lifeGuides: COLLECTION_NAMES.lifeGuides,
+    memoryPairs: COLLECTION_NAMES.memoryPairs
+  };
+
+  const summary = {};
+  const order = [
+    "users",
+    "persons",
+    "memories",
+    "healthRecords",
+    "voiceMessages",
+    "lifeGuides",
+    "memoryPairs"
+  ];
+
+  for (const key of order) {
+    const collectionName = collectionMap[key];
+    const docs = Array.isArray(demoData[key]) ? demoData[key] : [];
+    summary[key] = 0;
+
+    for (const doc of docs) {
+      if (!doc || !doc._id) {
+        continue;
+      }
+
+      const { _id, ...payload } = doc;
+      await db.collection(collectionName).doc(_id).set({
+        data: payload
+      });
+      summary[key] += 1;
+    }
+  }
+
+  return {
+    success: true,
+    message: "婕旂ず鏁版嵁瀵煎叆瀹屾垚",
+    summary
+  };
+}
+
+async function bindCurrentUserToDemoElder(event = {}) {
+  await ensureCollections();
+
+  const user = event.userId ? await getUserById(event.userId) : await getCurrentUser();
+  if (!user) {
+    throw new Error("鏈壘鍒版寚瀹氱殑鐢ㄦ埛锛岃妫€鏌?userId");
+  }
+  const demoElder = await getUserById(DEMO_ELDER_ID);
+
+  if (!demoElder || !isElderUser(demoElder)) {
+    throw new Error("婕旂ず鑰佷汉鏁版嵁涓嶅瓨鍦紝璇峰厛鎵ц importDemoData");
+  }
+
+  await db.collection(COLLECTION_NAMES.users).doc(user._id).update({
+    data: {
+      userType: "family",
+      relation: user.relation || "家属",
+      boundElderId: DEMO_ELDER_ID,
+      boundAt: new Date().toISOString()
+    }
+  });
+
+  return {
+    success: true,
+    message: "褰撳墠璐﹀彿宸茬粦瀹氬埌婕旂ず鑰佷汉",
+    elderId: DEMO_ELDER_ID,
+    elderName: demoElder.name || "演示老人",
+    userId: user._id
+  };
+}
+
+async function addVoiceMessage(event = {}) {
+  await ensureCollections();
+
+  const fileID = typeof event.fileID === "string" ? event.fileID.trim() : "";
+  if (!fileID && !(typeof event.note === "string" && event.note.trim())) {
+    throw new Error("缺少语音文件");
+  }
+
+  const user = await getCurrentUser();
+  const elderId = await resolveElderIdForEvent(user, event);
+  const senderName = (user.name || "").trim() || "家人";
+  const senderRelation = (user.relation || "").trim() || "家人";
+  const duration = Number(event.duration || 0);
+  const note = typeof event.note === "string" ? event.note.trim().slice(0, 200) : "";
+
+  const res = await db.collection(COLLECTION_NAMES.voiceMessages).add({
+    data: {
+      elderId,
+      fileID,
+      duration: fileID && Number.isFinite(duration) ? duration : 0,
+      senderName,
+      senderRelation,
+      senderRole: normalizeUserType(user),
+      note,
+      isReadByElder: false,
+      createdAt: new Date().toISOString()
+    }
+  });
+
+  return { id: res._id, success: true };
+}
+
+async function getVoiceMessages(event = {}) {
+  await ensureCollections();
+
+  const user = await getCurrentUser();
+  const elderId = await resolveElderIdForEvent(user, event);
+  const res = await db
+    .collection(COLLECTION_NAMES.voiceMessages)
+    .where({ elderId })
+    .orderBy("createdAt", "desc")
+    .get();
+
+  const list = res.data || [];
+  const unreadCount = list.filter((item) => !item.isReadByElder).length;
+
+  return {
+    unreadCount,
+    list: list.map((item) => ({
+      id: item._id,
+      fileID: item.fileID || "",
+      duration: item.duration || 0,
+      senderName: item.senderName || "家人",
+      senderRelation: item.senderRelation || "家人",
+      senderRole: item.senderRole || "family",
+      note: item.note || "",
+      hasAudio: !!item.fileID,
+      isReadByElder: !!item.isReadByElder,
+      createdAt: item.createdAt || "",
+      readAt: item.readAt || ""
+    }))
+  };
+}
+
+async function markVoiceMessagesRead(event = {}) {
+  await ensureCollections();
+
+  const user = await getCurrentUser();
+  const elderId = await resolveElderIdForEvent(user, event);
+  const readAt = new Date().toISOString();
+
+  await db
+    .collection(COLLECTION_NAMES.voiceMessages)
+    .where({ elderId, isReadByElder: false })
+    .update({
+      data: {
+        isReadByElder: true,
+        readAt
+      }
+    });
+
+  return { success: true, readAt };
+}
+
 async function createMemoryPair(event = {}) {
   await ensureCollections();
   const user = await getCurrentUser();
@@ -868,6 +1746,90 @@ async function recalcEventMonthDay(event = {}) {
   return { success: true, fixedElderUploads, fixedMemories, fixed: fixedElderUploads + fixedMemories };
 }
 
+async function recognizeFace(event = {}) {
+  if (!event.photoFileID) {
+    throw new Error("缺少待识别照片");
+  }
+
+  const user = await getCurrentUser();
+  const elderId = await getEffectiveElderId(user);
+  const result = await db.collection(COLLECTION_NAMES.persons).where({ elderId }).get();
+  const persons = result.data || [];
+
+  if (!persons.length) {
+    return {
+      success: true,
+      match: null,
+      message: "暂无家庭成员资料，请先添加家人信息"
+    };
+  }
+
+  const recognizablePersons = persons.filter((person) => person.facePhoto || person.avatar);
+  if (!recognizablePersons.length) {
+    return {
+      success: true,
+      match: null,
+      message: "请先为家庭成员上传清晰照片"
+    };
+  }
+
+  const client = createIaiClient();
+  const config = assertFaceRecognitionConfigured();
+  const groupId = await ensureIaiGroup(client, elderId);
+  const imageBase64 = await downloadCloudFileAsBase64(event.photoFileID);
+
+  const searchRes = await client.SearchPersons({
+    GroupIds: [groupId],
+    Image: imageBase64,
+    MaxFaceNum: 1,
+    MaxPersonNum: 1,
+    NeedRotateDetection: 1,
+    FaceModelVersion: FACE_MODEL_VERSION
+  });
+
+  const firstResult = searchRes.Results && searchRes.Results[0];
+  const firstCandidate = firstResult && firstResult.Candidates && firstResult.Candidates[0];
+  const matchedPersonId = firstCandidate && firstCandidate.PersonId;
+  const matchedScore = firstCandidate && typeof firstCandidate.Score === "number"
+    ? firstCandidate.Score
+    : 0;
+
+  if (!matchedPersonId || matchedScore < config.scoreThreshold) {
+    return {
+      success: true,
+      match: null,
+      score: matchedScore,
+      message: "未识别到家庭成员"
+    };
+  }
+
+  const matchedPerson = persons.find((person) => getIaiPersonId(person._id) === matchedPersonId);
+  if (!matchedPerson) {
+    return {
+      success: true,
+      match: null,
+      score: matchedScore,
+      message: "识别结果未匹配到本地成员资料"
+    };
+  }
+
+  return {
+    success: true,
+    match: {
+      id: matchedPerson._id,
+      name: matchedPerson.name,
+      relation: matchedPerson.relation,
+      avatar: matchedPerson.avatar || "",
+      facePhoto: matchedPerson.facePhoto || matchedPerson.avatar || "",
+      description: matchedPerson.description || "",
+      age: matchedPerson.age || null,
+      gender: matchedPerson.gender || ""
+    },
+    score: matchedScore,
+    message: "识别成功"
+  };
+}
+
 exports.main = async (event) => {
   try {
     switch (event.action) {
@@ -907,6 +1869,8 @@ exports.main = async (event) => {
         return await addMedicalHistory(event);
       case "addMedication":
         return await addMedication(event);
+      case "addHealthMeasurement":
+        return await addHealthMeasurement(event);
       case "updateTodayHealth":
         return await updateTodayHealth(event);
       case "deleteHealthRecord":
@@ -917,12 +1881,34 @@ exports.main = async (event) => {
         return await getElderUploads(event);
       case "getOnThisDayMemory":
         return await getOnThisDayMemory(event);
+      case "addVoiceMessage":
+        return await addVoiceMessage(event);
+      case "getVoiceMessages":
+        return await getVoiceMessages(event);
+      case "markVoiceMessagesRead":
+        return await markVoiceMessagesRead(event);
+      case "getLifeGuides":
+        return await getLifeGuides(event);
+      case "getLifeGuideDetail":
+        return await getLifeGuideDetail(event);
+      case "addLifeGuide":
+        return await addLifeGuide(event);
+      case "updateLifeGuide":
+        return await updateLifeGuide(event);
+      case "deleteLifeGuide":
+        return await deleteLifeGuide(event);
+      case "importDemoData":
+        return await importDemoData(event);
+      case "bindCurrentUserToDemoElder":
+        return await bindCurrentUserToDemoElder(event);
       case "createMemoryPair":
         return await createMemoryPair(event);
       case "getMemoryPairs":
         return await getMemoryPairs(event);
       case "recalcEventMonthDay":
         return await recalcEventMonthDay(event);
+      case "recognizeFace":
+        return await recognizeFace(event);
       default:
         throw new Error("鏈煡鎿嶄綔");
     }

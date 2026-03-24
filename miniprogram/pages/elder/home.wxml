@@ -1,90 +1,157 @@
 <view class="page">
+  <view class="card board-card">
+    <view class="board-head-row">
+      <view wx:if="{{boardTab === 'messages'}}" class="board-header">留言板</view>
+      <view wx:else class="board-header">回忆</view>
+      <view wx:if="{{unreadMessageCount > 0}}" class="message-bubble">{{unreadMessageCount}} 条新消息</view>
+    </view>
 
-<view class="logo">忆站</view>
-<view class="subtitle">帮助记住家人与回忆</view>
+    <view class="board-tabs">
+      <view
+        class="board-tab board-tab-message {{boardTab === 'messages' ? 'board-tab-active' : ''}}"
+        data-tab="messages"
+        bindtap="switchBoardTab"
+      >
+        <text>留言板</text>
+        <text wx:if="{{unreadMessageCount > 0}}" class="tab-count">{{unreadMessageCount}}</text>
+        <view wx:if="{{unreadMessageCount > 0}}" class="tab-dot"></view>
+      </view>
+      <view
+        class="board-tab {{boardTab === 'today' ? 'board-tab-active' : ''}}"
+        data-tab="today"
+        bindtap="switchBoardTab"
+      >
+        回忆
+      </view>
+    </view>
 
-<!-- 历史上的今天 -->
-<view wx:if="{{onThisDay}}" class="card today-card">
-  <view class="today-header">历史上的今天</view>
-  <view class="today-body">
-    <image
-      wx:if="{{onThisDay.img}}"
-      class="today-image"
-      src="{{onThisDay.img}}"
-      mode="aspectFill"
-      bindtap="openPreview"
-    />
-    <view wx:if="{{onThisDay.title}}" class="today-title">{{onThisDay.title}}</view>
-    <view wx:if="{{onThisDay.content}}" class="today-desc">{{onThisDay.content}}</view>
+    <view wx:if="{{boardTab === 'messages'}}" class="board-body">
+      <view wx:if="{{medicationReminders.length}}" class="reminder-panel">
+        <view class="reminder-title">今日服药提醒</view>
+        <block wx:for="{{medicationReminders}}" wx:key="id">
+          <view class="reminder-item">
+            <view class="reminder-main">
+              <view class="reminder-name">{{item.name}}</view>
+              <view class="reminder-meta">
+                {{item.time || "请按时服用"}}{{item.frequency ? " · " + item.frequency : ""}}{{item.dosage ? " · " + item.dosage : ""}}
+              </view>
+              <view wx:if="{{item.notes}}" class="reminder-note">{{item.notes}}</view>
+            </view>
+            <view class="reminder-tag">服药</view>
+          </view>
+        </block>
+      </view>
+
+      <view wx:if="{{voiceMessages.length}}" class="message-list {{medicationReminders.length ? 'message-list-spaced' : ''}}">
+        <block wx:for="{{voiceMessages}}" wx:key="id">
+          <view class="message-item">
+            <view class="message-main">
+              <view class="message-sender">{{item.senderName}}</view>
+              <view class="message-meta">
+                {{item.hasAudio ? item.senderRelation + " · " + item.displayTime + " · " + item.durationText : item.senderRelation + " · " + item.displayTime + " · 文字留言"}}
+              </view>
+              <view wx:if="{{item.note}}" class="message-note">{{item.note}}</view>
+            </view>
+            <button wx:if="{{item.hasAudio}}" class="message-play-btn" bindtap="playVoiceMessage" data-id="{{item.id}}">
+              {{playingMessageId === item.id ? "停止" : "播放"}}
+            </button>
+            <view wx:else class="message-text-tag">文字</view>
+          </view>
+        </block>
+      </view>
+
+      <view wx:if="{{!medicationReminders.length && !voiceMessages.length}}" class="empty-content">无内容</view>
+    </view>
+
+    <view wx:else class="board-body">
+      <block wx:if="{{onThisDay}}">
+        <image
+          wx:if="{{onThisDay.img}}"
+          class="board-image"
+          src="{{onThisDay.img}}"
+          mode="aspectFill"
+          bindtap="openPreview"
+        />
+        <view wx:if="{{onThisDay.title}}" class="board-title">{{onThisDay.title}}</view>
+        <view wx:if="{{onThisDay.content}}" class="board-desc">{{onThisDay.content}}</view>
+        <view wx:if="{{!onThisDay.img && !onThisDay.title && !onThisDay.content}}" class="empty-content">无内容</view>
+      </block>
+      <view wx:else class="empty-content">无内容</view>
+    </view>
   </view>
-  <!-- 去掉“我来上传一段回忆”入口 -->
- </view>
 
-<!-- 功能按钮：看家人 -->
-<view class="card feature" bindtap="goToFamily">
-  <view class="icon">👨‍👩‍👧‍👦</view>
-  <view class="info">
-    <view class="title">看家人</view>
-    <view class="desc">查看家属头像列表</view>
+  <view wx:if="{{featureTab === 'daily'}}" class="feature-list">
+    <view class="card feature" bindtap="goToProfile">
+      <view class="icon">🧓</view>
+      <view class="info">
+        <view class="title">我的资料</view>
+        <view class="desc">身份卡与我的故事轴</view>
+      </view>
+    </view>
+
+    <view class="card feature" bindtap="goToFamily">
+      <view class="icon">👪</view>
+      <view class="info">
+        <view class="title">看家人</view>
+        <view class="desc">查看家属头像和关系信息</view>
+      </view>
+    </view>
+
+    <view class="card feature" bindtap="goToHealth">
+      <view class="icon">❤️</view>
+      <view class="info">
+        <view class="title">今日健康</view>
+        <view class="desc">查看血压、血糖等健康信息</view>
+      </view>
+    </view>
   </view>
-</view>
 
-<!-- 功能按钮：看过去 -->
-<view class="card feature" bindtap="goToMemory">
-  <view class="icon">🕰</view>
-  <view class="info">
-    <view class="title">看过去</view>
-    <view class="desc">浏览回忆时间</view>
+  <view wx:else class="feature-list">
+    <view class="card feature" bindtap="goToMemory">
+      <view class="icon">🖼</view>
+      <view class="info">
+        <view class="title">看回忆</view>
+        <view class="desc">浏览过去的照片和故事</view>
+      </view>
+    </view>
+
+    <view class="card feature" bindtap="goToLifeGuides">
+      <view class="icon">📘</view>
+      <view class="info">
+        <view class="title">生活小助手</view>
+        <view class="desc">查看家电和常用物品的使用教程</view>
+      </view>
+    </view>
+
+    <view class="card feature" bindtap="goToMatch">
+      <view class="icon">🃏</view>
+      <view class="info">
+        <view class="title">卡片游戏</view>
+        <view class="desc">通过配对游戏加深记忆</view>
+      </view>
+    </view>
   </view>
-</view>
 
-<!-- 功能按钮：回忆上传 -->
-<view class="card feature" bindtap="goToUpload">
-  <view class="icon">📝</view>
-  <view class="info">
-    <view class="title">回忆上传</view>
-    <view class="desc">图片或文字，记录今天</view>
+  <view class="feature-switch">
+    <view
+      class="switch-item {{featureTab === 'daily' ? 'switch-item-active' : ''}}"
+      data-tab="daily"
+      bindtap="switchFeatureTab"
+    >
+      <view class="switch-label">日常陪伴</view>
+      <view class="switch-desc">资料 · 家人 · 健康</view>
+    </view>
+    <view
+      class="switch-item {{featureTab === 'memory' ? 'switch-item-active' : ''}}"
+      data-tab="memory"
+      bindtap="switchFeatureTab"
+    >
+      <view class="switch-label">时光乐园</view>
+      <view class="switch-desc">回忆 · 教程 · 游戏</view>
+    </view>
   </view>
-</view>
 
-<!-- 功能按钮：今日健康 -->
-<view class="card feature" bindtap="goToHealth">
-  <view class="icon">❤️</view>
-  <view class="info">
-    <view class="title">今日健康</view>
-    <view class="desc">查看血压、血糖等健康信息</view>
+  <view wx:if="{{previewVisible}}" class="preview-mask" bindtap="closePreview">
+    <image class="preview-full" src="{{previewImg}}" mode="aspectFit" />
   </view>
-</view>
-
-<!-- 功能按钮：卡片游戏 -->
-<view class="card feature" bindtap="goToMatch">
-  <view class="icon">🃏</view>
-  <view class="info">
-    <view class="title">卡片游戏</view>
-    <view class="desc">匹配家人头像与名字</view>
-  </view>
-</view>
-
-<!-- 功能按钮：我的资料 -->
-<view class="card feature" bindtap="goToProfile">
-  <view class="icon">👴</view>
-  <view class="info">
-    <view class="title">我的资料</view>
-    <view class="desc">身份卡与我的故事轴</view>
-  </view>
-</view>
-
-<!-- 人脸识别悬浮按钮 -->
-<view class="floating-buttons">
-  <view class="floating-btn face-btn" bindtap="goToFaceRecognition">
-    <view class="btn-icon">👤</view>
-    <view class="btn-text">人脸识别</view>
-  </view>
-</view>
-
-<!-- 全屏预览 -->
-<view wx:if="{{previewVisible}}" class="preview-mask" bindtap="closePreview">
-  <image class="preview-full" src="{{previewImg}}" mode="aspectFit" />
-</view>
-
 </view>

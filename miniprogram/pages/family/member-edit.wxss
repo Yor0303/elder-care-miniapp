@@ -35,6 +35,13 @@
   margin-bottom: 15rpx;
 }
 
+.field-tip {
+  margin-bottom: 14rpx;
+  font-size: 24rpx;
+  color: #8a94a6;
+  line-height: 1.5;
+}
+
 .avatar-section {
   margin-top: 8rpx;
 }

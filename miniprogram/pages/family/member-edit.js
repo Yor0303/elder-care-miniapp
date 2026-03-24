@@ -17,6 +17,7 @@ Page({
     health: "",
     description: "",
     avatar: "",
+    facePhoto: "",
     relationOptions: ["祖父", "祖母", "父亲", "母亲", "叔叔", "姑姑", "本人", "儿子", "女儿", "孙子", "孙女", "其他"],
     genderOptions: ["男", "女"],
     showRelationPicker: false,
@@ -45,7 +46,8 @@ Page({
         gender: person.gender || "",
         health: person.health || "",
         description: person.description || "",
-        avatar: person.avatar || ""
+        avatar: person.avatar || "",
+        facePhoto: person.facePhoto || person.avatar || ""
       });
 
       wx.hideLoading();
@@ -111,15 +113,31 @@ Page({
     });
   },
 
+  chooseFacePhoto() {
+    wx.chooseImage({
+      count: 1,
+      sizeType: ["compressed"],
+      sourceType: ["album", "camera"],
+      success: (res) => {
+        const tempPath = res.tempFilePaths[0];
+        this.setData({ facePhoto: tempPath });
+      }
+    });
+  },
+
   removeAvatar() {
     this.setData({ avatar: "" });
   },
 
-  uploadToCloud(tempFilePath) {
+  removeFacePhoto() {
+    this.setData({ facePhoto: "" });
+  },
+
+  uploadToCloud(tempFilePath, folder = "member-avatars") {
     return new Promise((resolve, reject) => {
       const extMatch = tempFilePath.match(/\.[^.]+$/);
       const ext = extMatch ? extMatch[0] : ".jpg";
-      const cloudPath = `member-avatars/${Date.now()}-${Math.random().toString(36).slice(2, 11)}${ext}`;
+      const cloudPath = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 11)}${ext}`;
 
       wx.cloud.uploadFile({
         cloudPath,
@@ -131,7 +149,7 @@ Page({
   },
 
   async save() {
-    const { name, relation, age, gender, health, description, avatar, isEdit, personId, saving } = this.data;
+    const { name, relation, age, gender, health, description, avatar, facePhoto, isEdit, personId, saving } = this.data;
 
     if (!name.trim()) {
       wx.showToast({ title: "请输入姓名", icon: "none" });
@@ -147,7 +165,15 @@ Page({
       let avatarUrl = avatar;
       if (avatar && avatar.startsWith("wxfile://")) {
         wx.showLoading({ title: "上传头像中..." });
-        avatarUrl = await this.uploadToCloud(avatar);
+        avatarUrl = await this.uploadToCloud(avatar, "member-avatars");
+      }
+
+      let facePhotoUrl = facePhoto;
+      if (facePhoto && facePhoto === avatar) {
+        facePhotoUrl = avatarUrl;
+      } else if (facePhoto && facePhoto.startsWith("wxfile://")) {
+        wx.showLoading({ title: "上传人脸照中..." });
+        facePhotoUrl = await this.uploadToCloud(facePhoto, "member-faces");
       }
 
       wx.showLoading({ title: "保存中..." });
@@ -159,20 +185,33 @@ Page({
         gender,
         health,
         description,
-        avatar: avatarUrl || ""
+        avatar: avatarUrl || "",
+        facePhoto: facePhotoUrl || avatarUrl || ""
       };
 
+      let result;
       if (isEdit) {
-        await updatePersonAPI({ personId, ...data });
+        result = await updatePersonAPI({ personId, ...data });
       } else {
-        await addPersonAPI(data);
+        result = await addPersonAPI(data);
       }
 
       wx.hideLoading();
-      wx.showToast({ title: "保存成功", icon: "success" });
-      setTimeout(() => {
-        wx.navigateBack();
-      }, 1200);
+      if (result && result.faceSyncWarning) {
+        wx.showModal({
+          title: "已保存成员",
+          content: `成员资料已保存，但人脸同步失败：${result.faceSyncWarning}`,
+          showCancel: false,
+          success: () => {
+            wx.navigateBack();
+          }
+        });
+      } else {
+        wx.showToast({ title: "保存成功", icon: "success" });
+        setTimeout(() => {
+          wx.navigateBack();
+        }, 1200);
+      }
     } catch (error) {
       wx.hideLoading();
       wx.showToast({ title: error.message || "保存失败", icon: "none" });

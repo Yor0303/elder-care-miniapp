@@ -1,0 +1,31 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="empty-card">加载中...</view>
+
+  <view wx:elif="{{guide}}" class="guide-card">
+    <view class="content-wrap">
+      <view class="title">{{guide.title}}</view>
+      <view class="item-name">{{guide.itemName}}</view>
+
+      <view class="section">
+        <view class="section-title">图文步骤</view>
+        <view wx:if="{{guide.steps.length}}" class="step-list">
+          <block wx:for="{{guide.steps}}" wx:key="order">
+            <view class="step-card">
+              <view class="step-index">步骤 {{index + 1}}</view>
+              <image wx:if="{{item.imageUrl}}" class="step-image" src="{{item.imageUrl}}" mode="aspectFill" />
+              <view class="step-text">{{item.text}}</view>
+            </view>
+          </block>
+        </view>
+        <view wx:else class="empty-tip">无内容</view>
+      </view>
+
+      <view wx:if="{{guide.videoUrl}}" class="section">
+        <view class="section-title">演示视频</view>
+        <video class="guide-video" src="{{guide.videoUrl}}" controls></video>
+      </view>
+    </view>
+  </view>
+
+  <view wx:else class="empty-card">无内容</view>
+</view>

@@ -1,0 +1,98 @@
+.page {
+  min-height: 100vh;
+  padding: 40rpx;
+  background: #f8f9fb;
+  box-sizing: border-box;
+}
+
+.header-card,
+.empty-card,
+.guide-card {
+  background: #fff;
+  border-radius: 24rpx;
+  box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.06);
+}
+
+.header-card {
+  padding: 34rpx 32rpx;
+  margin-bottom: 28rpx;
+}
+
+.title {
+  font-size: 42rpx;
+  font-weight: 700;
+  color: #1a3a5f;
+}
+
+.subtitle {
+  margin-top: 14rpx;
+  font-size: 28rpx;
+  line-height: 1.6;
+  color: #8896a5;
+}
+
+.empty-card {
+  padding: 60rpx 30rpx;
+  text-align: center;
+  font-size: 30rpx;
+  color: #999;
+}
+
+.guide-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.guide-card {
+  overflow: hidden;
+}
+
+.guide-cover {
+  width: 100%;
+  height: 320rpx;
+  background: #eef2f6;
+}
+
+.guide-cover-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 28rpx;
+}
+
+.guide-info {
+  padding: 26rpx 28rpx 30rpx;
+}
+
+.guide-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.guide-name {
+  margin-top: 12rpx;
+  font-size: 28rpx;
+  color: #4a90e2;
+}
+
+.guide-tags {
+  display: flex;
+  gap: 12rpx;
+  margin-top: 18rpx;
+}
+
+.guide-tag {
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+  background: #eef5ff;
+  color: #4a90e2;
+  font-size: 22rpx;
+}
+
+.guide-tag-video {
+  background: #fff7e8;
+  color: #d48806;
+}

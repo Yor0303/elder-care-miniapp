@@ -31,7 +31,10 @@
           <view class="memory-story" wx:if="{{item.story}}">{{item.story}}</view>
 
           <view class="memory-meta">
-            <text class="memory-person">{{item.person || "未填写人物"}}</text>
+            <view class="memory-meta-text">
+              <text class="memory-person">{{item.person || "未填写人物"}}</text>
+              <text class="memory-date">{{item.eventDateLabel}}</text>
+            </view>
             <view class="edit-btn" bindtap="editMemory" data-id="{{item.id}}">编辑</view>
           </view>
         </view>

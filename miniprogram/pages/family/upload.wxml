@@ -58,14 +58,15 @@
 
       <view class="form-row">
         <view class="form-item half">
-          <view class="form-label">年份</view>
-          <input
-            class="form-input"
-            type="number"
-            placeholder="如：2026"
-            value="{{year}}"
-            bindinput="onYearChange"
-          />
+          <view class="form-label">回忆日期 *</view>
+          <picker mode="date" value="{{eventDate}}" bindchange="onDateChange">
+            <view class="form-picker">
+              <text class="{{eventDate ? '' : 'placeholder'}}">
+                {{eventDate || "请选择日期"}}
+              </text>
+              <text class="arrow">></text>
+            </view>
+          </picker>
         </view>
 
         <view class="form-item half">
@@ -73,12 +74,13 @@
           <picker
             mode="selector"
             range="{{personOptions}}"
+            range-key="label"
             value="{{personIndex < 0 ? 0 : personIndex}}"
             bindchange="onPersonChange"
           >
             <view class="form-picker">
               <text class="{{personIndex < 0 ? 'placeholder' : ''}}">
-                {{personIndex < 0 ? "请选择人物" : personOptions[personIndex]}}
+                {{personIndex < 0 ? "请选择人物" : personOptions[personIndex].label}}
               </text>
               <text class="arrow">></text>
             </view>

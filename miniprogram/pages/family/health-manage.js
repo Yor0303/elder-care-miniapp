@@ -1,11 +1,78 @@
-// pages/family/health-manage.js
 const {
   getHealthInfoAPI,
   addMedicalHistoryAPI,
   addMedicationAPI,
-  updateTodayHealthAPI,
+  addHealthMeasurementAPI,
   deleteHealthRecordAPI
 } = require("../../api/user");
+
+function todayDateString() {
+  const now = new Date();
+  const month = `${now.getMonth() + 1}`.padStart(2, "0");
+  const day = `${now.getDate()}`.padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
+function formatDateLabel(value) {
+  if (!value) return "--";
+  return String(value).slice(5);
+}
+
+function parseBloodPressure(value) {
+  const matched = String(value || "").match(/(\d{2,3})\s*\/\s*(\d{2,3})/);
+  if (!matched) return { systolic: null, diastolic: null };
+  return {
+    systolic: Number.parseInt(matched[1], 10),
+    diastolic: Number.parseInt(matched[2], 10)
+  };
+}
+
+function getMetricStatus(metric, value) {
+  if (metric === "bloodPressure") {
+    const pressure = parseBloodPressure(value);
+    if (!pressure.systolic || !pressure.diastolic) return { text: "待记录", type: "normal" };
+    if (pressure.systolic >= 140 || pressure.diastolic >= 90) return { text: "偏高", type: "high" };
+    if (pressure.systolic < 90 || pressure.diastolic < 60) return { text: "偏低", type: "low" };
+    return { text: "正常", type: "normal" };
+  }
+
+  const num = Number.parseFloat(value);
+  if (!Number.isFinite(num)) return { text: "待记录", type: "normal" };
+
+  if (metric === "bloodSugar") {
+    if (num > 7.8) return { text: "偏高", type: "high" };
+    if (num < 3.9) return { text: "偏低", type: "low" };
+    return { text: "平稳", type: "normal" };
+  }
+
+  if (metric === "heartRate") {
+    if (num > 100) return { text: "偏快", type: "high" };
+    if (num < 50) return { text: "偏慢", type: "low" };
+    return { text: "平稳", type: "normal" };
+  }
+
+  return { text: "正常", type: "normal" };
+}
+
+function buildBloodPressureTrend(list) {
+  const maxSystolic = Math.max(...list.map((item) => item.systolic || 0), 160);
+  const maxDiastolic = Math.max(...list.map((item) => item.diastolic || 0), 100);
+  return list.map((item) => ({
+    ...item,
+    label: formatDateLabel(item.date),
+    systolicWidth: `${Math.max(12, Math.min(100, Math.round(((item.systolic || 0) / maxSystolic) * 100)))}%`,
+    diastolicWidth: `${Math.max(12, Math.min(100, Math.round(((item.diastolic || 0) / maxDiastolic) * 100)))}%`
+  }));
+}
+
+function buildSingleTrend(list, maxBase) {
+  const maxValue = Math.max(...list.map((item) => item.value || 0), maxBase);
+  return list.map((item) => ({
+    ...item,
+    label: formatDateLabel(item.date),
+    width: `${Math.max(12, Math.min(100, Math.round(((item.value || 0) / maxValue) * 100)))}%`
+  }));
+}
 
 Page({
   data: {
@@ -15,8 +82,14 @@ Page({
       heartRate: "",
       bloodSugar: ""
     },
+    todayCards: [],
     medicalHistory: [],
     medications: [],
+    measurementHistory: [],
+    healthAlerts: [],
+    bloodPressureTrend: [],
+    bloodSugarTrend: [],
+    latestMeasurement: null,
     showAddModal: false,
     addType: "",
     newRecord: {}
@@ -39,14 +112,44 @@ Page({
     this.setData({ loading: true });
     try {
       const healthInfo = await getHealthInfoAPI();
+      const todayHealth = healthInfo.todayHealth || {
+        bloodPressure: "",
+        heartRate: "",
+        bloodSugar: ""
+      };
+
       this.setData({
-        todayHealth: healthInfo.todayHealth || {
-          bloodPressure: "",
-          heartRate: "",
-          bloodSugar: ""
-        },
+        todayHealth,
+        todayCards: [
+          {
+            key: "bloodPressure",
+            label: "血压",
+            value: todayHealth.bloodPressure || "--/--",
+            unit: "",
+            status: getMetricStatus("bloodPressure", todayHealth.bloodPressure)
+          },
+          {
+            key: "heartRate",
+            label: "心率",
+            value: todayHealth.heartRate || "--",
+            unit: "次/分钟",
+            status: getMetricStatus("heartRate", todayHealth.heartRate)
+          },
+          {
+            key: "bloodSugar",
+            label: "血糖",
+            value: todayHealth.bloodSugar || "--",
+            unit: "mmol/L",
+            status: getMetricStatus("bloodSugar", todayHealth.bloodSugar)
+          }
+        ],
         medicalHistory: Array.isArray(healthInfo.medicalHistory) ? healthInfo.medicalHistory : [],
         medications: Array.isArray(healthInfo.medications) ? healthInfo.medications : [],
+        measurementHistory: Array.isArray(healthInfo.measurementHistory) ? healthInfo.measurementHistory : [],
+        healthAlerts: Array.isArray(healthInfo.healthAlerts) ? healthInfo.healthAlerts : [],
+        bloodPressureTrend: buildBloodPressureTrend((healthInfo.healthTrend && healthInfo.healthTrend.bloodPressure) || []),
+        bloodSugarTrend: buildSingleTrend((healthInfo.healthTrend && healthInfo.healthTrend.bloodSugar) || [], 10),
+        latestMeasurement: healthInfo.latestMeasurement || null,
         loading: false
       });
     } catch (error) {
@@ -58,58 +161,16 @@ Page({
 
   noop() {},
 
-  async editTodayHealth() {
-    const { todayHealth } = this.data;
-    wx.showModal({
-      title: "更新今日血压",
-      content: `血压：${todayHealth.bloodPressure || "--/--"}`,
-      editable: true,
-      placeholderText: "请输入血压，例如 120/80",
-      success: async (res) => {
-        if (!res.confirm || !res.content) return;
-        try {
-          await updateTodayHealthAPI({ bloodPressure: res.content.trim() });
-          await this.loadHealthInfo();
-          wx.showToast({ title: "更新成功", icon: "success" });
-        } catch (error) {
-          wx.showToast({ title: "更新失败", icon: "none" });
-        }
-      }
-    });
-  },
-
-  async editHeartRate() {
-    wx.showModal({
-      title: "更新心率",
-      editable: true,
-      placeholderText: "请输入心率，例如 72",
-      success: async (res) => {
-        if (!res.confirm || !res.content) return;
-        try {
-          await updateTodayHealthAPI({ heartRate: parseInt(res.content, 10) });
-          await this.loadHealthInfo();
-          wx.showToast({ title: "更新成功", icon: "success" });
-        } catch (error) {
-          wx.showToast({ title: "更新失败", icon: "none" });
-        }
-      }
-    });
-  },
-
-  async editBloodSugar() {
-    wx.showModal({
-      title: "更新血糖",
-      editable: true,
-      placeholderText: "请输入血糖，例如 5.6",
-      success: async (res) => {
-        if (!res.confirm || !res.content) return;
-        try {
-          await updateTodayHealthAPI({ bloodSugar: res.content.trim() });
-          await this.loadHealthInfo();
-          wx.showToast({ title: "更新成功", icon: "success" });
-        } catch (error) {
-          wx.showToast({ title: "更新失败", icon: "none" });
-        }
+  showAddMeasurement() {
+    this.setData({
+      showAddModal: true,
+      addType: "measurement",
+      newRecord: {
+        recordDate: todayDateString(),
+        bloodPressure: "",
+        heartRate: "",
+        bloodSugar: "",
+        notes: ""
       }
     });
   },
@@ -155,21 +216,39 @@ Page({
     });
   },
 
+  onDateChange(e) {
+    this.setData({
+      "newRecord.recordDate": e.detail.value
+    });
+  },
+
   async submitNewRecord() {
     const { addType, newRecord } = this.data;
-    if (!newRecord.name || !newRecord.name.trim()) {
-      wx.showToast({ title: "请输入名称", icon: "none" });
-      return;
-    }
 
     try {
-      if (addType === "history") {
+      if (addType === "measurement") {
+        await addHealthMeasurementAPI({
+          recordDate: newRecord.recordDate,
+          bloodPressure: (newRecord.bloodPressure || "").trim(),
+          heartRate: (newRecord.heartRate || "").trim(),
+          bloodSugar: (newRecord.bloodSugar || "").trim(),
+          notes: (newRecord.notes || "").trim()
+        });
+      } else if (addType === "history") {
+        if (!newRecord.name || !newRecord.name.trim()) {
+          wx.showToast({ title: "请输入名称", icon: "none" });
+          return;
+        }
         await addMedicalHistoryAPI({
           name: newRecord.name.trim(),
           diagnoseYear: parseInt(newRecord.diagnoseYear, 10) || new Date().getFullYear(),
           notes: (newRecord.notes || "").trim()
         });
       } else if (addType === "medication") {
+        if (!newRecord.name || !newRecord.name.trim()) {
+          wx.showToast({ title: "请输入名称", icon: "none" });
+          return;
+        }
         await addMedicationAPI({
           name: newRecord.name.trim(),
           frequency: (newRecord.frequency || "").trim(),
@@ -181,10 +260,9 @@ Page({
 
       this.closeModal();
       await this.loadHealthInfo();
-      wx.showToast({ title: "添加成功", icon: "success" });
+      wx.showToast({ title: "保存成功", icon: "success" });
     } catch (error) {
-      console.error("添加健康记录失败:", error);
-      wx.showToast({ title: "添加失败", icon: "none" });
+      wx.showToast({ title: error.message || "保存失败", icon: "none" });
     }
   },
 

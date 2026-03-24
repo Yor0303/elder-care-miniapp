@@ -161,9 +161,20 @@
   justify-content: space-between;
 }
 
+.memory-meta-text {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
 .memory-person {
   font-size: 26rpx;
   color: #888;
+}
+
+.memory-date {
+  font-size: 24rpx;
+  color: #a0a8b3;
 }
 
 .edit-btn {

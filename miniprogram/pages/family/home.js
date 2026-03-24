@@ -40,6 +40,18 @@ Page({
     });
   },
 
+  goToMessageBoard() {
+    wx.navigateTo({
+      url: "/pages/family/message-board"
+    });
+  },
+
+  goToLifeGuides() {
+    wx.navigateTo({
+      url: "/pages/family/life-guides"
+    });
+  },
+
   goToProfile() {
     wx.navigateTo({
       url: "/pages/family/profile"

@@ -1,10 +1,53 @@
 const {
   getMemoriesAPI,
   getPersonListAPI,
+  getElderInfoAPI,
   addMemoryAPI,
   updateMemoryAPI,
   deleteMemoryAPI
 } = require("../../api/user");
+
+function normalizeDateValue(value) {
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value.trim())) {
+    return value.trim();
+  }
+
+  return "";
+}
+
+function inferPersonRole(person, role) {
+  if (role === "self" || role === "family") {
+    return role;
+  }
+
+  const normalizedPerson = (person || "").trim();
+  return ["本人", "自己", "我"].includes(normalizedPerson) ? "self" : (normalizedPerson ? "family" : "");
+}
+
+function buildPersonOptions(persons, elderName) {
+  const options = [
+    {
+      label: elderName ? `本人（${elderName}）` : "本人",
+      value: "本人",
+      role: "self"
+    }
+  ];
+
+  (Array.isArray(persons) ? persons : []).forEach((item) => {
+    const name = item && item.name ? item.name.trim() : "";
+    if (!name || name === "本人") {
+      return;
+    }
+
+    options.push({
+      label: name,
+      value: name,
+      role: "family"
+    });
+  });
+
+  return options;
+}
 
 Page({
   data: {
@@ -12,8 +55,9 @@ Page({
     memoryId: "",
     title: "",
     story: "",
-    year: "",
+    eventDate: "",
     person: "",
+    personRole: "",
     img: "",
     type: "",
     typeOptions: ["family", "travel", "festival", "daily"],
@@ -44,25 +88,28 @@ Page({
 
   async loadPersons() {
     try {
-      const persons = await getPersonListAPI();
-      const personOptions = Array.isArray(persons) ? persons.map((item) => item.name) : [];
+      const [persons, elder] = await Promise.all([getPersonListAPI(), getElderInfoAPI()]);
+      const elderName = elder && elder.name ? elder.name.trim() : "";
+      const personOptions = buildPersonOptions(persons, elderName);
       this.setData({ personOptions });
-      this.syncPersonIndex(this.data.person, personOptions);
+      this.syncPersonIndex(this.data.person, this.data.personRole, personOptions);
     } catch (error) {
       console.error("加载人物列表失败:", error);
       wx.showToast({ title: "人物加载失败", icon: "none" });
     }
   },
 
-  syncPersonIndex(personValue, options = this.data.personOptions) {
+  syncPersonIndex(personValue, personRole = this.data.personRole, options = this.data.personOptions) {
     const person = (personValue || "").trim();
+    const role = inferPersonRole(person, personRole);
+
     if (!options || options.length === 0) {
       this.setData({ personIndex: -1 });
       return;
     }
 
-    const index = options.findIndex((name) => name === person);
-    this.setData({ personIndex: person ? index : -1 });
+    const index = options.findIndex((item) => item.value === person && item.role === role);
+    this.setData({ personIndex: index });
   },
 
   async loadMemoryDetail(memoryId) {
@@ -75,16 +122,18 @@ Page({
       const memory = memories.find((item) => item.id === memoryId);
 
       if (memory) {
+        const personRole = inferPersonRole(memory.person, memory.personRole);
         this.setData({
           title: memory.title || "",
           story: memory.story || "",
-          year: memory.year ? String(memory.year) : "",
+          eventDate: normalizeDateValue(memory.eventDate),
           person: memory.person || "",
+          personRole,
           type: memory.type || "",
           img: memory.img || "",
           fileList: memory.img ? [{ url: memory.img }] : []
         });
-        this.syncPersonIndex(memory.person);
+        this.syncPersonIndex(memory.person, personRole);
       }
 
       wx.hideLoading();
@@ -102,14 +151,18 @@ Page({
     this.setData({ story: e.detail.value });
   },
 
-  onYearInput(e) {
-    this.setData({ year: e.detail.value });
+  onDateChange(e) {
+    this.setData({ eventDate: e.detail.value });
   },
 
   onPersonChange(e) {
     const index = Number(e.detail.value);
-    const person = this.data.personOptions[index] || "";
-    this.setData({ personIndex: index, person });
+    const target = this.data.personOptions[index];
+    this.setData({
+      personIndex: index,
+      person: target ? target.value : "",
+      personRole: target ? target.role : ""
+    });
   },
 
   showTypePicker() {
@@ -160,7 +213,7 @@ Page({
   },
 
   async save() {
-    const { title, story, year, person, type, img, isEdit, memoryId, saving } = this.data;
+    const { title, story, eventDate, person, personRole, type, img, isEdit, memoryId, saving } = this.data;
 
     if (!title.trim()) {
       wx.showToast({ title: "请输入标题", icon: "none" });
@@ -168,6 +221,10 @@ Page({
     }
     if (!story.trim()) {
       wx.showToast({ title: "请输入回忆内容", icon: "none" });
+      return;
+    }
+    if (!eventDate) {
+      wx.showToast({ title: "请选择回忆日期", icon: "none" });
       return;
     }
     if (saving) {
@@ -185,12 +242,13 @@ Page({
       }
 
       wx.showLoading({ title: "保存中..." });
-      const parsedYear = parseInt(year, 10);
       const data = {
         title: title.trim(),
         story: story.trim(),
-        year: Number.isFinite(parsedYear) ? parsedYear : new Date().getFullYear(),
+        eventDate,
+        year: Number(eventDate.slice(0, 4)),
         person: person.trim(),
+        personRole: inferPersonRole(person.trim(), personRole),
         type: type || "daily",
         img: cloudUrl || ""
       };

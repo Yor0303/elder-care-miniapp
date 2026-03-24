@@ -14,8 +14,17 @@ const FAMILY_ELDER_ACTIONS = new Set([
   "getHealthInfo",
   "addMedicalHistory",
   "addMedication",
+  "addHealthMeasurement",
   "updateTodayHealth",
-  "deleteHealthRecord"
+  "deleteHealthRecord",
+  "addVoiceMessage",
+  "getVoiceMessages",
+  "markVoiceMessagesRead",
+  "getLifeGuides",
+  "getLifeGuideDetail",
+  "addLifeGuide",
+  "updateLifeGuide",
+  "deleteLifeGuide"
 ]);
 
 function callService(action, data = {}) {
@@ -139,6 +148,10 @@ function addMedicationAPI(medication) {
   return callService("addMedication", medication);
 }
 
+function addHealthMeasurementAPI(measurement) {
+  return callService("addHealthMeasurement", measurement);
+}
+
 /**
  * 更新今日健康数据
  * @param {Object} health - 健康数据
@@ -180,6 +193,38 @@ function getElderUploadsAPI() {
  */
 function getOnThisDayMemoryAPI() {
   return callService("getOnThisDayMemory");
+}
+
+function addVoiceMessageAPI(payload) {
+  return callService("addVoiceMessage", payload || {});
+}
+
+function getVoiceMessagesAPI(options = {}) {
+  return callService("getVoiceMessages", options);
+}
+
+function markVoiceMessagesReadAPI() {
+  return callService("markVoiceMessagesRead");
+}
+
+function getLifeGuidesAPI(options = {}) {
+  return callService("getLifeGuides", options);
+}
+
+function getLifeGuideDetailAPI(guideId) {
+  return callService("getLifeGuideDetail", { guideId });
+}
+
+function addLifeGuideAPI(payload) {
+  return callService("addLifeGuide", payload || {});
+}
+
+function updateLifeGuideAPI(payload) {
+  return callService("updateLifeGuide", payload || {});
+}
+
+function deleteLifeGuideAPI(guideId) {
+  return callService("deleteLifeGuide", { guideId });
 }
 
 /**
@@ -276,6 +321,7 @@ module.exports = {
   getHealthInfoAPI,
   addMedicalHistoryAPI,
   addMedicationAPI,
+  addHealthMeasurementAPI,
   updateTodayHealthAPI,
   deleteHealthRecordAPI,
   addPersonAPI,
@@ -285,6 +331,14 @@ module.exports = {
   addElderUploadAPI,
   getElderUploadsAPI,
   getOnThisDayMemoryAPI,
+  addVoiceMessageAPI,
+  getVoiceMessagesAPI,
+  markVoiceMessagesReadAPI,
+  getLifeGuidesAPI,
+  getLifeGuideDetailAPI,
+  addLifeGuideAPI,
+  updateLifeGuideAPI,
+  deleteLifeGuideAPI,
   createMemoryPairAPI,
   getMemoryPairsAPI,
   uploadFacePhotoAPI,

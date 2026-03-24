@@ -1,0 +1,263 @@
+.page {
+  padding: 40rpx;
+  background: #f8f9fb;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 50rpx;
+}
+
+.welcome {
+  font-size: 44rpx;
+  font-weight: bold;
+  color: #1a3a5f;
+}
+
+.subtitle {
+  font-size: 28rpx;
+  color: #888;
+  margin-top: 15rpx;
+  line-height: 1.6;
+}
+
+.card {
+  background: #ffffff;
+  padding: 35rpx 40rpx;
+  margin-bottom: 25rpx;
+  border-radius: 24rpx;
+  box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.06);
+}
+
+.card-left {
+  display: flex;
+  align-items: center;
+}
+
+.icon {
+  font-size: 60rpx;
+  margin-right: 30rpx;
+}
+
+.card-content {
+  flex: 1;
+}
+
+.card-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8rpx;
+}
+
+.card-desc {
+  font-size: 26rpx;
+  color: #999;
+  line-height: 1.6;
+}
+
+.panel {
+  margin-top: 30rpx;
+  padding-top: 30rpx;
+  border-top: 1rpx solid #eef2f6;
+}
+
+.note-panel {
+  padding-bottom: 8rpx;
+}
+
+.panel-recording {
+  text-align: center;
+}
+
+.record-status {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.record-dot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background: #ff7b7b;
+  margin-right: 14rpx;
+}
+
+.record-text {
+  font-size: 28rpx;
+  color: #666;
+}
+
+.draft-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.draft-desc {
+  font-size: 26rpx;
+  color: #999;
+  margin-top: 10rpx;
+}
+
+.note-label {
+  font-size: 26rpx;
+  color: #666;
+  margin-top: 22rpx;
+  margin-bottom: 12rpx;
+}
+
+.note-input {
+  width: 100%;
+  min-height: 132rpx;
+  background: #f8f9fb;
+  border-radius: 16rpx;
+  padding: 20rpx 24rpx;
+  box-sizing: border-box;
+  font-size: 28rpx;
+  color: #333;
+  line-height: 1.6;
+}
+
+.text-send-btn {
+  margin-top: 20rpx;
+}
+
+.action-row {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 24rpx;
+}
+
+.action-row button {
+  flex: 1;
+}
+
+.primary-btn,
+.secondary-btn,
+.danger-btn,
+.play-btn {
+  height: 84rpx;
+  line-height: 84rpx;
+  border-radius: 42rpx;
+  font-size: 28rpx;
+  border: none;
+}
+
+.primary-btn {
+  background: #4a90e2;
+  color: #fff;
+}
+
+.secondary-btn {
+  background: #f2f5f8;
+  color: #666;
+}
+
+.danger-btn {
+  background: #ff8f6b;
+  color: #fff;
+}
+
+.message-list {
+  margin-top: 30rpx;
+}
+
+.message-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8f9fb;
+  border-radius: 20rpx;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+}
+
+.message-item:last-child {
+  margin-bottom: 0;
+}
+
+.message-main {
+  flex: 1;
+  margin-right: 20rpx;
+}
+
+.message-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+
+.message-name {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.message-time {
+  font-size: 24rpx;
+  color: #aaa;
+}
+
+.message-desc {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 10rpx;
+}
+
+.message-note {
+  font-size: 26rpx;
+  color: #4f5f73;
+  line-height: 1.6;
+  margin-top: 12rpx;
+}
+
+.play-btn {
+  min-width: 132rpx;
+  padding: 0 24rpx;
+  background: #e8f1ff;
+  color: #4a90e2;
+}
+
+.text-tag {
+  min-width: 132rpx;
+  height: 84rpx;
+  line-height: 84rpx;
+  border-radius: 42rpx;
+  text-align: center;
+  background: #f2f5f8;
+  color: #7c8b9a;
+  font-size: 26rpx;
+}
+
+.empty-state {
+  padding: 50rpx 0 20rpx;
+  text-align: center;
+  font-size: 28rpx;
+  color: #999;
+}
+
+.tips {
+  background: #fff9e6;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin-top: 40rpx;
+}
+
+.tips-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #d4a000;
+  margin-bottom: 15rpx;
+}
+
+.tips-content {
+  font-size: 26rpx;
+  color: #997a00;
+  line-height: 1.6;
+}

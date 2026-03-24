@@ -117,12 +117,34 @@
   box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
 }
 
+.unknown-card {
+  border: 2rpx solid rgba(255, 107, 107, 0.18);
+  background: linear-gradient(180deg, #fff 0%, #fff7f7 100%);
+}
+
 .result-avatar {
   width: 120rpx;
   height: 120rpx;
   border-radius: 50%;
   margin-right: 30rpx;
   background: #f0f0f0;
+}
+
+.unknown-avatar {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  margin-right: 30rpx;
+  background: linear-gradient(135deg, #ffd7d7 0%, #ffb2b2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.unknown-avatar-text {
+  font-size: 54rpx;
+  color: #b42318;
+  font-weight: bold;
 }
 
 .result-info {
@@ -139,6 +161,10 @@
   font-size: 28rpx;
   color: #4A90E2;
   margin-top: 8rpx;
+}
+
+.unknown-relation {
+  color: #d92d20;
 }
 
 .result-desc {

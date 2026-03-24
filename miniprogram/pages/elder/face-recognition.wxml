@@ -36,12 +36,21 @@
     </view>
   </view>
 
+  <view class="result-section" wx:elif="{{noMatch}}">
+    <view class="result-card unknown-card">
+      <view class="unknown-avatar">
+        <text class="unknown-avatar-text">?</text>
+      </view>
+      <view class="result-info">
+        <view class="result-name">未知人士</view>
+        <view class="result-relation unknown-relation">未匹配到家庭成员</view>
+        <view class="result-desc">{{errorMessage || "请让家属先录入清晰的人脸照片"}}</view>
+      </view>
+    </view>
+  </view>
+
   <view class="status-section" wx:if="{{recognizing}}">
     <view class="status-text">正在识别中...</view>
-  </view>
-  <view class="status-section" wx:elif="{{noMatch}}">
-    <view class="status-text no-match">{{errorMessage}}</view>
-    <button class="retry-btn" bindtap="retry">重新识别</button>
   </view>
 
   <view class="action-section" wx:if="{{!recognizedPerson && !noMatch}}">
@@ -51,7 +60,7 @@
     </button>
   </view>
 
-  <view class="action-section" wx:if="{{recognizedPerson}}">
+  <view class="action-section" wx:if="{{recognizedPerson || noMatch}}">
     <button class="capture-btn" bindtap="retry">
       <text class="btn-icon">RE</text>
       <text>继续识别</text>

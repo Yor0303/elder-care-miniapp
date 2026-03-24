@@ -4,7 +4,7 @@
 
   <view class="form">
     <view class="form-item">
-      <view class="form-label">照片</view>
+      <view class="form-label">展示照片</view>
       <view class="avatar-section">
         <view wx:if="{{avatar}}" class="avatar-preview">
           <image class="avatar-image" src="{{avatar}}" mode="aspectFill"></image>
@@ -13,6 +13,21 @@
         <view wx:else class="avatar-upload" bindtap="chooseAvatar">
           <text class="avatar-plus">+</text>
           <text class="avatar-text">上传照片</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="form-item">
+      <view class="form-label">识别人脸照</view>
+      <view class="field-tip">建议上传清晰正脸照，便于摄像头识别时命中。</view>
+      <view class="avatar-section">
+        <view wx:if="{{facePhoto}}" class="avatar-preview">
+          <image class="avatar-image" src="{{facePhoto}}" mode="aspectFill"></image>
+          <view class="remove-avatar" catchtap="removeFacePhoto">X</view>
+        </view>
+        <view wx:else class="avatar-upload" bindtap="chooseFacePhoto">
+          <text class="avatar-plus">+</text>
+          <text class="avatar-text">上传人脸照</text>
         </view>
       </view>
     </view>

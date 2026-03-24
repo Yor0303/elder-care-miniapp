@@ -1,0 +1,291 @@
+{
+  "users": [
+    {
+      "_id": "elder_demo_001",
+      "openId": "demo-elder-openid",
+      "name": "李秀兰",
+      "avatar": "",
+      "age": 72,
+      "gender": "女",
+      "userType": "elder",
+      "relation": "本人",
+      "birthYear": "1954",
+      "hometown": "江苏苏州",
+      "address": "苏州市姑苏区平江路 18 号",
+      "emergencyContactName": "王丽",
+      "emergencyContactPhone": "13800138001",
+      "allergies": "青霉素过敏",
+      "medications": "降压药、钙片",
+      "notes": "喜欢老照片和听家人留言",
+      "healthStatus": {
+        "bloodPressure": "128/78",
+        "heartRate": 72,
+        "bloodSugar": "5.6"
+      },
+      "createdAt": "2026-03-24T08:00:00.000Z"
+    },
+    {
+      "_id": "family_demo_001",
+      "openId": "demo-family-openid",
+      "name": "王丽",
+      "avatar": "",
+      "age": 45,
+      "gender": "女",
+      "userType": "family",
+      "relation": "女儿",
+      "boundElderId": "elder_demo_001",
+      "boundAt": "2026-03-24T08:10:00.000Z",
+      "createdAt": "2026-03-24T08:10:00.000Z"
+    }
+  ],
+  "persons": [
+    {
+      "_id": "person_demo_001",
+      "elderId": "elder_demo_001",
+      "name": "王丽",
+      "avatar": "",
+      "facePhoto": "",
+      "relation": "女儿",
+      "age": 45,
+      "gender": "女",
+      "health": "健康",
+      "description": "在杭州工作，每周都会和妈妈视频。",
+      "createdAt": "2026-03-24T08:20:00.000Z"
+    },
+    {
+      "_id": "person_demo_002",
+      "elderId": "elder_demo_001",
+      "name": "张建国",
+      "avatar": "",
+      "facePhoto": "",
+      "relation": "儿子",
+      "age": 42,
+      "gender": "男",
+      "health": "健康",
+      "description": "喜欢给妈妈修家电，周末常回家。",
+      "createdAt": "2026-03-24T08:21:00.000Z"
+    },
+    {
+      "_id": "person_demo_003",
+      "elderId": "elder_demo_001",
+      "name": "张小满",
+      "avatar": "",
+      "facePhoto": "",
+      "relation": "孙女",
+      "age": 12,
+      "gender": "女",
+      "health": "健康",
+      "description": "上六年级，常给奶奶画画写卡片。",
+      "createdAt": "2026-03-24T08:22:00.000Z"
+    }
+  ],
+  "memories": [
+    {
+      "_id": "memory_demo_001",
+      "elderId": "elder_demo_001",
+      "title": "年轻时的结婚照",
+      "img": "",
+      "story": "这是我和老伴结婚那年的照片，当时在苏州老家拍的，大家都说我笑得特别开心。",
+      "person": "本人",
+      "personRole": "self",
+      "year": 1978,
+      "eventDate": "1978-10-03",
+      "eventMonthDay": "10-03",
+      "createdAt": "2026-03-24T08:30:00.000Z"
+    },
+    {
+      "_id": "memory_demo_002",
+      "elderId": "elder_demo_001",
+      "title": "女儿上大学那天",
+      "img": "",
+      "story": "王丽去杭州上大学，我们全家一起送她到火车站，她说以后一定常回来看我。",
+      "person": "王丽",
+      "personRole": "family",
+      "year": 1999,
+      "eventDate": "1999-09-01",
+      "eventMonthDay": "09-01",
+      "createdAt": "2026-03-24T08:31:00.000Z"
+    },
+    {
+      "_id": "memory_demo_003",
+      "elderId": "elder_demo_001",
+      "title": "第一次带孙女去公园",
+      "img": "",
+      "story": "小满三岁那年，我带她去公园看鸽子，她一路追着鸽子跑，笑个不停。",
+      "person": "张小满",
+      "personRole": "family",
+      "year": 2017,
+      "eventDate": "2017-04-16",
+      "eventMonthDay": "04-16",
+      "createdAt": "2026-03-24T08:32:00.000Z"
+    }
+  ],
+  "healthRecords": [
+    {
+      "_id": "health_demo_001",
+      "elderId": "elder_demo_001",
+      "type": "medicalHistory",
+      "name": "高血压",
+      "diagnoseYear": 2018,
+      "notes": "平时需规律服药",
+      "createdAt": "2026-03-24T08:40:00.000Z"
+    },
+    {
+      "_id": "health_demo_002",
+      "elderId": "elder_demo_001",
+      "type": "medication",
+      "name": "缬沙坦",
+      "frequency": "每日 1 次",
+      "dosage": "80mg",
+      "time": "早餐后",
+      "notes": "饭后温水送服",
+      "createdAt": "2026-03-24T08:41:00.000Z"
+    },
+    {
+      "_id": "health_demo_003",
+      "elderId": "elder_demo_001",
+      "type": "medication",
+      "name": "钙片",
+      "frequency": "每日 1 次",
+      "dosage": "1 片",
+      "time": "晚饭后",
+      "notes": "记得喝水",
+      "createdAt": "2026-03-24T08:42:00.000Z"
+    },
+    {
+      "_id": "health_demo_004",
+      "elderId": "elder_demo_001",
+      "type": "dailyHealth",
+      "recordDate": "2026-03-20",
+      "bloodPressure": "132/82",
+      "heartRate": 74,
+      "bloodSugar": "5.8",
+      "notes": "早餐后测量",
+      "recorderRole": "family",
+      "createdAt": "2026-03-20T09:00:00.000Z"
+    },
+    {
+      "_id": "health_demo_005",
+      "elderId": "elder_demo_001",
+      "type": "dailyHealth",
+      "recordDate": "2026-03-22",
+      "bloodPressure": "130/80",
+      "heartRate": 73,
+      "bloodSugar": "5.7",
+      "notes": "状态平稳",
+      "recorderRole": "family",
+      "createdAt": "2026-03-22T09:10:00.000Z"
+    },
+    {
+      "_id": "health_demo_006",
+      "elderId": "elder_demo_001",
+      "type": "dailyHealth",
+      "recordDate": "2026-03-24",
+      "bloodPressure": "128/78",
+      "heartRate": 72,
+      "bloodSugar": "5.6",
+      "notes": "今日状态不错",
+      "recorderRole": "family",
+      "createdAt": "2026-03-24T09:20:00.000Z"
+    }
+  ],
+  "voiceMessages": [
+    {
+      "_id": "voice_demo_001",
+      "elderId": "elder_demo_001",
+      "fileID": "",
+      "duration": 0,
+      "senderName": "王丽",
+      "senderRelation": "女儿",
+      "senderRole": "family",
+      "note": "妈，今天降温了，记得出门穿厚一点。",
+      "isReadByElder": false,
+      "createdAt": "2026-03-24T10:00:00.000Z"
+    },
+    {
+      "_id": "voice_demo_002",
+      "elderId": "elder_demo_001",
+      "fileID": "",
+      "duration": 0,
+      "senderName": "张小满",
+      "senderRelation": "孙女",
+      "senderRole": "family",
+      "note": "奶奶，我周末去看你，给你带我画的小兔子。",
+      "isReadByElder": false,
+      "createdAt": "2026-03-24T11:00:00.000Z"
+    }
+  ],
+  "lifeGuides": [
+    {
+      "_id": "guide_demo_001",
+      "elderId": "elder_demo_001",
+      "title": "电饭煲煮饭",
+      "itemName": "电饭煲",
+      "steps": [
+        {
+          "image": "",
+          "text": "先把米放进内胆里，用清水淘洗两遍。",
+          "order": 0
+        },
+        {
+          "image": "",
+          "text": "加入适量清水，水面大约高出米面一指节。",
+          "order": 1
+        },
+        {
+          "image": "",
+          "text": "把内胆放回电饭煲，盖好盖子，按下煮饭键。",
+          "order": 2
+        },
+        {
+          "image": "",
+          "text": "等跳到保温后焖 10 分钟，再打开盛饭。",
+          "order": 3
+        }
+      ],
+      "videoFileID": "",
+      "createdAt": "2026-03-24T12:00:00.000Z",
+      "updatedAt": "2026-03-24T12:00:00.000Z",
+      "createdBy": "family_demo_001"
+    },
+    {
+      "_id": "guide_demo_002",
+      "elderId": "elder_demo_001",
+      "title": "热水器洗澡前怎么开",
+      "itemName": "热水器",
+      "steps": [
+        {
+          "image": "",
+          "text": "先确认热水器电源已打开，面板有亮灯。",
+          "order": 0
+        },
+        {
+          "image": "",
+          "text": "把温度调到 40 度左右，不要调得太高。",
+          "order": 1
+        },
+        {
+          "image": "",
+          "text": "打开淋浴喷头，先用手试水温，合适后再洗澡。",
+          "order": 2
+        }
+      ],
+      "videoFileID": "",
+      "createdAt": "2026-03-24T12:20:00.000Z",
+      "updatedAt": "2026-03-24T12:20:00.000Z",
+      "createdBy": "family_demo_001"
+    }
+  ],
+  "memoryPairs": [
+    {
+      "_id": "pair_demo_001",
+      "elderId": "elder_demo_001",
+      "leftImg": "",
+      "rightImg": "",
+      "leftLabel": "王丽小时候",
+      "rightLabel": "王丽现在",
+      "notes": "用于记忆配对游戏",
+      "createdAt": "2026-03-24T13:00:00.000Z"
+    }
+  ]
+}

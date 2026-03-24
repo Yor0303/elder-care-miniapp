@@ -1,0 +1,26 @@
+<view class="page">
+  <view class="header-card">
+    <view class="title">生活小助手</view>
+    <view class="subtitle">家里的家电和常用物品，点开就能看怎么用。</view>
+  </view>
+
+  <view wx:if="{{loading}}" class="empty-card">加载中...</view>
+  <view wx:elif="{{!guides.length}}" class="empty-card">无内容</view>
+
+  <view wx:else class="guide-list">
+    <block wx:for="{{guides}}" wx:key="id">
+      <view class="guide-card" bindtap="goToDetail" data-id="{{item.id}}">
+        <image wx:if="{{item.coverUrl}}" class="guide-cover" src="{{item.coverUrl}}" mode="aspectFill" />
+        <view wx:else class="guide-cover guide-cover-empty">暂无图片</view>
+        <view class="guide-info">
+          <view class="guide-title">{{item.title}}</view>
+          <view class="guide-name">{{item.itemName}}</view>
+          <view class="guide-tags">
+            <view class="guide-tag">图文教程</view>
+            <view wx:if="{{item.hasVideo}}" class="guide-tag guide-tag-video">带视频</view>
+          </view>
+        </view>
+      </view>
+    </block>
+  </view>
+</view>

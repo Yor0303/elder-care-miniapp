@@ -25,6 +25,7 @@ Page({
       const selfKeys = ["本人", "自己", "我"];
       const selfMemories = (memories || [])
         .filter((m) => {
+          if (m && m.personRole === "self") return true;
           const person = (m.person || "").trim();
           if (!person) return false;
           if (selfKeys.includes(person)) return true;

@@ -1,74 +1,42 @@
-<!--pages/elder/health.wxml-->
 <view class="page">
+  <view class="title">今日健康</view>
 
-<view class="title">医疗健康</view>
-
-<!-- 加载状态 -->
-<view wx:if="{{loading}}" class="loading-container">
-  <view class="loading">加载中...</view>
-</view>
-
-<!-- 错误提示 -->
-<view wx:if="{{errorMsg}}" class="error-container">
-  <view class="error-msg">{{errorMsg}}</view>
-  <button class="retry-btn" bindtap="loadHealthInfo">重试</button>
-</view>
-
-<!-- 正常内容 -->
-<view wx:if="{{!loading && !errorMsg}}">
-
-<!-- 今日健康 -->
-<view class="section">
-  <view class="section-title">今日健康</view>
-
-  <view class="card" bindtap="updateHealthData">
-    <view class="label">血压</view>
-    <view class="value">{{todayHealth.bloodPressure}}</view>
+  <view wx:if="{{loading}}" class="loading-container">
+    <view class="loading">加载中...</view>
   </view>
 
-  <view class="card" bindtap="updateHealthData">
-    <view class="label">心率</view>
-    <view class="value">{{todayHealth.heartRate}} 次/分钟</view>
+  <view wx:elif="{{errorMsg}}" class="error-container">
+    <view class="error-msg">{{errorMsg}}</view>
+    <button class="retry-btn" bindtap="loadHealthInfo">重试</button>
   </view>
 
-  <view class="card" bindtap="updateHealthData">
-    <view class="label">血糖</view>
-    <view class="value">{{todayHealth.bloodSugar}} mmol/L</view>
+  <view wx:else>
+    <view class="section summary-section">
+      <view class="section-header-card">
+        <view class="section-title">今天的身体状态</view>
+        <view class="section-desc">只保留最常看的内容，方便老人一眼看懂。</view>
+      </view>
+
+      <view class="health-grid">
+        <view wx:for="{{todayCards}}" wx:key="key" class="overview-card">
+          <view class="overview-label">{{item.label}}</view>
+          <view class="overview-value">{{item.value}}</view>
+          <view wx:if="{{item.unit}}" class="overview-unit">{{item.unit}}</view>
+          <view class="status-pill status-{{item.status.type}}">{{item.status.text}}</view>
+        </view>
+      </view>
+
+      <view wx:if="{{latestMeasurement}}" class="latest-note">
+        最近一次记录时间：{{latestMeasurement.recordDate || "--"}}
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-title">健康提醒</view>
+      <view wx:if="{{!healthAlerts.length}}" class="empty-tip">目前状态平稳，请继续保持。</view>
+      <view wx:for="{{healthAlerts}}" wx:key="text" class="alert-card alert-{{item.level}}">
+        <view class="alert-text">{{item.text}}</view>
+      </view>
+    </view>
   </view>
-</view>
-
-<!-- 既往病史 -->
-<view class="section">
-  <view class="section-title">既往病史</view>
-
-  <view wx:if="{{medicalHistory.length === 0}}" class="empty-tip">
-    暂无病史记录
-  </view>
-
-  <view wx:for="{{medicalHistory}}" wx:key="id" class="card history">
-    {{item.name}}（{{item.diagnoseYear}}年确诊）
-    <view wx:if="{{item.notes}}" class="notes">{{item.notes}}</view>
-  </view>
-
-</view>
-
-<!-- 当前用药 -->
-<view class="section">
-
-  <view class="section-title">当前用药</view>
-
-  <view wx:if="{{medications.length === 0}}" class="empty-tip">
-    暂无用药记录
-  </view>
-
-  <view wx:for="{{medications}}" wx:key="id" class="card medicine">
-    <view class="med-name">{{item.name}}</view>
-    <view class="med-info">{{item.frequency}}</view>
-    <view wx:if="{{item.time}}" class="med-time">{{item.time}}</view>
-  </view>
-
-</view>
-
-</view>
-
 </view>
