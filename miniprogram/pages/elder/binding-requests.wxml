@@ -1,0 +1,32 @@
+<view class="page">
+  <view class="hero-card">
+    <view class="hero-title">待处理绑定申请</view>
+    <view class="hero-desc">
+      家属提交绑定申请后，你可以在这里选择同意或拒绝，确保只有熟悉的家人进入家庭空间。
+    </view>
+  </view>
+
+  <view wx:if="{{requests.length}}">
+    <view wx:for="{{requests}}" wx:key="id" class="request-card">
+      <view class="request-header">
+        <view>
+          <view class="request-name">{{item.applicantName}}</view>
+          <view class="request-meta">{{item.relation}} · {{item.phone}}</view>
+        </view>
+        <view class="request-time">{{item.requestTime}}</view>
+      </view>
+
+      <view wx:if="{{item.status === 'pending'}}" class="action-row">
+        <button class="action-btn reject" bindtap="rejectRequest" data-id="{{item.id}}">拒绝</button>
+        <button class="action-btn approve" bindtap="approveRequest" data-id="{{item.id}}">同意</button>
+      </view>
+
+      <view wx:elif="{{item.status === 'approved'}}" class="status approved">已同意该申请</view>
+      <view wx:elif="{{item.status === 'rejected'}}" class="status rejected">已拒绝该申请</view>
+    </view>
+  </view>
+
+  <view wx:else class="empty-card">
+    当前没有新的绑定申请
+  </view>
+</view>

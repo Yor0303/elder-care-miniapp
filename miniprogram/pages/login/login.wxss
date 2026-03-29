@@ -22,6 +22,17 @@
   margin-bottom: 60rpx;
 }
 
+.invite-tip {
+  background: #eef6ff;
+  border: 2rpx solid #b8d9ff;
+  color: #1a3a5f;
+  border-radius: 24rpx;
+  padding: 24rpx 28rpx;
+  font-size: 28rpx;
+  line-height: 1.6;
+  margin-bottom: 40rpx;
+}
+
 .illustration {
   font-size: 120rpx;
   text-align: center;

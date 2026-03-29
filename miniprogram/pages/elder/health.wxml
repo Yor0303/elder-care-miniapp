@@ -1,41 +1,136 @@
 <view class="page">
-  <view class="title">今日健康</view>
+  <view class="title">医疗健康</view>
 
   <view wx:if="{{loading}}" class="loading-container">
     <view class="loading">加载中...</view>
   </view>
 
-  <view wx:elif="{{errorMsg}}" class="error-container">
+  <view wx:if="{{errorMsg}}" class="error-container">
     <view class="error-msg">{{errorMsg}}</view>
     <button class="retry-btn" bindtap="loadHealthInfo">重试</button>
   </view>
 
-  <view wx:else>
-    <view class="section summary-section">
-      <view class="section-header-card">
-        <view class="section-title">今天的身体状态</view>
-        <view class="section-desc">只保留最常看的内容，方便老人一眼看懂。</view>
-      </view>
-
-      <view class="health-grid">
-        <view wx:for="{{todayCards}}" wx:key="key" class="overview-card">
-          <view class="overview-label">{{item.label}}</view>
-          <view class="overview-value">{{item.value}}</view>
-          <view wx:if="{{item.unit}}" class="overview-unit">{{item.unit}}</view>
-          <view class="status-pill status-{{item.status.type}}">{{item.status.text}}</view>
+  <view wx:if="{{!loading && !errorMsg}}">
+    <view class="section">
+      <view class="section-title">今日健康概览</view>
+      <view class="hero-card" bindtap="updateHealthData">
+        <view class="hero-main">
+          <view class="hero-label">血压</view>
+          <view class="hero-value">{{pressureOverview.current}}</view>
+          <view class="hero-tip">{{pressureOverview.latestLabel ? "最近记录 " + pressureOverview.latestLabel : "点击可更新今日血压"}}</view>
         </view>
-      </view>
-
-      <view wx:if="{{latestMeasurement}}" class="latest-note">
-        最近一次记录时间：{{latestMeasurement.recordDate || "--"}}
+        <view class="hero-meta">
+          <view class="metric-chip">
+            <text class="metric-chip-label">心率</text>
+            <text class="metric-chip-value">{{todayHealth.heartRate || "--"}} 次/分</text>
+          </view>
+          <view class="metric-chip">
+            <text class="metric-chip-label">血糖</text>
+            <text class="metric-chip-value">{{todayHealth.bloodSugar || "--"}} mmol/L</text>
+          </view>
+        </view>
       </view>
     </view>
 
     <view class="section">
-      <view class="section-title">健康提醒</view>
-      <view wx:if="{{!healthAlerts.length}}" class="empty-tip">目前状态平稳，请继续保持。</view>
-      <view wx:for="{{healthAlerts}}" wx:key="text" class="alert-card alert-{{item.level}}">
-        <view class="alert-text">{{item.text}}</view>
+      <view class="section-title">今日用药提醒</view>
+      <view wx:if="{{reminderMedications.length === 0}}" class="empty-tip">
+        暂无已开启的用药提醒，家属可在健康管理中为药物设置提醒时间。
+      </view>
+
+      <view wx:for="{{reminderMedications}}" wx:key="id" class="reminder-card">
+        <view class="reminder-time">{{item.reminderTime}}</view>
+        <view class="reminder-content">
+          <view class="reminder-name">{{item.name}}</view>
+          <view class="reminder-meta">
+            <text wx:if="{{item.frequency}}">{{item.frequency}}</text>
+            <text wx:if="{{item.time}}">{{item.time}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-title">健康趋势</view>
+
+      <view class="chart-card pressure-chart">
+        <view class="chart-header">
+          <view>
+            <view class="chart-title">血压变化</view>
+            <view class="chart-subtitle">最近 {{pressureTrend.length || 0}} 条记录</view>
+          </view>
+          <view class="chart-current">{{pressureOverview.current}}</view>
+        </view>
+
+        <view wx:if="{{pressureTrend.length === 0}}" class="chart-empty">
+          暂无血压趋势数据，更新今日健康后会自动生成记录。
+        </view>
+
+        <scroll-view wx:else class="pressure-track" scroll-x enhanced show-scrollbar="{{false}}">
+          <view class="pressure-items">
+            <view wx:for="{{pressureTrend}}" wx:key="label" class="pressure-item">
+              <view class="pressure-value">{{item.displayValue}}</view>
+              <view class="pressure-sticks">
+                <view class="pressure-stick systolic animate-rise" style="height: {{item.systolicHeight}}rpx;"></view>
+                <view class="pressure-stick diastolic animate-rise" style="height: {{item.diastolicHeight}}rpx;"></view>
+              </view>
+              <view class="pressure-label">{{item.label}}</view>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+
+      <view wx:for="{{chartCards}}" wx:key="key" class="chart-card">
+        <view class="chart-header">
+          <view>
+            <view class="chart-title">{{item.title}}</view>
+            <view class="chart-subtitle">{{item.changeText}}</view>
+          </view>
+          <view class="chart-current">{{item.latestValue}}{{item.empty ? "" : item.unit}}</view>
+        </view>
+
+        <view wx:if="{{item.empty}}" class="chart-empty">
+          暂无{{item.title}}数据，更新健康信息后会自动生成趋势。
+        </view>
+
+        <scroll-view wx:else class="bar-track" scroll-x enhanced show-scrollbar="{{false}}">
+          <view class="bar-list">
+            <view wx:for="{{item.bars}}" wx:key="label" class="bar-item">
+              <view class="bar-value">{{item.valueText}}</view>
+              <view class="bar-column">
+                <view class="bar-fill animate-rise" style="height: {{item.height}}rpx;"></view>
+              </view>
+              <view class="bar-label">{{item.label}}</view>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-title">既往病史</view>
+
+      <view wx:if="{{medicalHistory.length === 0}}" class="empty-tip">
+        暂无病史记录
+      </view>
+
+      <view wx:for="{{medicalHistory}}" wx:key="id" class="info-card history">
+        {{item.name}}（{{item.diagnoseYear}}年确诊）
+        <view wx:if="{{item.notes}}" class="notes">{{item.notes}}</view>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-title">当前用药</view>
+
+      <view wx:if="{{medications.length === 0}}" class="empty-tip">
+        暂无用药记录
+      </view>
+
+      <view wx:for="{{medications}}" wx:key="id" class="info-card medicine">
+        <view class="med-name">{{item.name}}</view>
+        <view class="med-info">{{item.frequency}}</view>
+        <view wx:if="{{item.time}}" class="med-time">{{item.time}}</view>
       </view>
     </view>
   </view>

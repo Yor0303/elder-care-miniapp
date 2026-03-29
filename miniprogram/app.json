@@ -10,6 +10,8 @@
     "pages/elder/match",
     "pages/elder/life-guides",
     "pages/elder/life-guide-detail",
+    "pages/elder/binding-requests",
+    "pages/elder/face-recognition",
     "pages/family/home",
     "pages/family/members",
     "pages/family/upload",

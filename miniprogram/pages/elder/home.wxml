@@ -81,6 +81,15 @@
   </view>
 
   <view wx:if="{{featureTab === 'daily'}}" class="feature-list">
+    <view class="card feature request-card" bindtap="goToBindingRequests">
+      <view class="icon request-icon">审</view>
+      <view class="info">
+        <view class="title">绑定申请</view>
+        <view class="desc">查看家属提交的绑定请求</view>
+      </view>
+      <view wx:if="{{pendingCount > 0}}" class="request-badge">{{pendingCount}}</view>
+    </view>
+
     <view class="card feature" bindtap="goToProfile">
       <view class="icon">🧓</view>
       <view class="info">
@@ -153,5 +162,16 @@
 
   <view wx:if="{{previewVisible}}" class="preview-mask" bindtap="closePreview">
     <image class="preview-full" src="{{previewImg}}" mode="aspectFit" />
+  </view>
+
+  <view class="floating-buttons">
+    <button class="floating-btn invite-btn" open-type="share">
+      <view class="btn-icon">邀</view>
+      <view class="btn-text">邀请家人</view>
+    </button>
+    <button class="floating-btn face-btn" bindtap="goToFaceRecognition">
+      <view class="btn-icon">识</view>
+      <view class="btn-text">人脸识别</view>
+    </button>
   </view>
 </view>

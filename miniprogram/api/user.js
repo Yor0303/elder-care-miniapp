@@ -70,8 +70,32 @@ function getElderListAPI() {
   return callService("getElderList");
 }
 
+function getElderBindInfoAPI(elderId) {
+  return callService("getElderBindInfo", { elderId });
+}
+
 function bindElderAPI(elderId) {
   return callService("bindElder", { elderId });
+}
+
+function createBindingRequestAPI(data) {
+  return callService("createBindingRequest", data);
+}
+
+function getMyBindingRequestsAPI() {
+  return callService("getMyBindingRequests");
+}
+
+function getBindingRequestsAPI() {
+  return callService("getBindingRequests");
+}
+
+function approveBindingRequestAPI(requestId) {
+  return callService("approveBindingRequest", { requestId });
+}
+
+function rejectBindingRequestAPI(requestId) {
+  return callService("rejectBindingRequest", { requestId });
 }
 
 function getFamilyTreeAPI() {
@@ -308,7 +332,13 @@ function uploadAndRecognizeAPI(tempFilePath) {
 module.exports = {
   loginAPI,
   getElderListAPI,
+  getElderBindInfoAPI,
   bindElderAPI,
+  createBindingRequestAPI,
+  getMyBindingRequestsAPI,
+  getBindingRequestsAPI,
+  approveBindingRequestAPI,
+  rejectBindingRequestAPI,
   getPersonListAPI,
   getFamilyTreeAPI,
   getPersonDetailAPI,

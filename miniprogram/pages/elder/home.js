@@ -2,7 +2,8 @@ const {
   getOnThisDayMemoryAPI,
   getVoiceMessagesAPI,
   markVoiceMessagesReadAPI,
-  getHealthInfoAPI
+  getHealthInfoAPI,
+  getBindingRequestsAPI
 } = require("../../api/user");
 
 function formatDateTime(value) {
@@ -52,6 +53,7 @@ Page({
     featureTab: "daily",
     onThisDay: null,
     medicationReminders: [],
+    pendingCount: 0,
     voiceMessages: [],
     unreadMessageCount: 0,
     previewVisible: false,
@@ -64,12 +66,17 @@ Page({
     this.promptAudioContext = wx.createInnerAudioContext();
     this.speechPlugin = getSpeechPlugin();
     this.lastPromptKey = "";
+    wx.showShareMenu({
+      withShareTicket: false,
+      menus: ["shareAppMessage"]
+    });
     this.initAudioPlayer();
     this.initPromptAudioPlayer();
   },
 
   onShow() {
     this.loadBoardData();
+    this.loadPendingCount();
   },
 
   onHide() {
@@ -117,6 +124,18 @@ Page({
 
   async loadBoardData() {
     await Promise.all([this.loadOnThisDay(), this.loadVoiceMessages(), this.loadMedicationReminders()]);
+  },
+
+  async loadPendingCount() {
+    try {
+      const requests = await getBindingRequestsAPI();
+      const list = Array.isArray(requests) ? requests : [];
+      this.setData({
+        pendingCount: list.filter((item) => item && item.status === "pending").length
+      });
+    } catch (_) {
+      this.setData({ pendingCount: 0 });
+    }
   },
 
   async loadOnThisDay() {
@@ -343,6 +362,14 @@ Page({
     wx.navigateTo({ url: "/pages/elder/life-guides" });
   },
 
+  goToBindingRequests() {
+    wx.navigateTo({ url: "/pages/elder/binding-requests" });
+  },
+
+  goToFaceRecognition() {
+    wx.navigateTo({ url: "/pages/elder/face-recognition" });
+  },
+
   openPreview() {
     const img = this.data.onThisDay && this.data.onThisDay.img;
     if (!img) return;
@@ -351,5 +378,19 @@ Page({
 
   closePreview() {
     this.setData({ previewVisible: false, previewImg: "" });
+  },
+
+  onShareAppMessage() {
+    let elderId = "";
+    try {
+      elderId = wx.getStorageSync("userId") || "";
+    } catch (_) {
+      elderId = "";
+    }
+
+    return {
+      title: "邀请家人加入忆站，一起守护回忆与健康",
+      path: elderId ? `/pages/login/login?inviteElderId=${elderId}` : "/pages/login/login"
+    };
   }
 });

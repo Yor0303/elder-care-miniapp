@@ -16,11 +16,34 @@ const COLLECTION_NAMES = {
   persons: "persons",
   memories: "memories",
   healthRecords: "healthRecords",
+  bindingRequests: "binding_requests",
   elderUploads: "elder_uploads",
   memoryPairs: "memory_pairs",
   voiceMessages: "voice_messages",
   lifeGuides: "life_guides"
 };
+
+function toIsoDate(value = new Date()) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toISOString();
+}
+
+function getDateKey(value = new Date()) {
+  return normalizeDateOnly(value);
+}
+
+function getDateLabel(value) {
+  const normalized = normalizeDateOnly(value);
+  if (!normalized) return "";
+  const [, month, day] = normalized.split("-");
+  return `${Number(month)}月${Number(day)}日`;
+}
+
+function parseNumberValue(value) {
+  const num = Number.parseFloat(value);
+  return Number.isFinite(num) ? num : null;
+}
 
 const FACE_MODEL_VERSION = "3.0";
 const DEFAULT_FACE_SCORE_THRESHOLD = 85;
@@ -438,6 +461,197 @@ async function bindElder(event) {
     data: {
       boundElderId: event.elderId,
       boundAt: new Date().toISOString()
+    }
+  });
+
+  return { success: true };
+}
+
+async function getElderBindInfo(event = {}) {
+  if (!event.elderId) {
+    throw new Error("缺少老人ID");
+  }
+
+  const elder = await getUserById(event.elderId);
+  if (!elder || !isElderUser(elder)) {
+    throw new Error("老人不存在");
+  }
+
+  return {
+    id: elder._id,
+    name: elder.name || "未命名老人",
+    age: elder.age || null,
+    gender: elder.gender || "",
+    avatar: elder.avatar || "",
+    relation: "本人"
+  };
+}
+
+async function createBindingRequest(event = {}) {
+  if (!event.elderId) {
+    throw new Error("缺少老人ID");
+  }
+
+  const user = await getCurrentUser();
+  if (normalizeUserType(user) !== "family") {
+    throw new Error("只有家属可以发起绑定申请");
+  }
+
+  const elder = await getUserById(event.elderId);
+  if (!elder || !isElderUser(elder)) {
+    throw new Error("老人不存在");
+  }
+
+  const existing = await db
+    .collection(COLLECTION_NAMES.bindingRequests)
+    .where({
+      elderId: elder._id,
+      familyUserId: user._id,
+      status: "pending"
+    })
+    .get();
+
+  if (existing.data.length) {
+    return {
+      success: true,
+      requestId: existing.data[0]._id,
+      status: "pending"
+    };
+  }
+
+  const now = toIsoDate();
+  const result = await db.collection(COLLECTION_NAMES.bindingRequests).add({
+    data: {
+      elderId: elder._id,
+      familyUserId: user._id,
+      familyName: user.name || "家属",
+      familyPhone: user.phone || "",
+      relation: event.relation || user.relation || "家属",
+      status: "pending",
+      source: event.source || "invite",
+      createdAt: now,
+      updatedAt: now
+    }
+  });
+
+  return {
+    success: true,
+    requestId: result._id,
+    status: "pending"
+  };
+}
+
+async function getMyBindingRequests() {
+  const user = await getCurrentUser();
+  if (normalizeUserType(user) !== "family") {
+    return [];
+  }
+
+  const result = await db
+    .collection(COLLECTION_NAMES.bindingRequests)
+    .where({ familyUserId: user._id })
+    .get();
+
+  return result.data
+    .slice()
+    .sort((a, b) => `${b.updatedAt || b.createdAt || ""}`.localeCompare(`${a.updatedAt || a.createdAt || ""}`))
+    .map((item) => ({
+      id: item._id,
+      elderId: item.elderId,
+      familyUserId: item.familyUserId,
+      familyName: item.familyName || user.name || "家属",
+      familyPhone: item.familyPhone || "",
+      relation: item.relation || "家属",
+      status: item.status || "pending",
+      createdAt: item.createdAt || "",
+      updatedAt: item.updatedAt || ""
+    }));
+}
+
+async function getBindingRequests() {
+  const user = await getCurrentUser();
+  if (!isElderUser(user)) {
+    throw new Error("只有老人可以查看绑定申请");
+  }
+
+  const result = await db
+    .collection(COLLECTION_NAMES.bindingRequests)
+    .where({ elderId: user._id })
+    .get();
+
+  return result.data
+    .slice()
+    .sort((a, b) => `${b.createdAt || ""}`.localeCompare(`${a.createdAt || ""}`))
+    .map((item) => ({
+      id: item._id,
+      familyUserId: item.familyUserId,
+      name: item.familyName || "家属",
+      phone: item.familyPhone || "",
+      relation: item.relation || "家属",
+      status: item.status || "pending",
+      createdAt: item.createdAt || "",
+      updatedAt: item.updatedAt || ""
+    }));
+}
+
+async function approveBindingRequest(event = {}) {
+  if (!event.requestId) {
+    throw new Error("缺少申请ID");
+  }
+
+  const user = await getCurrentUser();
+  if (!isElderUser(user)) {
+    throw new Error("只有老人可以审批绑定申请");
+  }
+
+  const requestRes = await db.collection(COLLECTION_NAMES.bindingRequests).doc(event.requestId).get();
+  const request = requestRes.data;
+  if (!request || request.elderId !== user._id) {
+    throw new Error("申请不存在");
+  }
+
+  const now = toIsoDate();
+  await db.collection(COLLECTION_NAMES.bindingRequests).doc(event.requestId).update({
+    data: {
+      status: "approved",
+      updatedAt: now,
+      approvedAt: now,
+      approvedBy: user._id
+    }
+  });
+
+  await db.collection(COLLECTION_NAMES.users).doc(request.familyUserId).update({
+    data: {
+      boundElderId: user._id,
+      boundAt: now
+    }
+  });
+
+  return { success: true };
+}
+
+async function rejectBindingRequest(event = {}) {
+  if (!event.requestId) {
+    throw new Error("缺少申请ID");
+  }
+
+  const user = await getCurrentUser();
+  if (!isElderUser(user)) {
+    throw new Error("只有老人可以审批绑定申请");
+  }
+
+  const requestRes = await db.collection(COLLECTION_NAMES.bindingRequests).doc(event.requestId).get();
+  const request = requestRes.data;
+  if (!request || request.elderId !== user._id) {
+    throw new Error("申请不存在");
+  }
+
+  await db.collection(COLLECTION_NAMES.bindingRequests).doc(event.requestId).update({
+    data: {
+      status: "rejected",
+      updatedAt: toIsoDate(),
+      rejectedAt: toIsoDate(),
+      rejectedBy: user._id
     }
   });
 
@@ -916,6 +1130,70 @@ function formatHealthLabel(date) {
   return normalized ? normalized.slice(5) : "";
 }
 
+function formatTrendRecord(record = {}) {
+  const pressure = parseBloodPressure(record.bloodPressure || "");
+  const systolic = record.systolic !== undefined && record.systolic !== null ? Number(record.systolic) : pressure.systolic;
+  const diastolic = record.diastolic !== undefined && record.diastolic !== null ? Number(record.diastolic) : pressure.diastolic;
+
+  return {
+    date: record.recordDate || record.dateKey || record.createdAt || "",
+    dateKey: record.dateKey || normalizeDateOnly(record.recordDate || record.createdAt),
+    label: record.label || getDateLabel(record.recordDate || record.dateKey || record.createdAt),
+    bloodPressure: record.bloodPressure || (systolic !== null && diastolic !== null ? `${systolic}/${diastolic}` : ""),
+    systolic,
+    diastolic,
+    heartRate: parseNumberValue(record.heartRate),
+    bloodSugar: parseNumberValue(record.bloodSugar)
+  };
+}
+
+function buildFallbackTrend(healthStatus = {}) {
+  const item = formatTrendRecord({
+    recordDate: getDateKey(),
+    dateKey: getDateKey(),
+    label: getDateLabel(getDateKey()),
+    bloodPressure: healthStatus.bloodPressure || "",
+    heartRate: healthStatus.heartRate,
+    bloodSugar: healthStatus.bloodSugar,
+    createdAt: toIsoDate()
+  });
+
+  return item.systolic !== null || item.diastolic !== null || item.heartRate !== null || item.bloodSugar !== null ? [item] : [];
+}
+
+function formatTrendRecord(record = {}) {
+  const pressure = parseBloodPressure(record.bloodPressure || "");
+  const systolic = record.systolic !== undefined && record.systolic !== null ? Number(record.systolic) : pressure.systolic;
+  const diastolic = record.diastolic !== undefined && record.diastolic !== null ? Number(record.diastolic) : pressure.diastolic;
+
+  return {
+    date: record.recordDate || record.dateKey || record.createdAt || "",
+    dateKey: record.dateKey || normalizeDateOnly(record.recordDate || record.createdAt),
+    label: record.label || getDateLabel(record.recordDate || record.dateKey || record.createdAt),
+    bloodPressure: record.bloodPressure || (systolic !== null && diastolic !== null ? `${systolic}/${diastolic}` : ""),
+    systolic,
+    diastolic,
+    heartRate: parseNumberValue(record.heartRate),
+    bloodSugar: parseNumberValue(record.bloodSugar)
+  };
+}
+
+function buildFallbackTrend(healthStatus = {}) {
+  const item = formatTrendRecord({
+    recordDate: getDateKey(),
+    dateKey: getDateKey(),
+    label: getDateLabel(getDateKey()),
+    bloodPressure: healthStatus.bloodPressure || "",
+    heartRate: healthStatus.heartRate,
+    bloodSugar: healthStatus.bloodSugar,
+    createdAt: toIsoDate()
+  });
+
+  return item.systolic !== null || item.diastolic !== null || item.heartRate !== null || item.bloodSugar !== null
+    ? [item]
+    : [];
+}
+
 function getHealthAlerts(measurement = {}) {
   const alerts = [];
   const pressure = parseBloodPressure(measurement.bloodPressure);
@@ -1046,7 +1324,12 @@ async function getHealthInfo(event = {}) {
     heartRate: currentHealth.heartRate || (latestMeasurement && latestMeasurement.heartRate) || null,
     bloodSugar: currentHealth.bloodSugar || (latestMeasurement && latestMeasurement.bloodSugar) || ""
   };
-  const healthTrend = buildHealthTrend(measurements);
+  const formattedTrend = measurements
+    .slice()
+    .sort((a, b) => `${a.dateKey || a.recordDate || a.createdAt || ""}`.localeCompare(`${b.dateKey || b.recordDate || b.createdAt || ""}`))
+    .map(formatTrendRecord)
+    .filter((item) => item.systolic !== null || item.diastolic !== null || item.heartRate !== null || item.bloodSugar !== null);
+  const healthTrend = formattedTrend.length ? formattedTrend.slice(-7) : buildFallbackTrend(currentHealth);
   const healthAlerts = getHealthAlerts({
     bloodPressure: todayHealth.bloodPressure,
     heartRate: todayHealth.heartRate,
@@ -1098,7 +1381,9 @@ async function getHealthInfo(event = {}) {
       frequency: item.frequency,
       dosage: item.dosage,
       time: item.time,
-      notes: item.notes
+      notes: item.notes,
+      reminderEnabled: !!item.reminderEnabled,
+      reminderTime: item.reminderTime || ""
     }))
   };
 }
@@ -1142,6 +1427,8 @@ async function addMedication(event = {}) {
       dosage: event.dosage || "",
       time: event.time || "",
       notes: event.notes || "",
+      reminderEnabled: !!event.reminderEnabled,
+      reminderTime: event.reminderEnabled ? (event.reminderTime || "") : "",
       createdAt: new Date().toISOString()
     }
   });
@@ -1210,6 +1497,45 @@ async function updateTodayHealth(event = {}) {
     await db.collection(COLLECTION_NAMES.users).doc(elderId).update({
       data: updateData
     });
+
+    const todayKey = getDateKey();
+    const now = toIsoDate();
+    const bloodPressure = event.bloodPressure !== undefined ? String(event.bloodPressure || "").trim() : "";
+    const parsedPressure = parseBloodPressure(bloodPressure);
+    const heartRate = event.heartRate !== undefined ? parseNumberValue(event.heartRate) : null;
+    const bloodSugar = event.bloodSugar !== undefined ? String(event.bloodSugar || "").trim() : "";
+    const existing = await db
+      .collection(COLLECTION_NAMES.healthRecords)
+      .where({ elderId, type: "dailyHealth", dateKey: todayKey })
+      .get();
+
+    const trendPayload = {
+      elderId,
+      type: "dailyHealth",
+      recordDate: todayKey,
+      dateKey: todayKey,
+      label: getDateLabel(todayKey),
+      bloodPressure,
+      systolic: parsedPressure.systolic,
+      diastolic: parsedPressure.diastolic,
+      heartRate,
+      bloodSugar,
+      recorderRole: normalizeUserType(user),
+      updatedAt: now
+    };
+
+    if (existing.data.length) {
+      await db.collection(COLLECTION_NAMES.healthRecords).doc(existing.data[0]._id).update({
+        data: trendPayload
+      });
+    } else {
+      await db.collection(COLLECTION_NAMES.healthRecords).add({
+        data: {
+          ...trendPayload,
+          createdAt: now
+        }
+      });
+    }
   }
 
   return { success: true };
@@ -1837,8 +2163,20 @@ exports.main = async (event) => {
         return await login(event);
       case "getElderList":
         return await getElderList();
+      case "getElderBindInfo":
+        return await getElderBindInfo(event);
       case "bindElder":
         return await bindElder(event);
+      case "createBindingRequest":
+        return await createBindingRequest(event);
+      case "getMyBindingRequests":
+        return await getMyBindingRequests();
+      case "getBindingRequests":
+        return await getBindingRequests();
+      case "approveBindingRequest":
+        return await approveBindingRequest(event);
+      case "rejectBindingRequest":
+        return await rejectBindingRequest(event);
       case "getPersonList":
         return await getPersonList();
       case "getFamilyTree":

@@ -6,100 +6,105 @@
   </view>
 
   <view wx:else>
-    <view class="section hero-section">
-      <view class="section-header">
-        <view>
-          <view class="section-title">今日健康概览</view>
-          <view class="section-subtitle">家属可以代录每日数据，系统会自动生成提醒</view>
-        </view>
-        <view class="add-btn primary" bindtap="showAddMeasurement">+ 代录数据</view>
-      </view>
-
-      <view class="health-grid">
-        <view wx:for="{{todayCards}}" wx:key="key" class="overview-card">
-          <view class="overview-label">{{item.label}}</view>
-          <view class="overview-value">{{item.value}}</view>
-          <view wx:if="{{item.unit}}" class="overview-unit">{{item.unit}}</view>
-          <view class="status-pill status-{{item.status.type}}">{{item.status.text}}</view>
-        </view>
-      </view>
-
-      <view wx:if="{{latestMeasurement}}" class="latest-note">
-        最近一次记录：{{latestMeasurement.recordDate || "--"}}<text wx:if="{{latestMeasurement.notes}}"> · {{latestMeasurement.notes}}</text>
-      </view>
-    </view>
-
     <view class="section">
       <view class="section-header">
-        <view class="section-title">异常提醒</view>
+        <view class="section-title">趋势概览</view>
+        <text class="tip">更新今日健康后会自动沉淀趋势记录</text>
       </view>
 
-      <view wx:if="{{!healthAlerts.length}}" class="empty-tip">当前没有明显异常提醒</view>
-
-      <view wx:for="{{healthAlerts}}" wx:key="text" class="alert-card alert-{{item.level}}">
-        <view class="alert-text">{{item.text}}</view>
+      <view class="overview-card">
+        <view class="overview-main">
+          <view class="overview-label">血压</view>
+          <view class="overview-value">{{pressureOverview.current}}</view>
+          <view class="overview-subtitle">适合快速观察近期状态</view>
+        </view>
+        <view class="overview-side">
+          <view class="mini-metric">
+            <text class="mini-metric-label">心率</text>
+            <text class="mini-metric-value">{{todayHealth.heartRate || "--"}} 次/分</text>
+          </view>
+          <view class="mini-metric">
+            <text class="mini-metric-label">血糖</text>
+            <text class="mini-metric-value">{{todayHealth.bloodSugar || "--"}} mmol/L</text>
+          </view>
+        </view>
       </view>
-    </view>
 
-    <view class="section">
-      <view class="section-header">
-        <view class="section-title">血压趋势</view>
-      </view>
+      <view class="chart-card">
+        <view class="chart-header">
+          <view>
+            <view class="chart-title">血压变化</view>
+            <view class="chart-subtitle">最近 {{pressureTrend.length || 0}} 条记录</view>
+          </view>
+        </view>
 
-      <view wx:if="{{!bloodPressureTrend.length}}" class="empty-tip">录入几次血压后，这里会显示趋势图</view>
+        <view wx:if="{{pressureTrend.length === 0}}" class="chart-empty">
+          暂无历史趋势，录入今日数据后会自动生成血压图表。
+        </view>
 
-      <view wx:else class="trend-card">
-        <view wx:for="{{bloodPressureTrend}}" wx:key="date" class="trend-row">
-          <view class="trend-date">{{item.label}}</view>
-          <view class="trend-bars">
-            <view class="trend-bar-track">
-              <view class="trend-bar trend-bar-primary" style="width: {{item.systolicWidth}};"></view>
-            </view>
-            <view class="trend-bar-track">
-              <view class="trend-bar trend-bar-secondary" style="width: {{item.diastolicWidth}};"></view>
+        <scroll-view wx:else class="pressure-track" scroll-x enhanced show-scrollbar="{{false}}">
+          <view class="pressure-items">
+            <view wx:for="{{pressureTrend}}" wx:key="label" class="pressure-item">
+              <view class="pressure-value">{{item.displayValue}}</view>
+              <view class="pressure-sticks">
+                <view class="pressure-stick systolic animate-rise" style="height: {{item.systolicHeight}}rpx;"></view>
+                <view class="pressure-stick diastolic animate-rise" style="height: {{item.diastolicHeight}}rpx;"></view>
+              </view>
+              <view class="pressure-label">{{item.label}}</view>
             </view>
           </view>
-          <view class="trend-value">{{item.systolic}}/{{item.diastolic}}</view>
+        </scroll-view>
+      </view>
+
+      <view wx:for="{{chartCards}}" wx:key="key" class="chart-card">
+        <view class="chart-header">
+          <view>
+            <view class="chart-title">{{item.title}}</view>
+            <view class="chart-subtitle">{{item.changeText}}</view>
+          </view>
+          <view class="chart-current">{{item.latestValue}}{{item.empty ? "" : item.unit}}</view>
         </view>
-      </view>
-    </view>
 
-    <view class="section">
-      <view class="section-header">
-        <view class="section-title">血糖趋势</view>
-      </view>
+        <view wx:if="{{item.empty}}" class="chart-empty">
+          暂无{{item.title}}数据。
+        </view>
 
-      <view wx:if="{{!bloodSugarTrend.length}}" class="empty-tip">录入几次血糖后，这里会显示趋势图</view>
-
-      <view wx:else class="trend-card">
-        <view wx:for="{{bloodSugarTrend}}" wx:key="date" class="trend-row single-trend-row">
-          <view class="trend-date">{{item.label}}</view>
-          <view class="trend-bars">
-            <view class="trend-bar-track single-track">
-              <view class="trend-bar trend-bar-accent" style="width: {{item.width}};"></view>
+        <scroll-view wx:else class="bar-track" scroll-x enhanced show-scrollbar="{{false}}">
+          <view class="bar-list">
+            <view wx:for="{{item.bars}}" wx:key="label" class="bar-item">
+              <view class="bar-value">{{item.valueText}}</view>
+              <view class="bar-column">
+                <view class="bar-fill animate-rise" style="height: {{item.height}}rpx;"></view>
+              </view>
+              <view class="bar-label">{{item.label}}</view>
             </view>
           </view>
-          <view class="trend-value">{{item.value}}</view>
-        </view>
+        </scroll-view>
       </view>
     </view>
 
     <view class="section">
       <view class="section-header">
-        <view class="section-title">代录历史</view>
+        <view class="section-title">今日健康</view>
+        <text class="tip">点击卡片可直接编辑</text>
       </view>
 
-      <view wx:if="{{measurementHistory.length === 0}}" class="empty-tip">还没有代录记录</view>
+      <view class="data-card" bindtap="editTodayHealth">
+        <view class="data-label">血压</view>
+        <view class="data-value">{{todayHealth.bloodPressure || "--/--"}}</view>
+        <view class="edit-icon">编辑</view>
+      </view>
 
-      <view wx:for="{{measurementHistory}}" wx:key="id" class="record-card">
-        <view class="record-info">
-          <view class="record-name">{{item.recordDate || "--"}}</view>
-          <view class="record-meta">
-            血压：{{item.bloodPressure || "--/--"}} · 心率：{{item.heartRate || "--"}} · 血糖：{{item.bloodSugar || "--"}}
-          </view>
-          <view wx:if="{{item.notes}}" class="record-notes">备注：{{item.notes}}</view>
-        </view>
-        <view class="delete-btn" catchtap="deleteRecord" data-id="{{item.id}}">删除</view>
+      <view class="data-card" bindtap="editHeartRate">
+        <view class="data-label">心率</view>
+        <view class="data-value">{{todayHealth.heartRate || "--"}} 次/分</view>
+        <view class="edit-icon">编辑</view>
+      </view>
+
+      <view class="data-card" bindtap="editBloodSugar">
+        <view class="data-label">血糖</view>
+        <view class="data-value">{{todayHealth.bloodSugar || "--"}} mmol/L</view>
+        <view class="edit-icon">编辑</view>
       </view>
     </view>
 
@@ -109,9 +114,11 @@
         <view class="add-btn" bindtap="showAddHistory">+ 添加</view>
       </view>
 
-      <view wx:if="{{medicalHistory.length === 0}}" class="empty-tip">暂无病史记录</view>
+      <view wx:if="{{medicalHistory.length === 0}}" class="empty-tip">
+        暂无病史记录，点击右上角添加
+      </view>
 
-      <view wx:for="{{medicalHistory}}" wx:key="id" class="record-card">
+      <view wx:for="{{medicalHistory}}" wx:key="id" class="data-card record-card">
         <view class="record-info">
           <view class="record-name">{{item.name}}</view>
           <view class="record-meta">{{item.diagnoseYear}} 年确诊</view>
@@ -127,14 +134,17 @@
         <view class="add-btn" bindtap="showAddMedication">+ 添加</view>
       </view>
 
-      <view wx:if="{{medications.length === 0}}" class="empty-tip">暂无用药记录</view>
+      <view wx:if="{{medications.length === 0}}" class="empty-tip">
+        暂无用药记录，点击右上角添加
+      </view>
 
-      <view wx:for="{{medications}}" wx:key="id" class="record-card">
+      <view wx:for="{{medications}}" wx:key="id" class="data-card record-card">
         <view class="record-info">
           <view class="record-name">{{item.name}}</view>
           <view class="record-meta">{{item.frequency || "未填写频率"}}</view>
           <view wx:if="{{item.dosage}}" class="record-notes">剂量：{{item.dosage}}</view>
           <view wx:if="{{item.time}}" class="record-notes">服用时间：{{item.time}}</view>
+          <view wx:if="{{item.reminderEnabled && item.reminderTime}}" class="record-tag">提醒时间：{{item.reminderTime}}</view>
           <view wx:if="{{item.notes}}" class="record-notes">备注：{{item.notes}}</view>
         </view>
         <view class="delete-btn" catchtap="deleteRecord" data-id="{{item.id}}">删除</view>
@@ -144,41 +154,14 @@
 
   <view class="modal-mask" wx:if="{{showAddModal}}" bindtap="closeModal">
     <view class="modal-content" catchtap="noop">
-      <view class="modal-title">
-        {{addType === "measurement" ? "代录健康数据" : addType === "history" ? "添加病史" : "添加用药"}}
-      </view>
-
-      <view wx:if="{{addType === 'measurement'}}">
-        <view class="modal-item">
-          <view class="modal-label">记录日期</view>
-          <picker mode="date" value="{{newRecord.recordDate}}" bindchange="onDateChange">
-            <view class="modal-picker">{{newRecord.recordDate || "请选择日期"}}</view>
-          </picker>
-        </view>
-        <view class="modal-item">
-          <view class="modal-label">血压</view>
-          <input class="modal-input" placeholder="例如 128/82" data-field="bloodPressure" value="{{newRecord.bloodPressure}}" bindinput="onInputChange" />
-        </view>
-        <view class="modal-item">
-          <view class="modal-label">心率</view>
-          <input class="modal-input" type="number" placeholder="例如 72" data-field="heartRate" value="{{newRecord.heartRate}}" bindinput="onInputChange" />
-        </view>
-        <view class="modal-item">
-          <view class="modal-label">血糖</view>
-          <input class="modal-input" type="digit" placeholder="例如 5.6" data-field="bloodSugar" value="{{newRecord.bloodSugar}}" bindinput="onInputChange" />
-        </view>
-        <view class="modal-item">
-          <view class="modal-label">备注</view>
-          <input class="modal-input" placeholder="例如 饭后两小时" data-field="notes" value="{{newRecord.notes}}" bindinput="onInputChange" />
-        </view>
-      </view>
+      <view class="modal-title">{{addType === "history" ? "添加病史" : "添加用药"}}</view>
 
       <view wx:if="{{addType === 'history'}}">
         <view class="modal-item">
-          <input class="modal-input" placeholder="病史名称，例如高血压" data-field="name" value="{{newRecord.name}}" bindinput="onInputChange" />
+          <input class="modal-input" placeholder="病史名称，如：高血压" data-field="name" value="{{newRecord.name}}" bindinput="onInputChange" />
         </view>
         <view class="modal-item">
-          <input class="modal-input" type="number" placeholder="确诊年份" data-field="diagnoseYear" value="{{newRecord.diagnoseYear}}" bindinput="onInputChange" />
+          <input class="modal-input" type="number" placeholder="确诊年份，如：2020" data-field="diagnoseYear" value="{{newRecord.diagnoseYear}}" bindinput="onInputChange" />
         </view>
         <view class="modal-item">
           <input class="modal-input" placeholder="备注，可选" data-field="notes" value="{{newRecord.notes}}" bindinput="onInputChange" />
@@ -187,16 +170,26 @@
 
       <view wx:if="{{addType === 'medication'}}">
         <view class="modal-item">
-          <input class="modal-input" placeholder="药物名称" data-field="name" value="{{newRecord.name}}" bindinput="onInputChange" />
+          <input class="modal-input" placeholder="药物名称，如：降压药" data-field="name" value="{{newRecord.name}}" bindinput="onInputChange" />
         </view>
         <view class="modal-item">
-          <input class="modal-input" placeholder="服用频率" data-field="frequency" value="{{newRecord.frequency}}" bindinput="onInputChange" />
+          <input class="modal-input" placeholder="服用频率，如：每日 1 次" data-field="frequency" value="{{newRecord.frequency}}" bindinput="onInputChange" />
         </view>
         <view class="modal-item">
-          <input class="modal-input" placeholder="剂量" data-field="dosage" value="{{newRecord.dosage}}" bindinput="onInputChange" />
+          <input class="modal-input" placeholder="剂量，如：1 片" data-field="dosage" value="{{newRecord.dosage}}" bindinput="onInputChange" />
         </view>
         <view class="modal-item">
-          <input class="modal-input" placeholder="服用时间" data-field="time" value="{{newRecord.time}}" bindinput="onInputChange" />
+          <input class="modal-input" placeholder="服用时间，如：早饭后" data-field="time" value="{{newRecord.time}}" bindinput="onInputChange" />
+        </view>
+        <view class="modal-item switch-item">
+          <view class="switch-copy">
+            <view class="switch-title">开启用药提醒</view>
+            <view class="switch-desc">先把提醒时间记录下来，认证完成后可接通知能力。</view>
+          </view>
+          <switch color="#4a90e2" checked="{{newRecord.reminderEnabled}}" bindchange="onReminderSwitch" />
+        </view>
+        <view wx:if="{{newRecord.reminderEnabled}}" class="modal-item">
+          <input class="modal-input" placeholder="提醒时间，如：09:00" data-field="reminderTime" value="{{newRecord.reminderTime}}" bindinput="onInputChange" />
         </view>
         <view class="modal-item">
           <input class="modal-input" placeholder="备注，可选" data-field="notes" value="{{newRecord.notes}}" bindinput="onInputChange" />
@@ -205,7 +198,7 @@
 
       <view class="modal-actions">
         <button class="modal-btn cancel" bindtap="closeModal">取消</button>
-        <button class="modal-btn confirm" bindtap="submitNewRecord">保存</button>
+        <button class="modal-btn confirm" bindtap="submitNewRecord">确定</button>
       </view>
     </view>
   </view>
