@@ -1,7 +1,7 @@
 .page {
   min-height: 100vh;
   padding: 40rpx;
-  background: linear-gradient(180deg, #f5f9ff 0%, #f8fbff 34%, #f8f9fb 100%);
+  background: linear-gradient(180deg, #faf6ef 0%, #f7f2ea 34%, #f7f5f1 100%);
 }
 
 .title {
@@ -9,7 +9,7 @@
   font-size: 44rpx;
   font-weight: 700;
   text-align: center;
-  color: #17375d;
+  color: #4e3a28;
 }
 
 .loading-container {
@@ -38,7 +38,7 @@
 .section-title {
   font-size: 34rpx;
   font-weight: 700;
-  color: #3979cf;
+  color: #7f6347;
 }
 
 .tip {
@@ -60,7 +60,7 @@
 .overview-card {
   display: flex;
   gap: 24rpx;
-  background: linear-gradient(135deg, #f7fbff 0%, #eef5ff 100%);
+  background: linear-gradient(135deg, #fff9f1 0%, #f6efe2 100%);
 }
 
 .overview-main {
@@ -76,7 +76,7 @@
   margin-top: 12rpx;
   font-size: 60rpx;
   font-weight: 700;
-  color: #1f4f93;
+  color: #7d5a34;
 }
 
 .overview-subtitle {
@@ -111,7 +111,7 @@
   margin-top: 8rpx;
   font-size: 28rpx;
   font-weight: 700;
-  color: #1e4f94;
+  color: #6b563d;
 }
 
 .chart-header {

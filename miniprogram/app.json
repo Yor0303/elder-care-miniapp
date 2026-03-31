@@ -22,7 +22,7 @@
     "pages/family/life-guide-edit",
     "pages/family/member-edit",
     "pages/family/memory-edit",
-    "pages/family/bind",
+    "pages/family/bind/index",
     "pages/memories/index",
     "components/tree-node/tree-node"
   ],

@@ -1,0 +1,142 @@
+<view class="container">
+  <view class="bind-shell">
+    <view class="shell-head">
+      <view>
+        <view class="shell-title">绑定老人</view>
+        <view class="shell-subtitle">扫码最方便，没有二维码再换其他方式</view>
+      </view>
+      <view class="shell-badge">家属端</view>
+    </view>
+
+    <view wx:if="{{currentBoundElder}}" class="inline-card current-card">
+      <view class="card-head">
+        <view>
+          <view class="panel-title">当前已绑定</view>
+          <view class="panel-subtitle">已经连接到这位老人</view>
+        </view>
+        <view class="status-pill success">已绑定</view>
+      </view>
+
+      <view class="person-summary">
+        <view class="person-avatar">👴</view>
+        <view class="person-main">
+          <view class="person-name">{{currentBoundElder.name || "未命名老人"}}</view>
+          <view class="person-meta">
+            <text wx:if="{{currentBoundElder.gender}}">{{currentBoundElder.gender}}</text>
+            <text wx:if="{{currentBoundElder.age}}">{{currentBoundElder.age}} 岁</text>
+            <text wx:if="{{currentBoundElder.phone}}">{{currentBoundElder.phone}}</text>
+          </view>
+        </view>
+      </view>
+
+      <button class="primary-btn" bindtap="enterFamilyHome">🏠 进入家属空间</button>
+    </view>
+
+    <view class="mode-tabs">
+      <view class="mode-chip {{mode === 'scan' ? 'active' : ''}}" data-mode="scan" bindtap="setMode">📷 扫码</view>
+      <view class="mode-chip {{mode === 'phone' ? 'active' : ''}}" data-mode="phone" bindtap="setMode">📱 手机号</view>
+      <view class="mode-chip {{mode === 'invite' ? 'active' : ''}}" data-mode="invite" bindtap="setMode">🔗 邀请</view>
+    </view>
+
+    <button class="demo-btn" bindtap="enterDemoMode" loading="{{demoLoading}}">🎬 一键进入演示</button>
+
+    <view class="action-area">
+      <view wx:if="{{mode === 'scan'}}" class="inline-card scan-card">
+        <view class="scan-visual">📷</view>
+        <view class="panel-title center">扫码绑定</view>
+        <view class="panel-subtitle center">扫描老人二维码后直接进入绑定申请</view>
+        <button class="primary-btn large-btn" bindtap="scanBindCode">📷 立即扫码</button>
+      </view>
+
+      <view wx:if="{{mode === 'phone'}}" class="inline-card">
+        <view class="card-head compact-head">
+          <view>
+            <view class="panel-title">手机号查找</view>
+            <view class="panel-subtitle">输入老人绑定手机号</view>
+          </view>
+        </view>
+
+        <input
+          class="phone-input"
+          type="number"
+          maxlength="11"
+          placeholder="请输入老人手机号"
+          value="{{phone}}"
+          bindinput="onPhoneInput"
+        />
+
+        <button class="secondary-btn" bindtap="lookupByPhone" loading="{{loading}}">🔎 查找老人</button>
+      </view>
+
+      <view wx:if="{{mode === 'invite'}}" class="inline-card">
+        <view class="card-head compact-head">
+          <view>
+            <view class="panel-title">邀请链接</view>
+            <view class="panel-subtitle">从家人分享的链接进入这里</view>
+          </view>
+        </view>
+
+        <view wx:if="{{loading && requestSource === 'share'}}" class="state-card">正在读取邀请信息...</view>
+        <view wx:elif="{{!loading && !sharedElder}}" class="state-card">当前没有可用的邀请信息</view>
+      </view>
+    </view>
+
+    <view wx:if="{{sharedElder}}" class="inline-card result-card">
+      <view class="card-head">
+        <view>
+          <view class="panel-title">{{requestSource === 'phone' ? '找到的老人' : requestSource === 'scan' ? '扫码结果' : '邀请信息'}}</view>
+          <view class="panel-subtitle">确认无误后提交绑定申请</view>
+        </view>
+        <view class="status-pill">
+          {{requestSource === 'phone' ? '手机号匹配' : requestSource === 'scan' ? '扫码识别' : '邀请进入'}}
+        </view>
+      </view>
+
+      <view class="person-summary strong-summary">
+        <view class="person-avatar accent">👵</view>
+        <view class="person-main">
+          <view class="person-name">{{sharedElder.name}}</view>
+          <view class="person-meta">
+            <text wx:if="{{sharedElder.gender}}">{{sharedElder.gender}}</text>
+            <text wx:if="{{sharedElder.age}}">{{sharedElder.age}} 岁</text>
+            <text wx:if="{{sharedElder.maskedPhone}}">{{sharedElder.maskedPhone}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="picker-card">
+        <view class="picker-label">关系</view>
+        <picker mode="selector" range="{{relationOptions}}" value="{{relationIndex < 0 ? 0 : relationIndex}}" bindchange="onRelationChange">
+          <view class="relation-picker">
+            <text class="{{relation ? '' : 'placeholder'}}">{{relation || "请选择关系"}}</text>
+            <text class="arrow">></text>
+          </view>
+        </picker>
+      </view>
+
+      <button wx:if="{{!requestSent}}" class="primary-btn" bindtap="submitInviteRequest">📝 提交绑定申请</button>
+      <view wx:else class="state-card success">申请已提交，等待老人确认</view>
+    </view>
+
+    <view class="inline-card pending-card">
+      <view class="card-head compact-head">
+        <view>
+          <view class="panel-title">我的申请</view>
+          <view class="panel-subtitle">查看绑定进度</view>
+        </view>
+      </view>
+
+      <block wx:if="{{pendingRequests.length}}">
+        <view wx:for="{{pendingRequests}}" wx:key="id" class="pending-item">
+          <view class="pending-main">
+            <view class="pending-name">{{item.elderName}}</view>
+            <view class="pending-meta">{{item.relation}} · {{item.statusText}}</view>
+          </view>
+          <view class="pending-badge {{item.statusClass}}">{{item.statusText}}</view>
+        </view>
+      </block>
+
+      <view wx:else class="empty-inline">还没有绑定申请</view>
+    </view>
+  </view>
+</view>

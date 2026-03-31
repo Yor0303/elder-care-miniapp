@@ -3,8 +3,10 @@ const {
   findElderByPhoneAPI,
   createBindingRequestAPI,
   getMyBindingRequestsAPI,
-  getElderInfoAPI
-} = require("../../api/user");
+  getElderInfoAPI,
+  importDemoDataAPI,
+  bindCurrentUserToDemoElderAPI
+} = require("../../../api/user");
 
 const RELATION_OPTIONS = ["配偶", "子女", "孙辈", "兄弟姐妹", "亲属", "朋友", "护工", "其他"];
 
@@ -32,8 +34,9 @@ function scanCode() {
 
 Page({
   data: {
-    mode: "phone",
+    mode: "scan",
     loading: false,
+    demoLoading: false,
     phone: "",
     sharedElder: null,
     requestSent: false,
@@ -123,7 +126,7 @@ Page({
         requestSource: source,
         loading: false
       });
-    } catch (error) {
+    } catch (_) {
       this.setData({
         loading: false,
         sharedElder: null
@@ -176,7 +179,16 @@ Page({
         return parsed.inviteElderId || parsed.elderId;
       }
     } catch (_) {
-      // noop
+      // ignore
+    }
+
+    const sceneMatch = value.match(/[?&]scene=([^&#]+)/);
+    if (sceneMatch && sceneMatch[1]) {
+      const decodedScene = decodeURIComponent(sceneMatch[1]);
+      const innerMatch = decodedScene.match(/(?:^|&)(?:inviteElderId|elderId)=([^&]+)/);
+      if (innerMatch && innerMatch[1]) {
+        return innerMatch[1];
+      }
     }
 
     const queryMatch = value.match(/[?&](?:inviteElderId|elderId)=([^&#]+)/);
@@ -195,10 +207,10 @@ Page({
   async scanBindCode() {
     try {
       const res = await scanCode();
-      const elderId = this.parseScannedElderId(res && res.result);
+      const elderId = this.parseScannedElderId((res && (res.path || res.result)) || "");
       if (!elderId) {
         wx.showToast({
-          title: "未识别到有效的邀请码",
+          title: "未识别到有效二维码",
           icon: "none"
         });
         return;
@@ -217,14 +229,29 @@ Page({
     }
   },
 
-  getPreviewTitle() {
-    switch (this.data.requestSource) {
-      case "phone":
-        return "查找到的老人";
-      case "scan":
-        return "扫描结果";
-      default:
-        return "邀请信息";
+  async enterDemoMode() {
+    if (this.data.demoLoading) return;
+
+    try {
+      this.setData({ demoLoading: true });
+      wx.showLoading({ title: "准备演示中" });
+      await importDemoDataAPI();
+      const result = await bindCurrentUserToDemoElderAPI();
+      const elderId = result && result.elderId;
+      if (elderId) {
+        wx.setStorageSync("elderId", elderId);
+      }
+      wx.hideLoading();
+      this.setData({ demoLoading: false });
+      wx.showToast({ title: "已进入演示数据", icon: "success" });
+      this.enterFamilyHome();
+    } catch (error) {
+      wx.hideLoading();
+      this.setData({ demoLoading: false });
+      wx.showToast({
+        title: (error && (error.message || error.msg)) || "进入演示失败",
+        icon: "none"
+      });
     }
   },
 
@@ -232,7 +259,7 @@ Page({
     const elder = this.data.sharedElder;
     if (!elder || !elder.id) return;
     if (!this.data.relation) {
-      wx.showToast({ title: "请选择你与老人的关系", icon: "none" });
+      wx.showToast({ title: "请选择关系", icon: "none" });
       return;
     }
 
@@ -251,7 +278,7 @@ Page({
           currentBoundElder: elder,
           requestSent: false
         });
-        wx.showToast({ title: "你已绑定这位老人", icon: "none" });
+        wx.showToast({ title: "你已经绑定这位老人", icon: "none" });
         return;
       }
 
@@ -260,7 +287,7 @@ Page({
       });
 
       if (result && result.alreadyPending) {
-        wx.showToast({ title: "你已提交过申请", icon: "none" });
+        wx.showToast({ title: "你已经提交过申请", icon: "none" });
       } else {
         wx.showToast({ title: "申请已提交", icon: "success" });
       }

@@ -1,26 +1,67 @@
 <view class="page">
-  <view class="logo">忆站</view>
-  <view class="subtitle">帮助记住家人与回忆</view>
-
-  <view wx:if="{{inviteElderId}}" class="invite-tip">
-    家人向你发来了绑定邀请，登录家属端后可直接完成绑定
+  <view class="hero">
+    <view class="brand">忆站</view>
+    <view class="hero-title">先注册身份，再进入对应端</view>
+    <view class="hero-subtitle">注册后登录，系统会按你的身份进入老人端或家属端</view>
   </view>
 
-  <view class="illustration">👨‍👩‍👧</view>
-
-  <view class="card elder" bindtap="enterElder">
-    <view class="icon">👴</view>
-    <view class="info">
-      <view class="title">我是老人</view>
-      <view class="desc">查看家人与重要回忆</view>
-    </view>
+  <view wx:if="{{inviteElderId}}" class="invite-banner">
+    <view class="invite-title">📩 收到老人邀请</view>
+    <view class="invite-desc">建议注册或登录家属身份，登录后会直接进入绑定流程。</view>
   </view>
 
-  <view class="card family" bindtap="enterFamily">
-    <view class="icon">👨‍👩‍👧</view>
-    <view class="info">
-      <view class="title">我是家属</view>
-      <view class="desc">上传照片与重要记忆</view>
+  <view class="panel">
+    <view class="mode-switch">
+      <view class="mode-chip {{mode === 'register' ? 'active' : ''}}" data-mode="register" bindtap="switchMode">注册</view>
+      <view class="mode-chip {{mode === 'login' ? 'active' : ''}}" data-mode="login" bindtap="switchMode">登录</view>
     </view>
+
+    <block wx:if="{{mode === 'register'}}">
+      <view class="section-head">
+        <view class="section-title">选择注册身份</view>
+        <view class="section-desc">一个微信号对应一个身份，后续登录会按这个身份进入系统。</view>
+      </view>
+
+      <view class="role-grid">
+        <view class="role-card {{selectedRole === 'elder' ? 'selected' : ''}}" data-role="elder" bindtap="selectRole">
+          <view class="role-icon">👴</view>
+          <view class="role-title">老人</view>
+          <view class="role-desc">查看回忆、家人消息和健康信息</view>
+        </view>
+
+        <view class="role-card {{selectedRole === 'family' ? 'selected' : ''}}" data-role="family" bindtap="selectRole">
+          <view class="role-icon">👨‍👩‍👧</view>
+          <view class="role-title">家属</view>
+          <view class="role-desc">上传资料、管理成员、陪伴老人</view>
+        </view>
+      </view>
+
+      <button class="primary-btn" loading="{{loading}}" bindtap="submitRegister">
+        {{selectedRole === 'elder' ? '注册老人身份' : '注册家属身份'}}
+      </button>
+
+      <view class="switch-tip">
+        已经注册过了？
+        <text class="switch-link" data-mode="login" bindtap="switchMode">去登录</text>
+      </view>
+    </block>
+
+    <block wx:else>
+      <view class="section-head">
+        <view class="section-title">登录已注册账号</view>
+        <view class="section-desc">无需再次选择身份，登录后会自动进入对应页面。</view>
+      </view>
+
+      <view wx:if="{{registeredRoleLabel}}" class="registered-tip">
+        已注册身份：{{registeredRoleLabel}}
+      </view>
+
+      <button class="primary-btn" loading="{{loading}}" bindtap="submitLogin">微信一键登录</button>
+
+      <view class="switch-tip">
+        还没有注册？
+        <text class="switch-link" data-mode="register" bindtap="switchMode">去注册</text>
+      </view>
+    </block>
   </view>
 </view>

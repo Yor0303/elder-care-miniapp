@@ -1,10 +1,12 @@
-﻿const { getElderInfoAPI, getMemoriesAPI } = require("../../api/user");
+const { getElderInfoAPI, getMemoriesAPI, updateElderInfoAPI } = require("../../api/user");
 
 Page({
   data: {
     loading: true,
+    saving: false,
     elder: null,
-    selfMemories: []
+    selfMemories: [],
+    phone: ""
   },
 
   onLoad() {
@@ -37,12 +39,45 @@ Page({
       this.setData({
         elder,
         selfMemories,
+        phone: (elder && elder.phone) || "",
         loading: false
       });
     } catch (error) {
       console.error("load elder profile failed", error);
       this.setData({ loading: false });
       wx.showToast({ title: "加载失败", icon: "none" });
+    }
+  },
+
+  onPhoneInput(e) {
+    this.setData({ phone: e.detail.value });
+  },
+
+  async savePhone() {
+    if (this.data.saving) return;
+
+    try {
+      this.setData({ saving: true });
+      wx.showLoading({ title: "保存中..." });
+      await updateElderInfoAPI({
+        phone: this.data.phone.trim()
+      });
+      wx.hideLoading();
+      this.setData({
+        elder: {
+          ...(this.data.elder || {}),
+          phone: this.data.phone.trim()
+        }
+      });
+      wx.showToast({ title: "保存成功", icon: "success" });
+    } catch (error) {
+      wx.hideLoading();
+      wx.showToast({
+        title: (error && (error.message || error.errMsg)) || "保存失败",
+        icon: "none"
+      });
+    } finally {
+      this.setData({ saving: false });
     }
   }
 });

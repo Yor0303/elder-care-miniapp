@@ -1,6 +1,5 @@
-<!-- pages/family/member-edit.wxml -->
 <view class="page">
-  <view class="title">{{isEdit ? "编辑成员" : "新增成员"}}</view>
+  <view class="title">{{isEdit ? "✏️ 编辑成员" : "➕ 新增成员"}}</view>
 
   <view class="form">
     <view class="form-item">
@@ -12,7 +11,7 @@
         </view>
         <view wx:else class="avatar-upload" bindtap="chooseAvatar">
           <text class="avatar-plus">+</text>
-          <text class="avatar-text">上传照片</text>
+          <text class="avatar-text">🖼️ 上传照片</text>
         </view>
       </view>
     </view>
@@ -27,7 +26,7 @@
         </view>
         <view wx:else class="avatar-upload" bindtap="chooseFacePhoto">
           <text class="avatar-plus">+</text>
-          <text class="avatar-text">上传人脸照</text>
+          <text class="avatar-text">📸 上传人脸照</text>
         </view>
       </view>
     </view>
@@ -70,10 +69,10 @@
   </view>
 
   <button class="save-btn" bindtap="save" disabled="{{saving}}">
-    {{saving ? "保存中..." : "保存"}}
+    {{saving ? "保存中..." : "💾 保存"}}
   </button>
 
-  <button wx:if="{{isEdit}}" class="delete-btn" bindtap="delete">删除成员</button>
+  <button wx:if="{{isEdit}}" class="delete-btn" bindtap="delete">🗑️ 删除成员</button>
 
   <view class="picker-mask" wx:if="{{showRelationPicker}}" bindtap="hideRelationPicker">
     <view class="picker-content" catchtap="noop">

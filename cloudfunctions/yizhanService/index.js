@@ -10,7 +10,7 @@ cloud.init({
 
 const db = cloud.database();
 
-// 鏁版嵁搴撻泦鍚堝悕绉伴厤缃?
+// 数据库集合名称配置
 const COLLECTION_NAMES = {
   users: "users",
   persons: "persons",
@@ -43,6 +43,35 @@ function getDateLabel(value) {
 function parseNumberValue(value) {
   const num = Number.parseFloat(value);
   return Number.isFinite(num) ? num : null;
+}
+
+function normalizePhone(phone) {
+  const digits = String(phone || "").replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.length === 13 && digits.startsWith("86")) {
+    return digits.slice(2);
+  }
+  if (digits.length === 11) {
+    return digits;
+  }
+  return digits;
+}
+
+function maskPhone(phone) {
+  const normalized = normalizePhone(phone);
+  if (normalized.length !== 11) return normalized;
+  return `${normalized.slice(0, 3)}****${normalized.slice(7)}`;
+}
+
+function getBindingRequestStatusText(status) {
+  switch (status) {
+    case "approved":
+      return "已同意";
+    case "rejected":
+      return "已拒绝";
+    default:
+      return "审批中";
+  }
 }
 
 const FACE_MODEL_VERSION = "3.0";
@@ -214,7 +243,7 @@ async function markPersonFaceSyncFailed(personId, error) {
 }
 
 /**
- * 纭繚闆嗗悎瀛樺湪
+ * 确保集合存在
  */
 async function ensureCollections() {
   const collectionNames = Object.values(COLLECTION_NAMES);
@@ -312,14 +341,14 @@ function normalizeMemoryPersonRole(role, person) {
 }
 
 /**
- * 鑾峰彇褰撳墠鐢ㄦ埛
+ * 获取当前用户
  */
 async function getCurrentUser() {
   const wxContext = cloud.getWXContext();
   const result = await db.collection(COLLECTION_NAMES.users).where({ openId: wxContext.OPENID }).get();
 
   if (!result.data.length) {
-    throw new Error("鐢ㄦ埛涓嶅瓨鍦紝璇峰厛鐧诲綍");
+    throw new Error("用户不存在，请先登录");
   }
 
   return result.data[0];
@@ -348,24 +377,20 @@ async function getEffectiveElderId(user) {
 
 async function resolveElderIdForEvent(user, event = {}) {
   const requestedElderId = event && event.elderId;
-  if (!requestedElderId) {
-    return getEffectiveElderId(user);
+  const userType = normalizeUserType(user);
+
+  if (userType === "family") {
+    if (!user.boundElderId) {
+      throw new Error("请先绑定老人");
+    }
+    return user.boundElderId;
   }
 
-  if (requestedElderId === user._id) {
+  if (!requestedElderId || requestedElderId === user._id) {
     return user._id;
   }
 
-  if (user.boundElderId && user.boundElderId !== requestedElderId) {
-    throw new Error("当前绑定的老人不匹配，请重新绑定后再试");
-  }
-
-  const elder = await getUserById(requestedElderId);
-  if (!elder || !isElderUser(elder)) {
-    throw new Error("老人不存在");
-  }
-
-  return requestedElderId;
+  throw new Error("无权访问其他老人数据");
 }
 
 async function getUserById(userId) {
@@ -374,7 +399,7 @@ async function getUserById(userId) {
 }
 
 /**
- * 鐧诲綍 - 鍒涘缓鎴栬幏鍙栫敤鎴?
+ * 登录 - 创建或获取用户
  */
 async function login(event = {}) {
   await ensureCollections();
@@ -383,7 +408,7 @@ async function login(event = {}) {
   const userCollection = db.collection(COLLECTION_NAMES.users);
   const role = event.role || "elder";
 
-  // 鏌ユ壘宸插瓨鍦ㄧ殑鐢ㄦ埛
+  // 查找已存在的用户
   const existingUser = await userCollection.where({ openId: wxContext.OPENID }).get();
 
   if (existingUser.data.length) {
@@ -399,20 +424,22 @@ async function login(event = {}) {
     return {
       token: `cloud-${wxContext.OPENID}`,
       userType: user.userType || role || "elder",
-      userId: user._id
+      userId: user._id,
+      boundElderId: user.boundElderId || ""
     };
   }
 
-  // 鍒涘缓鏂扮敤鎴?- 鍩虹淇℃伅锛屾棤婕旂ず鏁版嵁
+  // 创建新用户 - 基础信息，无演示数据
   const addResult = await userCollection.add({
     data: {
       openId: wxContext.OPENID,
       name: "",
       avatar: "",
       age: null,
+      phone: "",
       gender: "",
       userType: role || "elder",
-      relation: "鏈汉",
+      relation: "本人",
       healthStatus: {
         bloodPressure: "",
         heartRate: null,
@@ -425,10 +452,10 @@ async function login(event = {}) {
   return {
     token: `cloud-${wxContext.OPENID}`,
     userType: role || "elder",
-    userId: addResult._id
+    userId: addResult._id,
+    boundElderId: ""
   };
 }
-// ==================== 浜虹墿鐩稿叧 ====================
 // ==================== 绑定老人相关 ====================
 
 async function getElderList() {
@@ -451,10 +478,17 @@ async function bindElder(event) {
   }
 
   const user = await getCurrentUser();
+  if (normalizeUserType(user) !== "family") {
+    throw new Error("只有家属可以绑定老人");
+  }
   const elder = await getUserById(event.elderId);
 
   if (!elder || !isElderUser(elder)) {
     throw new Error("老人不存在");
+  }
+
+  if (user.boundElderId && user.boundElderId !== event.elderId) {
+    throw new Error("当前账号已绑定其他老人，如需更换请先解除原绑定");
   }
 
   await db.collection(COLLECTION_NAMES.users).doc(user._id).update({
@@ -483,7 +517,95 @@ async function getElderBindInfo(event = {}) {
     age: elder.age || null,
     gender: elder.gender || "",
     avatar: elder.avatar || "",
-    relation: "本人"
+    relation: "本人",
+    phone: elder.phone || "",
+    maskedPhone: maskPhone(elder.phone || "")
+  };
+}
+
+async function getBindingQRCode(event = {}) {
+  const user = await getCurrentUser();
+  if (!isElderUser(user)) {
+    throw new Error("只有老人账号可以生成绑定二维码");
+  }
+
+  if (user.bindQrCodeFileID && !event.forceRefresh) {
+    return {
+      success: true,
+      fileID: user.bindQrCodeFileID,
+      elderId: user._id
+    };
+  }
+
+  const qrRes = await cloud.openapi.wxacode.getUnlimited({
+    scene: `inviteElderId=${user._id}`,
+    page: "pages/login/login",
+    checkPath: false
+  });
+
+  const fileContent = qrRes && (qrRes.buffer || qrRes.resultBuffer || qrRes.result || qrRes.fileContent);
+  if (!fileContent) {
+    throw new Error("生成绑定二维码失败");
+  }
+
+  const uploadRes = await cloud.uploadFile({
+    cloudPath: `binding-qrcodes/${user._id}.png`,
+    fileContent: Buffer.isBuffer(fileContent) ? fileContent : Buffer.from(fileContent)
+  });
+
+  await db.collection(COLLECTION_NAMES.users).doc(user._id).update({
+    data: {
+      bindQrCodeFileID: uploadRes.fileID,
+      bindQrCodeUpdatedAt: new Date().toISOString()
+    }
+  });
+
+  return {
+    success: true,
+    fileID: uploadRes.fileID,
+    elderId: user._id
+  };
+}
+
+async function findElderByPhone(event = {}) {
+  const phone = normalizePhone(event.phone);
+  if (!phone || phone.length !== 11) {
+    throw new Error("请输入 11 位手机号");
+  }
+
+  const user = await getCurrentUser();
+  if (normalizeUserType(user) !== "family") {
+    throw new Error("只有家属可以查找老人");
+  }
+
+  await ensureCollections();
+
+  const result = await db
+    .collection(COLLECTION_NAMES.users)
+    .where({
+      userType: "elder",
+      phone
+    })
+    .get();
+
+  if (!result.data.length) {
+    throw new Error("未找到对应的老人账号");
+  }
+
+  if (result.data.length > 1) {
+    throw new Error("该手机号匹配到多个老人账号，请改用邀请链接绑定");
+  }
+
+  const elder = result.data[0];
+  return {
+    id: elder._id,
+    name: elder.name || "未命名老人",
+    age: elder.age || null,
+    gender: elder.gender || "",
+    avatar: elder.avatar || "",
+    relation: "本人",
+    phone,
+    maskedPhone: maskPhone(phone)
   };
 }
 
@@ -502,6 +624,19 @@ async function createBindingRequest(event = {}) {
     throw new Error("老人不存在");
   }
 
+  if (user.boundElderId === elder._id) {
+    return {
+      success: true,
+      alreadyBound: true,
+      boundElderId: elder._id,
+      status: "approved"
+    };
+  }
+
+  if (user.boundElderId && user.boundElderId !== elder._id) {
+    throw new Error("当前账号已绑定其他老人，如需更换请先解除原绑定");
+  }
+
   const existing = await db
     .collection(COLLECTION_NAMES.bindingRequests)
     .where({
@@ -515,7 +650,8 @@ async function createBindingRequest(event = {}) {
     return {
       success: true,
       requestId: existing.data[0]._id,
-      status: "pending"
+      status: "pending",
+      alreadyPending: true
     };
   }
 
@@ -523,9 +659,12 @@ async function createBindingRequest(event = {}) {
   const result = await db.collection(COLLECTION_NAMES.bindingRequests).add({
     data: {
       elderId: elder._id,
+      elderName: elder.name || "未命名老人",
+      elderAvatar: elder.avatar || "",
       familyUserId: user._id,
       familyName: user.name || "家属",
-      familyPhone: user.phone || "",
+      familyPhone: normalizePhone(user.phone || ""),
+      familyAvatar: user.avatar || "",
       relation: event.relation || user.relation || "家属",
       status: "pending",
       source: event.source || "invite",
@@ -552,19 +691,30 @@ async function getMyBindingRequests() {
     .where({ familyUserId: user._id })
     .get();
 
+  const elderMap = {};
+  for (const item of result.data) {
+    if (item && item.elderId && !elderMap[item.elderId]) {
+      elderMap[item.elderId] = await getUserById(item.elderId).catch(() => null);
+    }
+  }
+
   return result.data
     .slice()
     .sort((a, b) => `${b.updatedAt || b.createdAt || ""}`.localeCompare(`${a.updatedAt || a.createdAt || ""}`))
     .map((item) => ({
       id: item._id,
       elderId: item.elderId,
+      elderName: item.elderName || (elderMap[item.elderId] && elderMap[item.elderId].name) || "未命名老人",
+      elderAvatar: item.elderAvatar || (elderMap[item.elderId] && elderMap[item.elderId].avatar) || "",
       familyUserId: item.familyUserId,
       familyName: item.familyName || user.name || "家属",
       familyPhone: item.familyPhone || "",
       relation: item.relation || "家属",
       status: item.status || "pending",
+      statusText: getBindingRequestStatusText(item.status),
       createdAt: item.createdAt || "",
-      updatedAt: item.updatedAt || ""
+      updatedAt: item.updatedAt || "",
+      requestTime: item.createdAt || ""
     }));
 }
 
@@ -585,12 +735,16 @@ async function getBindingRequests() {
     .map((item) => ({
       id: item._id,
       familyUserId: item.familyUserId,
+      applicantName: item.familyName || "家属",
       name: item.familyName || "家属",
+      avatar: item.familyAvatar || "",
       phone: item.familyPhone || "",
       relation: item.relation || "家属",
       status: item.status || "pending",
       createdAt: item.createdAt || "",
-      updatedAt: item.updatedAt || ""
+      updatedAt: item.updatedAt || "",
+      requestTime: item.createdAt || "",
+      statusText: getBindingRequestStatusText(item.status)
     }));
 }
 
@@ -608,6 +762,20 @@ async function approveBindingRequest(event = {}) {
   const request = requestRes.data;
   if (!request || request.elderId !== user._id) {
     throw new Error("申请不存在");
+  }
+  if (request.status === "approved") {
+    return { success: true, alreadyApproved: true };
+  }
+  if (request.status && request.status !== "pending") {
+    throw new Error("该申请已处理");
+  }
+
+  const familyUser = await getUserById(request.familyUserId);
+  if (!familyUser) {
+    throw new Error("申请人不存在");
+  }
+  if (familyUser.boundElderId && familyUser.boundElderId !== user._id) {
+    throw new Error("该家属已绑定其他老人");
   }
 
   const now = toIsoDate();
@@ -645,6 +813,12 @@ async function rejectBindingRequest(event = {}) {
   if (!request || request.elderId !== user._id) {
     throw new Error("申请不存在");
   }
+  if (request.status === "rejected") {
+    return { success: true, alreadyRejected: true };
+  }
+  if (request.status && request.status !== "pending") {
+    throw new Error("该申请已处理");
+  }
 
   await db.collection(COLLECTION_NAMES.bindingRequests).doc(event.requestId).update({
     data: {
@@ -679,19 +853,19 @@ function buildTree(persons) {
   const nodeMap = new Map();
   const roots = [];
 
-  // 鍏崇郴鏄犲皠锛氱‘瀹氱埗瀛愬叧绯?
+  // 关系映射：确定亲子关系
   const relationParentMap = {
-    "绁栫埗": null,      // 绁栫埗鏄牴鑺傜偣
-    "绁栨瘝": null,      // 绁栨瘝鏄牴鑺傜偣
-    "鐖朵翰": ["绁栫埗", "绁栨瘝"],  // 鐖朵翰鐨勭埗姣嶆槸绁栫埗/绁栨瘝
-    "姣嶄翰": null,
-    "鍙斿彅": ["绁栫埗", "绁栨瘝"],  // 鍙斿彅鐨勭埗姣嶆槸绁栫埗/绁栨瘝
-    "濮戝": ["绁栫埗", "绁栨瘝"],
-    "鏈汉": ["鐖朵翰", "姣嶄翰"],  // 鏈汉鐨勭埗姣?
-    "鍎垮瓙": ["鏈汉"],
-    "濂冲効": ["鏈汉"],
-    "瀛欏瓙": ["鏈汉", "鍎垮瓙"],
-    "瀛欏コ": ["鏈汉", "鍎垮瓙"]
+    "祖父": null,      // 祖父是根节点
+    "祖母": null,      // 祖母是根节点
+    "父亲": ["祖父", "祖母"],  // 父亲的父母是祖父/祖母
+    "母亲": null,
+    "叔叔": ["祖父", "祖母"],  // 叔叔的父母是祖父/祖母
+    "姑姑": ["祖父", "祖母"],
+    "本人": ["父亲", "母亲"],  // 本人的父母
+    "儿子": ["本人"],
+    "女儿": ["本人"],
+    "孙子": ["本人", "儿子"],
+    "孙女": ["本人", "儿子"]
   };
 
   persons.forEach((person) => {
@@ -701,26 +875,26 @@ function buildTree(persons) {
       avatar: person.avatar,
       relation: person.relation,
       age: person.age,
-      health: person.health || "鏈煡",
+      health: person.health || "未知",
       description: person.description,
       children: []
     });
   });
 
-  // 寤虹珛鐖跺瓙鍏崇郴
+  // 建立亲子关系
   persons.forEach((person) => {
     const node = nodeMap.get(person._id);
 
-    // 浼樺厛浣跨敤鏁版嵁搴撲腑鐨?parentPersonId
+    // 优先使用数据库中的 parentPersonId
     if (person.parentPersonId && nodeMap.has(person.parentPersonId)) {
       nodeMap.get(person.parentPersonId).children.push(node);
       return;
     }
 
-    // 濡傛灉娌℃湁 parentPersonId锛屽皾璇曟牴鎹叧绯绘帹鏂?
+    // 如果没有 parentPersonId，尝试根据关系推断
     const parentRelations = relationParentMap[person.relation];
     if (parentRelations && parentRelations.length > 0) {
-      // 鏌ユ壘鍏锋湁鎸囧畾鍏崇郴鐨勬垚鍛?
+      // 查找具有指定关系的成员
       for (const parentRelation of parentRelations) {
         const parent = persons.find(p => p.relation === parentRelation);
         if (parent && nodeMap.has(parent._id)) {
@@ -730,7 +904,7 @@ function buildTree(persons) {
       }
     }
 
-    // 娌℃湁鐖惰妭鐐癸紝浣滀负鏍硅妭鐐?
+    // 没有父节点，作为根节点
     roots.push(node);
   });
 
@@ -746,7 +920,7 @@ async function getFamilyTree() {
 
 async function getPersonDetail(event) {
   if (!event.personId) {
-    throw new Error("缂哄皯 personId");
+    throw new Error("缺少 personId");
   }
 
   const user = await getCurrentUser();
@@ -787,6 +961,7 @@ async function getElderInfo(event = {}) {
     name: elder.name,
     avatar: elder.avatar,
     age: elder.age,
+    phone: elder.phone || "",
     gender: elder.gender,
     relation: elder.relation,
     healthStatus: elder.healthStatus,
@@ -809,6 +984,7 @@ async function updateElderInfo(event) {
   if (event.name !== undefined) updateData.name = event.name;
   if (event.avatar !== undefined) updateData.avatar = event.avatar;
   if (event.age !== undefined) updateData.age = event.age;
+  if (event.phone !== undefined) updateData.phone = normalizePhone(event.phone);
   if (event.gender !== undefined) updateData.gender = event.gender;
   if (event.relation !== undefined) updateData.relation = event.relation;
   if (event.birthYear !== undefined) updateData.birthYear = event.birthYear;
@@ -828,11 +1004,11 @@ async function updateElderInfo(event) {
 }
 
 /**
- * 娣诲姞瀹跺涵鎴愬憳
+ * 添加家庭成员
  */
 async function addPerson(event) {
   if (!event.name) {
-    throw new Error("濮撳悕涓嶈兘涓虹┖");
+    throw new Error("姓名不能为空");
   }
 
   const user = await getCurrentUser();
@@ -879,11 +1055,11 @@ async function addPerson(event) {
 }
 
 /**
- * 鏇存柊瀹跺涵鎴愬憳淇℃伅
+ * 更新家庭成员信息
  */
 async function updatePerson(event) {
   if (!event.personId) {
-    throw new Error("缂哄皯鎴愬憳ID");
+    throw new Error("缺少成员ID");
   }
 
   const user = await getCurrentUser();
@@ -946,11 +1122,11 @@ async function updatePerson(event) {
 }
 
 /**
- * 鍒犻櫎瀹跺涵鎴愬憳
+ * 删除家庭成员
  */
 async function deletePerson(event) {
   if (!event.personId) {
-    throw new Error("缂哄皯鎴愬憳ID");
+    throw new Error("缺少成员ID");
   }
 
   const user = await getCurrentUser();
@@ -1706,7 +1882,7 @@ async function getLifeGuides(event = {}) {
 
 async function getLifeGuideDetail(event = {}) {
   if (!event.guideId) {
-    throw new Error("缂哄皯鏁欑▼ID");
+    throw new Error("缺少教程ID");
   }
 
   await ensureCollections();
@@ -1717,7 +1893,7 @@ async function getLifeGuideDetail(event = {}) {
   const guide = res.data;
 
   if (!guide || guide.elderId !== elderId) {
-    throw new Error("鏁欑▼涓嶅瓨鍦ㄦ垨鏃犳潈璁块棶");
+    throw new Error("教程不存在或无权访问");
   }
 
   return mapLifeGuideItem(guide);
@@ -1725,14 +1901,14 @@ async function getLifeGuideDetail(event = {}) {
 
 async function addLifeGuide(event = {}) {
   if (!event.title) {
-    throw new Error("鏁欑▼鏍囬涓嶈兘涓虹┖");
+    throw new Error("教程标题不能为空");
   }
   if (!event.itemName) {
-    throw new Error("璇疯緭鍏ラ€傜敤鐗╁搧");
+    throw new Error("请输入适用物品");
   }
   const steps = normalizeLifeGuideSteps(event.steps);
   if (!steps.length) {
-    throw new Error("璇疯嚦灏戞坊鍔犱竴姝ュ浘鏂囨暀绋?");
+    throw new Error("请至少添加一步图文教程");
   }
 
   await ensureCollections();
@@ -1758,7 +1934,7 @@ async function addLifeGuide(event = {}) {
 
 async function updateLifeGuide(event = {}) {
   if (!event.guideId) {
-    throw new Error("缂哄皯鏁欑▼ID");
+    throw new Error("缺少教程ID");
   }
 
   await ensureCollections();
@@ -1769,7 +1945,7 @@ async function updateLifeGuide(event = {}) {
   const guide = res.data;
 
   if (!guide || guide.elderId !== elderId) {
-    throw new Error("鏁欑▼涓嶅瓨鍦ㄦ垨鏃犳潈淇敼");
+    throw new Error("教程不存在或无权修改");
   }
 
   const updateData = {
@@ -1790,13 +1966,13 @@ async function updateLifeGuide(event = {}) {
   const finalSteps = updateData.steps !== undefined ? updateData.steps : nextSteps;
 
   if (!finalTitle) {
-    throw new Error("鏁欑▼鏍囬涓嶈兘涓虹┖");
+    throw new Error("教程标题不能为空");
   }
   if (!finalItemName) {
-    throw new Error("璇疯緭鍏ラ€傜敤鐗╁搧");
+    throw new Error("请输入适用物品");
   }
   if (!finalSteps.length) {
-    throw new Error("璇疯嚦灏戜繚鐣欎竴姝ュ浘鏂囨暀绋?");
+    throw new Error("请至少保留一步图文教程");
   }
 
   await db.collection(COLLECTION_NAMES.lifeGuides).doc(event.guideId).update({
@@ -1808,7 +1984,7 @@ async function updateLifeGuide(event = {}) {
 
 async function deleteLifeGuide(event = {}) {
   if (!event.guideId) {
-    throw new Error("缂哄皯鏁欑▼ID");
+    throw new Error("缺少教程ID");
   }
 
   await ensureCollections();
@@ -1819,7 +1995,7 @@ async function deleteLifeGuide(event = {}) {
   const guide = res.data;
 
   if (!guide || guide.elderId !== elderId) {
-    throw new Error("鏁欑▼涓嶅瓨鍦ㄦ垨鏃犳潈鍒犻櫎");
+    throw new Error("教程不存在或无权删除");
   }
 
   await db.collection(COLLECTION_NAMES.lifeGuides).doc(event.guideId).remove();
@@ -1830,7 +2006,7 @@ async function importDemoData(event = {}) {
   await ensureCollections();
 
   if (event.confirm !== "IMPORT_DEMO_DATA") {
-    throw new Error("璇蜂紶鍏?confirm=IMPORT_DEMO_DATA 鍚庡啀鎵ц瀵煎叆");
+    throw new Error("请传入 confirm=IMPORT_DEMO_DATA 后再执行导入");
   }
 
   const collectionMap = {
@@ -1874,7 +2050,7 @@ async function importDemoData(event = {}) {
 
   return {
     success: true,
-    message: "婕旂ず鏁版嵁瀵煎叆瀹屾垚",
+    message: "演示数据导入完成",
     summary
   };
 }
@@ -1884,12 +2060,12 @@ async function bindCurrentUserToDemoElder(event = {}) {
 
   const user = event.userId ? await getUserById(event.userId) : await getCurrentUser();
   if (!user) {
-    throw new Error("鏈壘鍒版寚瀹氱殑鐢ㄦ埛锛岃妫€鏌?userId");
+    throw new Error("未找到指定的用户，请检查 userId");
   }
   const demoElder = await getUserById(DEMO_ELDER_ID);
 
   if (!demoElder || !isElderUser(demoElder)) {
-    throw new Error("婕旂ず鑰佷汉鏁版嵁涓嶅瓨鍦紝璇峰厛鎵ц importDemoData");
+    throw new Error("演示老人数据不存在，请先执行 importDemoData");
   }
 
   await db.collection(COLLECTION_NAMES.users).doc(user._id).update({
@@ -1903,7 +2079,7 @@ async function bindCurrentUserToDemoElder(event = {}) {
 
   return {
     success: true,
-    message: "褰撳墠璐﹀彿宸茬粦瀹氬埌婕旂ず鑰佷汉",
+    message: "当前账号已绑定到演示老人",
     elderId: DEMO_ELDER_ID,
     elderName: demoElder.name || "演示老人",
     userId: user._id
@@ -2156,15 +2332,235 @@ async function recognizeFace(event = {}) {
   };
 }
 
+async function getBindingQRCodeSafe(event = {}) {
+  const user = await getCurrentUser();
+  if (!isElderUser(user)) {
+    throw new Error("只有老人账号可以生成绑定二维码");
+  }
+
+  if (user.bindQrCodeFileID && !event.forceRefresh) {
+    return {
+      success: true,
+      fileID: user.bindQrCodeFileID,
+      elderId: user._id
+    };
+  }
+
+  let qrRes = null;
+
+  try {
+    qrRes = await cloud.openapi.wxacode.getUnlimited({
+      scene: `inviteElderId=${user._id}`,
+      page: "pages/login/login",
+      checkPath: false
+    });
+  } catch (primaryError) {
+    try {
+      qrRes = await cloud.openapi.wxacode.get({
+        path: `pages/login/login?inviteElderId=${user._id}`
+      });
+    } catch (fallbackError) {
+      const detail =
+        (fallbackError && (fallbackError.errMsg || fallbackError.message)) ||
+        (primaryError && (primaryError.errMsg || primaryError.message)) ||
+        "";
+      throw new Error(`生成绑定二维码失败，请确认云函数已重新部署并已开启 OpenAPI 权限。${detail}`);
+    }
+  }
+
+  const fileContent = qrRes && (qrRes.buffer || qrRes.resultBuffer || qrRes.result || qrRes.fileContent);
+  if (!fileContent) {
+    throw new Error("生成绑定二维码失败，未拿到二维码内容");
+  }
+
+  const uploadRes = await cloud.uploadFile({
+    cloudPath: `binding-qrcodes/${user._id}.png`,
+    fileContent: Buffer.isBuffer(fileContent) ? fileContent : Buffer.from(fileContent)
+  });
+
+  await db.collection(COLLECTION_NAMES.users).doc(user._id).update({
+    data: {
+      bindQrCodeFileID: uploadRes.fileID,
+      bindQrCodeUpdatedAt: new Date().toISOString()
+    }
+  });
+
+  return {
+    success: true,
+    fileID: uploadRes.fileID,
+    elderId: user._id
+  };
+}
+
+async function registerAccount(event = {}) {
+  await ensureCollections();
+
+  const wxContext = cloud.getWXContext();
+  const userCollection = db.collection(COLLECTION_NAMES.users);
+  const role = event.role;
+
+  if (role !== "elder" && role !== "family") {
+    throw new Error("注册时请选择身份");
+  }
+
+  const existingUser = await userCollection.where({ openId: wxContext.OPENID }).get();
+  if (existingUser.data.length) {
+    const user = existingUser.data[0];
+    if (user.userType && user.userType !== role) {
+      throw new Error(`当前微信号已注册为${user.userType === "elder" ? "老人" : "家属"}`);
+    }
+    return {
+      success: true,
+      alreadyRegistered: true,
+      token: `cloud-${wxContext.OPENID}`,
+      userType: user.userType || role,
+      userId: user._id,
+      boundElderId: user.boundElderId || ""
+    };
+  }
+
+  const addResult = await userCollection.add({
+    data: {
+      openId: wxContext.OPENID,
+      name: "",
+      avatar: "",
+      age: null,
+      phone: "",
+      gender: "",
+      userType: role,
+      relation: role === "family" ? "家属" : "本人",
+      healthStatus: {
+        bloodPressure: "",
+        heartRate: null,
+        bloodSugar: ""
+      },
+      createdAt: new Date().toISOString()
+    }
+  });
+
+  return {
+    success: true,
+    alreadyRegistered: false,
+    token: `cloud-${wxContext.OPENID}`,
+    userType: role,
+    userId: addResult._id,
+    boundElderId: ""
+  };
+}
+
+async function loginAccount() {
+  await ensureCollections();
+
+  const wxContext = cloud.getWXContext();
+  const userCollection = db.collection(COLLECTION_NAMES.users);
+  const existingUser = await userCollection.where({ openId: wxContext.OPENID }).get();
+
+  if (!existingUser.data.length) {
+    throw new Error("当前微信号未注册，请先注册");
+  }
+
+  const user = existingUser.data[0];
+  return {
+    token: `cloud-${wxContext.OPENID}`,
+    userType: user.userType || "elder",
+    userId: user._id,
+    boundElderId: user.boundElderId || ""
+  };
+}
+
+async function registerAccountV2(event = {}) {
+  await ensureCollections();
+
+  const wxContext = cloud.getWXContext();
+  const userCollection = db.collection(COLLECTION_NAMES.users);
+  const role = event.role;
+
+  if (role !== "elder" && role !== "family") {
+    throw new Error("注册时请选择身份");
+  }
+
+  const existingUser = await userCollection.where({ openId: wxContext.OPENID }).get();
+  if (existingUser.data.length) {
+    const user = existingUser.data[0];
+    if (user.userType && user.userType !== role) {
+      throw new Error(`当前微信号已注册为${user.userType === "elder" ? "老人" : "家属"}`);
+    }
+
+    return {
+      success: true,
+      alreadyRegistered: true,
+      token: `cloud-${wxContext.OPENID}`,
+      userType: user.userType || role,
+      userId: user._id,
+      boundElderId: user.boundElderId || ""
+    };
+  }
+
+  const addResult = await userCollection.add({
+    data: {
+      openId: wxContext.OPENID,
+      name: "",
+      avatar: "",
+      age: null,
+      phone: "",
+      gender: "",
+      userType: role,
+      relation: role === "family" ? "家属" : "本人",
+      healthStatus: {
+        bloodPressure: "",
+        heartRate: null,
+        bloodSugar: ""
+      },
+      createdAt: new Date().toISOString()
+    }
+  });
+
+  return {
+    success: true,
+    alreadyRegistered: false,
+    token: `cloud-${wxContext.OPENID}`,
+    userType: role,
+    userId: addResult._id,
+    boundElderId: ""
+  };
+}
+
+async function loginAccountV2() {
+  await ensureCollections();
+
+  const wxContext = cloud.getWXContext();
+  const userCollection = db.collection(COLLECTION_NAMES.users);
+  const existingUser = await userCollection.where({ openId: wxContext.OPENID }).get();
+
+  if (!existingUser.data.length) {
+    throw new Error("当前微信号未注册，请先注册");
+  }
+
+  const user = existingUser.data[0];
+  return {
+    success: true,
+    token: `cloud-${wxContext.OPENID}`,
+    userType: user.userType || "elder",
+    userId: user._id,
+    boundElderId: user.boundElderId || ""
+  };
+}
+
 exports.main = async (event) => {
   try {
     switch (event.action) {
+      case "register":
+        return await registerAccountV2(event);
       case "login":
-        return await login(event);
+        return await loginAccountV2();
       case "getElderList":
         return await getElderList();
       case "getElderBindInfo":
         return await getElderBindInfo(event);
+      case "getBindingQRCode":
+        return await getBindingQRCodeSafe(event);
+      case "findElderByPhone":
+        return await findElderByPhone(event);
       case "bindElder":
         return await bindElder(event);
       case "createBindingRequest":
@@ -2248,7 +2644,7 @@ exports.main = async (event) => {
       case "recognizeFace":
         return await recognizeFace(event);
       default:
-        throw new Error("鏈煡鎿嶄綔");
+        throw new Error("未知操作");
     }
   } catch (error) {
     return {

@@ -1,80 +1,182 @@
-/* 页面容器：使用柔和背景，减少视觉疲劳 */
 .page {
-  padding: 80rpx 40rpx;
-  background-color: #F8F9FB;
   min-height: 100vh;
+  box-sizing: border-box;
+  padding: 56rpx 32rpx 64rpx;
+  background:
+    radial-gradient(circle at top, rgba(246, 222, 190, 0.45), transparent 34%),
+    linear-gradient(180deg, #f8f2e8 0%, #f3ece1 50%, #efe6d7 100%);
+  color: #5a4331;
+}
+
+.hero {
+  padding: 28rpx 12rpx 32rpx;
+}
+
+.brand {
+  font-size: 64rpx;
+  font-weight: 700;
+  letter-spacing: 8rpx;
+  color: #7c5639;
+}
+
+.hero-title {
+  margin-top: 18rpx;
+  font-size: 48rpx;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #4f3727;
+}
+
+.hero-subtitle {
+  margin-top: 16rpx;
+  font-size: 28rpx;
+  line-height: 1.7;
+  color: #806657;
+}
+
+.invite-banner {
+  margin-top: 12rpx;
+  padding: 24rpx 28rpx;
+  border-radius: 28rpx;
+  background: rgba(255, 247, 232, 0.92);
+  border: 2rpx solid rgba(165, 127, 86, 0.18);
+}
+
+.invite-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #6b4d35;
+}
+
+.invite-desc {
+  margin-top: 10rpx;
+  font-size: 26rpx;
+  line-height: 1.7;
+  color: #886d5c;
+}
+
+.panel {
+  margin-top: 28rpx;
+  padding: 28rpx;
+  border-radius: 34rpx;
+  background: rgba(255, 251, 245, 0.95);
+  box-shadow: 0 22rpx 48rpx rgba(124, 86, 57, 0.08);
+}
+
+.mode-switch {
+  display: flex;
+  gap: 16rpx;
+  padding: 10rpx;
+  border-radius: 999rpx;
+  background: #f1e6d8;
+}
+
+.mode-chip {
+  flex: 1;
+  text-align: center;
+  padding: 20rpx 0;
+  border-radius: 999rpx;
+  font-size: 28rpx;
+  color: #8a6d5a;
+}
+
+.mode-chip.active {
+  background: #7c5639;
+  color: #fffaf5;
+  font-weight: 600;
+}
+
+.section-head {
+  margin-top: 30rpx;
+}
+
+.section-title {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #523a29;
+}
+
+.section-desc {
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  line-height: 1.7;
+  color: #8a6d5a;
+}
+
+.role-grid {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 28rpx;
+}
+
+.role-card {
+  flex: 1;
+  min-height: 260rpx;
+  padding: 30rpx 24rpx;
+  border-radius: 28rpx;
+  border: 2rpx solid #e8d7c4;
+  background: #fffaf3;
   box-sizing: border-box;
 }
 
-/* 品牌区：采用稳重的配色 */
-.logo {
-  font-size: 72rpx;
-  font-weight: bold;
-  color: #1A3A5F;
-  text-align: center;
-  margin-bottom: 20rpx;
+.role-card.selected {
+  border-color: #7c5639;
+  background: #f7ecdc;
+  box-shadow: 0 12rpx 28rpx rgba(124, 86, 57, 0.12);
 }
 
-.subtitle {
+.role-icon {
+  font-size: 60rpx;
+}
+
+.role-title {
+  margin-top: 18rpx;
   font-size: 32rpx;
-  color: #666;
-  text-align: center;
-  margin-bottom: 60rpx;
+  font-weight: 700;
+  color: #523a29;
 }
 
-.invite-tip {
-  background: #eef6ff;
-  border: 2rpx solid #b8d9ff;
-  color: #1a3a5f;
-  border-radius: 24rpx;
-  padding: 24rpx 28rpx;
-  font-size: 28rpx;
-  line-height: 1.6;
-  margin-bottom: 40rpx;
+.role-desc {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  line-height: 1.7;
+  color: #896b57;
 }
 
-.illustration {
-  font-size: 120rpx;
-  text-align: center;
-  margin-bottom: 80rpx;
-}
-
-/* 核心卡片样式：大触控热区，适老化关键 */
-.card {
-  display: flex;
-  align-items: center;
-  background: #FFFFFF;
-  padding: 50rpx 40rpx;
-  margin-bottom: 40rpx;
-  border-radius: 30rpx;
-  box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.06);
-  transition: transform 0.2s;
-}
-
-.card:active {
-  transform: scale(0.97); /* 点击反馈，增强老人操作信心 */
-  background: #F0F4F8;
-}
-
-.icon {
-  font-size: 80rpx;
-  margin-right: 40rpx;
-}
-
-/* 文字层级：确保清晰可读 */
-.title {
-  font-size: 44rpx;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 10rpx;
-}
-
-.desc {
+.primary-btn {
+  margin-top: 32rpx;
+  height: 96rpx;
+  line-height: 96rpx;
+  border-radius: 999rpx;
+  border: none;
+  background: linear-gradient(135deg, #8e6544 0%, #6d4b34 100%);
+  color: #fffaf5;
   font-size: 30rpx;
-  color: #888;
+  font-weight: 600;
 }
 
-/* 老人端高亮区分 */
-.elder {
-  border: 4rpx solid #4A90E2;
+.primary-btn::after {
+  border: none;
+}
+
+.registered-tip {
+  margin-top: 24rpx;
+  padding: 24rpx 26rpx;
+  border-radius: 24rpx;
+  background: #f7ecdc;
+  color: #6e503c;
+  font-size: 28rpx;
+}
+
+.switch-tip {
+  margin-top: 26rpx;
+  text-align: center;
+  font-size: 26rpx;
+  color: #8a6d5a;
+}
+
+.switch-link {
+  margin-left: 10rpx;
+  color: #6d4b34;
+  font-weight: 600;
 }

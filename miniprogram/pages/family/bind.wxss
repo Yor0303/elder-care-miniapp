@@ -69,6 +69,10 @@
   margin-bottom: 24rpx;
 }
 
+.current-card {
+  margin-top: 4rpx;
+}
+
 .panel-title {
   font-size: 34rpx;
   font-weight: 700;
@@ -180,6 +184,24 @@
   padding: 22rpx;
 }
 
+.relation-picker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 84rpx;
+  padding: 0 8rpx;
+  font-size: 29rpx;
+  color: #1f2a37;
+}
+
+.placeholder {
+  color: #98a2b3;
+}
+
+.arrow {
+  color: #98a2b3;
+}
+
 .state-card {
   padding: 28rpx 24rpx;
   margin-top: 20rpx;
@@ -202,4 +224,29 @@
   justify-content: space-between;
   gap: 18rpx;
   margin-top: 20rpx;
+}
+
+.pending-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.success-badge {
+  background: #effaf3;
+  color: #276749;
+}
+
+.pending-badge.pending {
+  background: #eaf3ff;
+  color: #2563eb;
+}
+
+.pending-badge.approved {
+  background: #effaf3;
+  color: #276749;
+}
+
+.pending-badge.rejected {
+  background: #fff1f0;
+  color: #d14343;
 }

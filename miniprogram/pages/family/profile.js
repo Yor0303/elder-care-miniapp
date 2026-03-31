@@ -8,6 +8,7 @@ Page({
 
     avatar: "",
     name: "",
+    phone: "",
     gender: "",
     age: "",
     birthYear: "",
@@ -36,6 +37,7 @@ Page({
       this.setData({
         avatar: elder.avatar || "",
         name: elder.name || "",
+        phone: elder.phone || "",
         gender: elder.gender || "",
         age: elder.age || "",
         birthYear: elder.birthYear || "",
@@ -61,6 +63,7 @@ Page({
   },
 
   onNameInput(e) { this.setData({ name: e.detail.value }); },
+  onPhoneInput(e) { this.setData({ phone: e.detail.value }); },
   onAgeInput(e) { this.setData({ age: e.detail.value }); },
   onBirthYearInput(e) { this.setData({ birthYear: e.detail.value }); },
   onHometownInput(e) { this.setData({ hometown: e.detail.value }); },
@@ -119,6 +122,7 @@ Page({
       await updateElderInfoAPI({
         avatar: avatarUrl || "",
         name: this.data.name.trim(),
+        phone: this.data.phone.trim(),
         gender: this.data.gender,
         age: Number.isFinite(ageValue) ? ageValue : null,
         birthYear: Number.isFinite(birthYearValue) ? birthYearValue : "",

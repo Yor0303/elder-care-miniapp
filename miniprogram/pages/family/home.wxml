@@ -1,92 +1,87 @@
 <view class="page">
-  <view class="header">
-    <view class="welcome">欢迎回来</view>
-    <view class="subtitle">您可以在这里为 {{elderName}} 上传和管理信息</view>
-  </view>
-
-  <view class="menu-section">
-    <view class="card" bindtap="goToProfile">
-      <view class="card-left">
-        <view class="icon">🪪</view>
-        <view class="card-content">
-          <view class="card-title">老人资料</view>
-          <view class="card-desc">完善身份信息与紧急联系人</view>
-        </view>
-      </view>
-      <view class="arrow">›</view>
+  <view class="section">
+    <view class="section-head">
+      <view class="section-title">核心操作</view>
+      <view class="section-desc">先处理最常用的三项内容，效率更高。</view>
     </view>
 
-    <view class="card" bindtap="goToMemoryManage">
-      <view class="card-left">
-        <view class="icon">🖼</view>
-        <view class="card-content">
-          <view class="card-title">回忆管理</view>
-          <view class="card-desc">像时间线一样查看与修改回忆</view>
-        </view>
+    <view class="primary-grid">
+      <view class="primary-card memory" bindtap="goToMemoryManage">
+        <view class="primary-icon">🖼️</view>
+        <view class="primary-title">回忆管理</view>
+        <view class="primary-desc">上传照片、整理故事，按时间线陪老人回看人生片段。</view>
       </view>
-      <view class="arrow">›</view>
-    </view>
 
-    <view class="card" bindtap="goToHealthManage">
-      <view class="card-left">
-        <view class="icon">💊</view>
-        <view class="card-content">
-          <view class="card-title">健康管理</view>
-          <view class="card-desc">健康数据、病史和用药提醒</view>
-        </view>
+      <view class="primary-card members" bindtap="goToMembers">
+        <view class="primary-icon">👨‍👩‍👧</view>
+        <view class="primary-title">家庭成员</view>
+        <view class="primary-desc">维护家属资料和关系信息，完善家庭陪伴网络。</view>
       </view>
-      <view class="arrow">›</view>
-    </view>
 
-    <view class="card" bindtap="goToMembers">
-      <view class="card-left">
-        <view class="icon">👨‍👩‍👧</view>
-        <view class="card-content">
-          <view class="card-title">家庭成员</view>
-          <view class="card-desc">查看和管理家人信息</view>
-        </view>
+      <view class="primary-card health" bindtap="goToHealthManage">
+        <view class="primary-icon">❤️</view>
+        <view class="primary-title">健康管理</view>
+        <view class="primary-desc">查看用药、健康记录和每日照护信息。</view>
       </view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view class="card" bindtap="goToMessageBoard">
-      <view class="card-left">
-        <view class="icon">🎙</view>
-        <view class="card-content">
-          <view class="card-title">家人留言板</view>
-          <view class="card-desc">录制语音留言，给 {{elderName}} 送去问候</view>
-        </view>
-      </view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view class="card" bindtap="goToLifeGuides">
-      <view class="card-left">
-        <view class="icon">📘</view>
-        <view class="card-content">
-          <view class="card-title">生活小助手</view>
-          <view class="card-desc">上传家电和常用物品的图文教程</view>
-        </view>
-      </view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view class="card" bindtap="goToBindPage">
-      <view class="card-left">
-        <view class="icon">🔆</view>
-        <view class="card-content">
-          <view class="card-title">绑定老人</view>
-          <view class="card-desc">绑定老人信息</view>
-        </view>
-      </view>
-      <view class="arrow">›</view>
     </view>
   </view>
 
-  <view class="tips">
-    <view class="tips-title">温馨提示</view>
-    <view class="tips-content">
-      上传的内容会同步显示在老人端小程序中，方便老人随时查看家人的关爱。
+  <view class="section">
+    <view class="section-head">
+      <view class="section-title">更多服务</view>
+      <view class="section-desc">资料完善、留言沟通和生活指引都放在这里。</view>
     </view>
+
+    <view class="service-list">
+      <view class="service-card" bindtap="goToProfile">
+        <view class="service-left">
+          <view class="service-icon profile">🪪</view>
+          <view class="service-copy">
+            <view class="service-title">老人资料</view>
+            <view class="service-desc">完善身份信息、联系电话和重要资料。</view>
+          </view>
+        </view>
+        <view class="service-arrow">></view>
+      </view>
+
+      <view class="service-card" bindtap="goToMessageBoard">
+        <view class="service-left">
+          <view class="service-icon message">💬</view>
+          <view class="service-copy">
+            <view class="service-title">家人留言板</view>
+            <view class="service-desc">给 {{elderName}} 留下语音和文字，保持温暖联系。</view>
+          </view>
+        </view>
+        <view class="service-arrow">></view>
+      </view>
+
+      <view class="service-card" bindtap="goToLifeGuides">
+        <view class="service-left">
+          <view class="service-icon guide">🧰</view>
+          <view class="service-copy">
+            <view class="service-title">生活小助手</view>
+            <view class="service-desc">上传家电和常用物品教程，帮助老人独立操作。</view>
+          </view>
+        </view>
+        <view class="service-arrow">></view>
+      </view>
+
+      <view class="service-card" bindtap="goToBindPage">
+        <view class="service-left">
+          <view class="service-icon bind">🔗</view>
+          <view class="service-copy">
+            <view class="service-title">绑定老人</view>
+            <view class="service-desc">{{hasBoundElder ? "查看当前绑定状态，必要时重新发起绑定流程。" : "先完成绑定，再开启后续管理功能。"}}</view>
+          </view>
+        </view>
+        <view class="service-arrow">></view>
+      </view>
+    </view>
+  </view>
+
+  <view class="tip-card">
+    <view class="tip-title">✨ 使用建议</view>
+    <view class="tip-line">先完善老人资料，再上传回忆内容，家属协作会更顺畅。</view>
+    <view class="tip-line">上传后的内容会同步显示在老人端，方便老人随时查看和回忆。</view>
   </view>
 </view>

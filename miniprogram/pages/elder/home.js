@@ -3,7 +3,9 @@ const {
   getVoiceMessagesAPI,
   markVoiceMessagesReadAPI,
   getHealthInfoAPI,
-  getBindingRequestsAPI
+  getBindingRequestsAPI,
+  getElderInfoAPI,
+  getBindingQRCodeAPI
 } = require("../../api/user");
 
 function formatDateTime(value) {
@@ -49,8 +51,8 @@ function buildMedicationReminders(medications) {
 
 Page({
   data: {
+    pageTab: "home",
     boardTab: "messages",
-    featureTab: "daily",
     onThisDay: null,
     medicationReminders: [],
     pendingCount: 0,
@@ -58,7 +60,10 @@ Page({
     unreadMessageCount: 0,
     previewVisible: false,
     previewImg: "",
-    playingMessageId: ""
+    playingMessageId: "",
+    elderProfile: null,
+    bindQrCodeFileID: "",
+    bindQrLoading: false
   },
 
   onLoad() {
@@ -66,10 +71,6 @@ Page({
     this.promptAudioContext = wx.createInnerAudioContext();
     this.speechPlugin = getSpeechPlugin();
     this.lastPromptKey = "";
-    wx.showShareMenu({
-      withShareTicket: false,
-      menus: ["shareAppMessage"]
-    });
     this.initAudioPlayer();
     this.initPromptAudioPlayer();
   },
@@ -77,6 +78,10 @@ Page({
   onShow() {
     this.loadBoardData();
     this.loadPendingCount();
+    this.loadElderProfile();
+    if (this.data.pageTab === "mine") {
+      this.loadBindingQRCode();
+    }
   },
 
   onHide() {
@@ -116,7 +121,6 @@ Page({
 
   initPromptAudioPlayer() {
     if (!this.promptAudioContext) return;
-
     this.promptAudioContext.onError(() => {
       this.fallbackPromptHint();
     });
@@ -135,6 +139,36 @@ Page({
       });
     } catch (_) {
       this.setData({ pendingCount: 0 });
+    }
+  },
+
+  async loadElderProfile() {
+    try {
+      const elder = await getElderInfoAPI();
+      this.setData({
+        elderProfile: elder || null
+      });
+    } catch (_) {
+      this.setData({ elderProfile: null });
+    }
+  },
+
+  async loadBindingQRCode(forceRefresh = false) {
+    if (this.data.bindQrLoading) return;
+
+    try {
+      this.setData({ bindQrLoading: true });
+      const result = await getBindingQRCodeAPI(!!forceRefresh);
+      this.setData({
+        bindQrCodeFileID: (result && result.fileID) || "",
+        bindQrLoading: false
+      });
+    } catch (error) {
+      this.setData({ bindQrLoading: false });
+      wx.showToast({
+        title: (error && (error.message || error.msg)) || "二维码生成失败",
+        icon: "none"
+      });
     }
   },
 
@@ -224,6 +258,16 @@ Page({
     }
   },
 
+  switchPageTab(e) {
+    const { tab } = e.currentTarget.dataset;
+    if (!tab || tab === this.data.pageTab) return;
+    this.setData({ pageTab: tab });
+
+    if (tab === "mine" && !this.data.bindQrCodeFileID) {
+      this.loadBindingQRCode();
+    }
+  },
+
   async markMessagesReadSilently() {
     try {
       await markVoiceMessagesReadAPI();
@@ -239,12 +283,6 @@ Page({
       }))
     });
     this.lastPromptKey = "";
-  },
-
-  switchFeatureTab(e) {
-    const { tab } = e.currentTarget.dataset;
-    if (!tab || tab === this.data.featureTab) return;
-    this.setData({ featureTab: tab });
   },
 
   playVoiceMessage(e) {
@@ -336,6 +374,10 @@ Page({
       title: "您有新的家人留言",
       icon: "none"
     });
+  },
+
+  refreshBindingQRCode() {
+    this.loadBindingQRCode(true);
   },
 
   goToFamily() {

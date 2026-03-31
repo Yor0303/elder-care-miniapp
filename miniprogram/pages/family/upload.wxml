@@ -1,23 +1,20 @@
-<!-- pages/family/upload.wxml -->
 <view class="page">
-  <view class="title">上传回忆</view>
+  <view class="title">🖼️ 上传回忆</view>
 
-  <!-- 模式切换 -->
   <view class="tabs">
-    <view class="tab {{mode==='single'?'active':''}}" bindtap="switchToSingle">单图上传</view>
-    <view class="tab {{mode==='pair'?'active':''}}" bindtap="switchToPair">配对上传</view>
+    <view class="tab {{mode==='single'?'active':''}}" bindtap="switchToSingle">📷 单图上传</view>
+    <view class="tab {{mode==='pair'?'active':''}}" bindtap="switchToPair">🧩 配对上传</view>
   </view>
 
-  <!-- 单图上传 -->
   <view wx:if="{{mode==='single'}}">
     <view class="upload-section">
       <view class="card upload-btn" bindtap="chooseImage">
-        <view class="icon">图</view>
+        <view class="icon">🖼️</view>
         <view class="text">上传照片</view>
       </view>
 
       <view class="card upload-btn" bindtap="chooseVideo">
-        <view class="icon">影</view>
+        <view class="icon">🎬</view>
         <view class="text">上传视频</view>
       </view>
     </view>
@@ -94,21 +91,20 @@
       bindtap="submitMemory"
       disabled="{{uploading}}"
     >
-      {{uploading ? "保存中..." : "保存回忆"}}
+      {{uploading ? "保存中..." : "💾 保存回忆"}}
     </button>
   </view>
 
-  <!-- 配对上传 -->
   <view wx:if="{{mode==='pair'}}">
     <view class="pair-section">
       <view class="pair-row">
         <view class="pair-card" bindtap="chooseLeftImage">
           <image wx:if="{{leftFileUrl}}" src="{{leftFileUrl}}" mode="aspectFill" class="pair-image"></image>
-          <view wx:else class="pair-placeholder">选择左侧图片</view>
+          <view wx:else class="pair-placeholder">🖼️ 选择左侧图片</view>
         </view>
         <view class="pair-card" bindtap="chooseRightImage">
           <image wx:if="{{rightFileUrl}}" src="{{rightFileUrl}}" mode="aspectFill" class="pair-image"></image>
-          <view wx:else class="pair-placeholder">选择右侧图片</view>
+          <view wx:else class="pair-placeholder">🖼️ 选择右侧图片</view>
         </view>
       </view>
 
@@ -134,7 +130,7 @@
       bindtap="submitPair"
       disabled="{{pairUploading}}"
     >
-      {{pairUploading ? "保存中..." : "保存配对"}}
+      {{pairUploading ? "保存中..." : "🧩 保存配对"}}
     </button>
   </view>
 </view>

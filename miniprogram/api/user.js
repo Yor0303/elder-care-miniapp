@@ -58,8 +58,12 @@ function callService(action, data = {}) {
   });
 }
 
-function loginAPI(role) {
-  return callService("login", { role });
+function registerAPI(role) {
+  return callService("register", { role });
+}
+
+function loginAPI() {
+  return callService("login");
 }
 
 function getPersonListAPI() {
@@ -72,6 +76,22 @@ function getElderListAPI() {
 
 function getElderBindInfoAPI(elderId) {
   return callService("getElderBindInfo", { elderId });
+}
+
+function getBindingQRCodeAPI(forceRefresh = false) {
+  return callService("getBindingQRCode", { forceRefresh });
+}
+
+function importDemoDataAPI() {
+  return callService("importDemoData", { confirm: "IMPORT_DEMO_DATA" });
+}
+
+function bindCurrentUserToDemoElderAPI() {
+  return callService("bindCurrentUserToDemoElder");
+}
+
+function findElderByPhoneAPI(phone) {
+  return callService("findElderByPhone", { phone });
 }
 
 function bindElderAPI(elderId) {
@@ -330,9 +350,14 @@ function uploadAndRecognizeAPI(tempFilePath) {
 }
 
 module.exports = {
+  registerAPI,
   loginAPI,
   getElderListAPI,
   getElderBindInfoAPI,
+  getBindingQRCodeAPI,
+  importDemoDataAPI,
+  bindCurrentUserToDemoElderAPI,
+  findElderByPhoneAPI,
   bindElderAPI,
   createBindingRequestAPI,
   getMyBindingRequestsAPI,

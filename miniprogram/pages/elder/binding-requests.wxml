@@ -1,32 +1,74 @@
 <view class="page">
   <view class="hero-card">
-    <view class="hero-title">待处理绑定申请</view>
-    <view class="hero-desc">
-      家属提交绑定申请后，你可以在这里选择同意或拒绝，确保只有熟悉的家人进入家庭空间。
-    </view>
+    <view class="hero-badge">家人连接</view>
+    <view class="hero-title">绑定家人</view>
+    <view class="hero-desc">这里可以处理新的绑定申请，也能查看已经绑定的家人。</view>
   </view>
 
-  <view wx:if="{{requests.length}}">
-    <view wx:for="{{requests}}" wx:key="id" class="request-card">
-      <view class="request-header">
-        <view>
-          <view class="request-name">{{item.applicantName}}</view>
-          <view class="request-meta">{{item.relation}} · {{item.phone}}</view>
+  <view wx:if="{{pendingRequests.length}}" class="section-card">
+    <view class="section-head">
+      <view class="section-title">待处理申请</view>
+      <view class="section-tag">{{pendingRequests.length}} 条</view>
+    </view>
+
+    <view class="request-list">
+      <view wx:for="{{pendingRequests}}" wx:key="id" class="request-card">
+        <view class="request-top">
+          <view class="request-main">
+            <view class="request-badge pending">待处理</view>
+            <view class="request-name">{{item.applicantName}}</view>
+            <view class="request-meta">{{item.relation}} · {{item.phone || "未留电话"}}</view>
+          </view>
+          <view class="request-time">{{item.requestTime}}</view>
         </view>
-        <view class="request-time">{{item.requestTime}}</view>
-      </view>
 
-      <view wx:if="{{item.status === 'pending'}}" class="action-row">
-        <button class="action-btn reject" bindtap="rejectRequest" data-id="{{item.id}}">拒绝</button>
-        <button class="action-btn approve" bindtap="approveRequest" data-id="{{item.id}}">同意</button>
+        <view class="action-row">
+          <button class="action-btn reject" bindtap="rejectRequest" data-id="{{item.id}}">暂不绑定</button>
+          <button class="action-btn approve" bindtap="approveRequest" data-id="{{item.id}}">同意绑定</button>
+        </view>
       </view>
-
-      <view wx:elif="{{item.status === 'approved'}}" class="status approved">已同意该申请</view>
-      <view wx:elif="{{item.status === 'rejected'}}" class="status rejected">已拒绝该申请</view>
     </view>
   </view>
 
-  <view wx:else class="empty-card">
-    当前没有新的绑定申请
+  <view wx:if="{{approvedRequests.length}}" class="section-card">
+    <view class="section-head">
+      <view class="section-title">已绑定家人</view>
+      <view class="section-tag soft">{{approvedRequests.length}} 位</view>
+    </view>
+
+    <view class="family-list">
+      <view wx:for="{{approvedRequests}}" wx:key="id" class="family-card">
+        <view class="family-icon">👪</view>
+        <view class="family-main">
+          <view class="family-name">{{item.applicantName}}</view>
+          <view class="family-meta">{{item.relation}} · {{item.phone || "未留电话"}}</view>
+        </view>
+        <view class="family-status">已绑定</view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{historyRequests.length}}" class="section-card">
+    <view class="section-head">
+      <view class="section-title">处理记录</view>
+    </view>
+
+    <view class="request-list">
+      <view wx:for="{{historyRequests}}" wx:key="id" class="request-card">
+        <view class="request-top">
+          <view class="request-main">
+            <view class="request-badge {{item.status}}">{{item.statusText}}</view>
+            <view class="request-name">{{item.applicantName}}</view>
+            <view class="request-meta">{{item.relation}} · {{item.phone || "未留电话"}}</view>
+          </view>
+          <view class="request-time">{{item.requestTime}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{!loading && !requests.length}}" class="empty-card">
+    <view class="empty-title">暂时还没有绑定消息</view>
+    <view class="empty-desc">家人扫码或发起申请后，会显示在这里。</view>
   </view>
 </view>

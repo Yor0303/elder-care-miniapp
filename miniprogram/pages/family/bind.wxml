@@ -2,7 +2,22 @@
   <view class="hero-card">
     <view class="hero-title">绑定老人</view>
     <view class="hero-desc">
-      通过手机号、二维码或邀请链接找到老人账号，提交绑定申请后，由家庭管理员确认通过。
+      通过手机号、二维码或邀请链接找到老人账号，提交绑定申请后，由老人端确认通过。
+    </view>
+  </view>
+
+  <view wx:if="{{currentBoundElder}}" class="panel-card current-card">
+    <view class="panel-title">当前已绑定</view>
+    <view class="panel-desc">你当前已接入下面这位老人，可直接进入家庭空间继续管理。</view>
+    <view class="invite-card">
+      <view class="invite-badge success-badge">已绑定</view>
+      <view class="invite-name">{{currentBoundElder.name || "未命名老人"}}</view>
+      <view class="invite-meta">
+        <text wx:if="{{currentBoundElder.gender}}">{{currentBoundElder.gender}}</text>
+        <text wx:if="{{currentBoundElder.age}}">{{currentBoundElder.age}} 岁</text>
+        <text wx:if="{{currentBoundElder.phone}}">手机号 {{currentBoundElder.phone}}</text>
+      </view>
+      <button class="primary-btn" bindtap="enterFamilyHome">进入家庭空间</button>
     </view>
   </view>
 
@@ -14,7 +29,7 @@
 
   <view wx:if="{{mode === 'phone'}}" class="panel-card">
     <view class="panel-title">通过手机号查找老人</view>
-    <view class="panel-desc">输入老人预留手机号，先查找账号，再发起绑定申请。</view>
+    <view class="panel-desc">输入老人预留的绑定手机号，系统会匹配老人账号并发起绑定申请。</view>
 
     <input
       class="phone-input"
@@ -25,72 +40,84 @@
       bindinput="onPhoneInput"
     />
 
-    <button class="primary-btn" bindtap="previewPhoneLookup">查找并申请绑定</button>
-
-    <view class="flow-tip">
-      <view class="tip-title">后续流程</view>
-      <view class="tip-line">1. 找到对应老人账号</view>
-      <view class="tip-line">2. 选择与老人的关系</view>
-      <view class="tip-line">3. 由家庭管理员审核通过</view>
-    </view>
+    <button class="primary-btn" bindtap="lookupByPhone" loading="{{loading}}">查找并申请绑定</button>
   </view>
 
   <view wx:if="{{mode === 'scan'}}" class="panel-card">
     <view class="panel-title">扫描二维码绑定</view>
-    <view class="panel-desc">适合家属在老人身边时使用。扫描老人端展示的二维码即可发起申请。</view>
+    <view class="panel-desc">支持扫描包含老人邀请参数的二维码、小程序码或绑定码。</view>
 
     <view class="scan-preview">
       <view class="scan-icon">▣</view>
-      <view class="scan-text">扫描后将自动带出老人账号信息</view>
+      <view class="scan-text">扫码后将自动识别老人账号，并进入确认申请流程。</view>
     </view>
 
-    <button class="primary-btn" bindtap="previewScanFlow">扫描二维码</button>
+    <button class="primary-btn" bindtap="scanBindCode">扫描二维码</button>
   </view>
 
   <view wx:if="{{mode === 'invite'}}" class="panel-card">
     <view class="panel-title">通过邀请链接绑定</view>
     <view class="panel-desc">老人可在老人端点击“邀请家人”，通过微信将邀请发送给家属。</view>
 
-    <view wx:if="{{loading}}" class="state-card">正在加载邀请信息...</view>
+    <view wx:if="{{loading && requestSource === 'share'}}" class="state-card">正在加载邀请信息...</view>
+    <view wx:elif="{{!loading && !sharedElder}}" class="state-card">
+      当前没有可用的邀请链接，请让老人端重新发起邀请。
+    </view>
+  </view>
 
-    <view wx:elif="{{sharedElder}}" class="invite-card">
-      <view class="invite-badge">已收到邀请</view>
+  <view wx:if="{{sharedElder}}" class="panel-card">
+    <view class="panel-title">{{requestSource === 'phone' ? '查找到的老人' : requestSource === 'scan' ? '扫描结果' : '邀请信息'}}</view>
+    <view class="panel-desc">请确认老人信息无误，并选择你与老人的关系后再提交绑定申请。</view>
+
+    <view class="invite-card">
+      <view class="invite-badge">{{requestSource === 'phone' ? '手机号匹配' : requestSource === 'scan' ? '扫码识别' : '已收到邀请'}}</view>
       <view class="invite-name">{{sharedElder.name}}</view>
       <view class="invite-meta">
         <text wx:if="{{sharedElder.gender}}">{{sharedElder.gender}}</text>
         <text wx:if="{{sharedElder.age}}">{{sharedElder.age}} 岁</text>
-        <text wx:if="{{sharedElder.hometown}}">{{sharedElder.hometown}}</text>
+        <text wx:if="{{sharedElder.maskedPhone}}">手机号 {{sharedElder.maskedPhone}}</text>
       </view>
-      <view wx:if="{{sharedElder.address}}" class="invite-address">{{sharedElder.address}}</view>
+
+      <view class="approval-box">
+        <view class="approval-title">选择与老人的关系</view>
+        <picker mode="selector" range="{{relationOptions}}" value="{{relationIndex < 0 ? 0 : relationIndex}}" bindchange="onRelationChange">
+          <view class="relation-picker">
+            <text class="{{relation ? '' : 'placeholder'}}">{{relation || "请选择关系"}}</text>
+            <text class="arrow">></text>
+          </view>
+        </picker>
+      </view>
 
       <view wx:if="{{!requestSent}}" class="approval-box">
         <view class="approval-title">发送绑定申请</view>
         <view class="approval-desc">
-          申请提交后，需要由家庭管理员确认通过，避免陌生人误绑定。
+          申请提交后，需要由老人端确认通过，避免陌生人误绑定。
         </view>
         <button class="primary-btn" bindtap="submitInviteRequest">提交绑定申请</button>
       </view>
 
       <view wx:else class="state-card success">
-        申请已提交，等待家庭管理员审批。审批通过后，你就能管理这位老人的回忆与健康信息。
+        申请已提交，等待老人端审批。审批通过后，你就能管理这位老人的回忆与健康信息。
       </view>
-    </view>
-
-    <view wx:elif="{{!loading}}" class="state-card">
-      当前没有可用的邀请链接，请让老人端重新发起邀请。
     </view>
   </view>
 
   <view class="panel-card pending-card">
-    <view class="panel-title">待处理申请</view>
-    <view class="panel-desc">这里会显示你已经提交、正在等待家庭管理员审批的绑定申请。</view>
+    <view class="panel-title">我的绑定申请</view>
+    <view class="panel-desc">这里会显示你提交过的绑定申请和最新审批状态。</view>
 
-    <view wx:for="{{pendingRequests}}" wx:key="id" class="pending-item">
-      <view>
-        <view class="pending-name">{{item.elderName}}</view>
-        <view class="pending-meta">{{item.relation}} · {{item.statusText}}</view>
+    <block wx:if="{{pendingRequests.length}}">
+      <view wx:for="{{pendingRequests}}" wx:key="id" class="pending-item">
+        <view class="pending-main">
+          <view class="pending-name">{{item.elderName}}</view>
+          <view class="pending-meta">{{item.relation}} · {{item.statusText}}</view>
+        </view>
+        <view class="pending-badge {{item.statusClass}}">{{item.statusText}}</view>
       </view>
-      <view class="pending-badge">审批中</view>
+    </block>
+
+    <view wx:else class="state-card">
+      你还没有提交过绑定申请
     </view>
   </view>
 </view>

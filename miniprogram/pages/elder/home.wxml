@@ -1,177 +1,214 @@
 <view class="page">
-  <view class="card board-card">
-    <view class="board-head-row">
-      <view wx:if="{{boardTab === 'messages'}}" class="board-header">留言板</view>
-      <view wx:else class="board-header">回忆</view>
-      <view wx:if="{{unreadMessageCount > 0}}" class="message-bubble">{{unreadMessageCount}} 条新消息</view>
-    </view>
+  <block wx:if="{{pageTab === 'home'}}">
 
-    <view class="board-tabs">
-      <view
-        class="board-tab board-tab-message {{boardTab === 'messages' ? 'board-tab-active' : ''}}"
-        data-tab="messages"
-        bindtap="switchBoardTab"
-      >
-        <text>留言板</text>
-        <text wx:if="{{unreadMessageCount > 0}}" class="tab-count">{{unreadMessageCount}}</text>
-        <view wx:if="{{unreadMessageCount > 0}}" class="tab-dot"></view>
-      </view>
-      <view
-        class="board-tab {{boardTab === 'today' ? 'board-tab-active' : ''}}"
-        data-tab="today"
-        bindtap="switchBoardTab"
-      >
-        回忆
-      </view>
-    </view>
 
-    <view wx:if="{{boardTab === 'messages'}}" class="board-body">
-      <view wx:if="{{medicationReminders.length}}" class="reminder-panel">
-        <view class="reminder-title">今日服药提醒</view>
-        <block wx:for="{{medicationReminders}}" wx:key="id">
-          <view class="reminder-item">
-            <view class="reminder-main">
-              <view class="reminder-name">{{item.name}}</view>
-              <view class="reminder-meta">
-                {{item.time || "请按时服用"}}{{item.frequency ? " · " + item.frequency : ""}}{{item.dosage ? " · " + item.dosage : ""}}
-              </view>
-              <view wx:if="{{item.notes}}" class="reminder-note">{{item.notes}}</view>
-            </view>
-            <view class="reminder-tag">服药</view>
+    <view class="memo-card">
+      <view class="memo-head-row">
+        <view class="memo-title">备忘录</view>
+        <view wx:if="{{unreadMessageCount > 0}}" class="memo-badge">{{unreadMessageCount}} 条新消息</view>
+      </view>
+
+      <view class="memo-tabs">
+        <view class="memo-tab {{boardTab === 'messages' ? 'memo-tab-active' : ''}}" data-tab="messages" bindtap="switchBoardTab">
+          留言
+        </view>
+        <view class="memo-tab {{boardTab === 'today' ? 'memo-tab-active' : ''}}" data-tab="today" bindtap="switchBoardTab">
+          回忆
+        </view>
+      </view>
+
+      <view wx:if="{{boardTab === 'messages'}}" class="memo-body">
+        <view wx:if="{{pendingCount > 0}}" class="binding-message-card" bindtap="goToBindingRequests">
+          <view class="binding-message-icon">🔔</view>
+          <view class="binding-message-copy">
+            <view class="binding-message-title">有新的绑定申请</view>
+            <view class="binding-message-desc">当前有 {{pendingCount}} 条待处理，点这里查看。</view>
           </view>
-        </block>
-      </view>
+        </view>
 
-      <view wx:if="{{voiceMessages.length}}" class="message-list {{medicationReminders.length ? 'message-list-spaced' : ''}}">
-        <block wx:for="{{voiceMessages}}" wx:key="id">
-          <view class="message-item">
-            <view class="message-main">
-              <view class="message-sender">{{item.senderName}}</view>
-              <view class="message-meta">
-                {{item.hasAudio ? item.senderRelation + " · " + item.displayTime + " · " + item.durationText : item.senderRelation + " · " + item.displayTime + " · 文字留言"}}
+        <view wx:if="{{medicationReminders.length}}" class="reminder-panel">
+          <view class="reminder-title">今日提醒</view>
+          <block wx:for="{{medicationReminders}}" wx:key="id">
+            <view class="reminder-item">
+              <view class="reminder-main">
+                <view class="reminder-name">{{item.name}}</view>
+                <view class="reminder-meta">
+                  {{item.time || "请按时服用"}}{{item.frequency ? " · " + item.frequency : ""}}{{item.dosage ? " · " + item.dosage : ""}}
+                </view>
+                <view wx:if="{{item.notes}}" class="reminder-note">{{item.notes}}</view>
               </view>
-              <view wx:if="{{item.note}}" class="message-note">{{item.note}}</view>
+              <view class="reminder-tag">提醒</view>
             </view>
-            <button wx:if="{{item.hasAudio}}" class="message-play-btn" bindtap="playVoiceMessage" data-id="{{item.id}}">
-              {{playingMessageId === item.id ? "停止" : "播放"}}
-            </button>
-            <view wx:else class="message-text-tag">文字</view>
-          </view>
+          </block>
+        </view>
+
+        <view wx:if="{{voiceMessages.length}}" class="message-list {{medicationReminders.length || pendingCount > 0 ? 'message-list-spaced' : ''}}">
+          <block wx:for="{{voiceMessages}}" wx:key="id">
+            <view class="message-item">
+              <view class="message-main">
+                <view class="message-sender">{{item.senderName}}</view>
+                <view class="message-meta">
+                  {{item.hasAudio ? item.senderRelation + " · " + item.displayTime + " · " + item.durationText : item.senderRelation + " · " + item.displayTime + " · 文字留言"}}
+                </view>
+                <view wx:if="{{item.note}}" class="message-note">{{item.note}}</view>
+              </view>
+              <button wx:if="{{item.hasAudio}}" class="message-play-btn" bindtap="playVoiceMessage" data-id="{{item.id}}">
+                {{playingMessageId === item.id ? "停止" : "播放"}}
+              </button>
+              <view wx:else class="message-text-tag">文字</view>
+            </view>
+          </block>
+        </view>
+
+        <view wx:if="{{!pendingCount && !medicationReminders.length && !voiceMessages.length}}" class="empty-content">今天还没有新的提醒和留言</view>
+      </view>
+
+      <view wx:else class="memo-body">
+        <block wx:if="{{onThisDay}}">
+          <image
+            wx:if="{{onThisDay.img}}"
+            class="board-image"
+            src="{{onThisDay.img}}"
+            mode="aspectFill"
+            bindtap="openPreview"
+          />
+          <view wx:if="{{onThisDay.title}}" class="board-title">{{onThisDay.title}}</view>
+          <view wx:if="{{onThisDay.content}}" class="board-desc">{{onThisDay.content}}</view>
+          <view wx:if="{{!onThisDay.img && !onThisDay.title && !onThisDay.content}}" class="empty-content">今天还没有新的回忆内容</view>
         </block>
-      </view>
-
-      <view wx:if="{{!medicationReminders.length && !voiceMessages.length}}" class="empty-content">无内容</view>
-    </view>
-
-    <view wx:else class="board-body">
-      <block wx:if="{{onThisDay}}">
-        <image
-          wx:if="{{onThisDay.img}}"
-          class="board-image"
-          src="{{onThisDay.img}}"
-          mode="aspectFill"
-          bindtap="openPreview"
-        />
-        <view wx:if="{{onThisDay.title}}" class="board-title">{{onThisDay.title}}</view>
-        <view wx:if="{{onThisDay.content}}" class="board-desc">{{onThisDay.content}}</view>
-        <view wx:if="{{!onThisDay.img && !onThisDay.title && !onThisDay.content}}" class="empty-content">无内容</view>
-      </block>
-      <view wx:else class="empty-content">无内容</view>
-    </view>
-  </view>
-
-  <view wx:if="{{featureTab === 'daily'}}" class="feature-list">
-    <view class="card feature request-card" bindtap="goToBindingRequests">
-      <view class="icon request-icon">审</view>
-      <view class="info">
-        <view class="title">绑定申请</view>
-        <view class="desc">查看家属提交的绑定请求</view>
-      </view>
-      <view wx:if="{{pendingCount > 0}}" class="request-badge">{{pendingCount}}</view>
-    </view>
-
-    <view class="card feature" bindtap="goToProfile">
-      <view class="icon">🧓</view>
-      <view class="info">
-        <view class="title">我的资料</view>
-        <view class="desc">身份卡与我的故事轴</view>
+        <view wx:else class="empty-content">今天还没有新的回忆内容</view>
       </view>
     </view>
 
-    <view class="card feature" bindtap="goToFamily">
-      <view class="icon">👪</view>
-      <view class="info">
-        <view class="title">看家人</view>
-        <view class="desc">查看家属头像和关系信息</view>
+    <view class="section">
+      <view class="section-title">生活</view>
+      <view class="feature-grid">
+        <view class="feature-card life-card" bindtap="goToLifeGuides">
+          <view class="feature-emoji">🍵</view>
+          <view class="feature-title">生活助手</view>
+          <view class="feature-desc">看常用物品和家电教程</view>
+        </view>
+
+        <view class="feature-card life-card" bindtap="goToMatch">
+          <view class="feature-emoji">🧩</view>
+          <view class="feature-title">卡片游戏</view>
+          <view class="feature-desc">通过配对小游戏训练记忆</view>
+        </view>
       </view>
     </view>
 
-    <view class="card feature" bindtap="goToHealth">
-      <view class="icon">❤️</view>
-      <view class="info">
-        <view class="title">今日健康</view>
-        <view class="desc">查看血压、血糖等健康信息</view>
-      </view>
-    </view>
-  </view>
+    <view class="section">
+      <view class="section-title">家人</view>
+      <view class="feature-grid">
+        <view class="feature-card family-card" bindtap="goToFamily">
+          <view class="feature-emoji">👨‍👩‍👧</view>
+          <view class="feature-title">看家人</view>
+          <view class="feature-desc">浏览家人的头像和关系</view>
+        </view>
 
-  <view wx:else class="feature-list">
-    <view class="card feature" bindtap="goToMemory">
-      <view class="icon">🖼</view>
-      <view class="info">
-        <view class="title">看回忆</view>
-        <view class="desc">浏览过去的照片和故事</view>
-      </view>
-    </view>
-
-    <view class="card feature" bindtap="goToLifeGuides">
-      <view class="icon">📘</view>
-      <view class="info">
-        <view class="title">生活小助手</view>
-        <view class="desc">查看家电和常用物品的使用教程</view>
+        <view class="feature-card family-card" bindtap="goToMemory">
+          <view class="feature-emoji">🖼️</view>
+          <view class="feature-title">看回忆</view>
+          <view class="feature-desc">翻看照片和故事内容</view>
+        </view>
       </view>
     </view>
 
-    <view class="card feature" bindtap="goToMatch">
-      <view class="icon">🃏</view>
-      <view class="info">
-        <view class="title">卡片游戏</view>
-        <view class="desc">通过配对游戏加深记忆</view>
+
+    <view class="section last-section">
+      <view class="section-title">健康</view>
+      <view class="feature-card health-card wide-card" bindtap="goToHealth">
+        <view class="feature-emoji">❤️</view>
+        <view class="feature-title">今日健康</view>
+        <view class="feature-desc">查看血压、血糖和今日健康记录</view>
       </view>
     </view>
-  </view>
+  </block>
 
-  <view class="feature-switch">
-    <view
-      class="switch-item {{featureTab === 'daily' ? 'switch-item-active' : ''}}"
-      data-tab="daily"
-      bindtap="switchFeatureTab"
-    >
-      <view class="switch-label">日常陪伴</view>
-      <view class="switch-desc">资料 · 家人 · 健康</view>
+  <block wx:else>
+    <view class="hero-card mine-hero">
+      <view class="hero-badge">我的空间</view>
+      <view class="mine-profile">
+        <image class="mine-avatar" src="{{(elderProfile && elderProfile.avatar) || '/assets/images/avatar1.png'}}" mode="aspectFill"></image>
+        <view class="mine-copy">
+          <view class="hero-title small">{{(elderProfile && elderProfile.name) || "未填写姓名"}}</view>
+          <view class="hero-desc small">
+            {{elderProfile && elderProfile.gender ? elderProfile.gender : "待完善资料"}}
+            <text wx:if="{{elderProfile && elderProfile.age}}"> · {{elderProfile.age}} 岁</text>
+          </view>
+        </view>
+      </view>
     </view>
-    <view
-      class="switch-item {{featureTab === 'memory' ? 'switch-item-active' : ''}}"
-      data-tab="memory"
-      bindtap="switchFeatureTab"
-    >
-      <view class="switch-label">时光乐园</view>
-      <view class="switch-desc">回忆 · 教程 · 游戏</view>
+
+    <view class="section">
+      <view class="section-title">我的内容</view>
+      <view class="feature-grid">
+        <view class="feature-card mine-card" bindtap="goToProfile">
+          <view class="feature-emoji">🪪</view>
+          <view class="feature-title">我的资料</view>
+          <view class="feature-desc">查看个人资料和重要信息</view>
+        </view>
+
+        <view class="feature-card mine-card" bindtap="goToMemory">
+          <view class="feature-emoji">📚</view>
+          <view class="feature-title">我的回忆</view>
+          <view class="feature-desc">查看照片、故事和回忆内容</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-title">绑定家人</view>
+      <view class="feature-grid">
+        <view class="feature-card bind-card" bindtap="goToBindingRequests">
+          <view class="feature-emoji">👥</view>
+          <view class="feature-title">我的绑定</view>
+          <view class="feature-desc">
+            {{pendingCount > 0 ? "有 " + pendingCount + " 条申请待处理" : "查看绑定申请和已绑定家人"}}
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="qr-panel">
+      <view class="qr-panel-title">老人专属二维码</view>
+      <view class="qr-panel-desc">家人扫码后就能申请绑定，每位老人都有自己的专属二维码。</view>
+
+      <view class="qr-box">
+        <image wx:if="{{bindQrCodeFileID}}" class="qr-image" src="{{bindQrCodeFileID}}" mode="aspectFit"></image>
+        <view wx:else class="qr-placeholder">
+          <view class="qr-placeholder-emoji">🧾</view>
+          <view class="qr-placeholder-text">{{bindQrLoading ? "正在生成二维码..." : "点下方按钮生成二维码"}}</view>
+        </view>
+      </view>
+
+      <view class="qr-actions">
+        <button class="secondary-btn" bindtap="refreshBindingQRCode" loading="{{bindQrLoading}}">
+          {{bindQrCodeFileID ? "🔄 刷新二维码" : "🧾 生成二维码"}}
+        </button>
+        <button class="secondary-btn ghost-btn" bindtap="goToBindingRequests">👥 查看绑定消息</button>
+      </view>
+    </view>
+  </block>
+
+  <view class="bottom-nav">
+    <view class="nav-item {{pageTab === 'home' ? 'active' : ''}}" data-tab="home" bindtap="switchPageTab">
+      <view class="nav-emoji">🏠</view>
+      <view class="nav-label">首页</view>
+    </view>
+
+    <view class="nav-center" bindtap="goToFaceRecognition">
+      <view class="nav-center-btn">📸</view>
+      <view class="nav-center-label">人脸识别</view>
+    </view>
+
+    <view class="nav-item {{pageTab === 'mine' ? 'active' : ''}}" data-tab="mine" bindtap="switchPageTab">
+      <view class="nav-emoji">👤</view>
+      <view class="nav-label">我的</view>
     </view>
   </view>
 
   <view wx:if="{{previewVisible}}" class="preview-mask" bindtap="closePreview">
     <image class="preview-full" src="{{previewImg}}" mode="aspectFit" />
-  </view>
-
-  <view class="floating-buttons">
-    <button class="floating-btn invite-btn" open-type="share">
-      <view class="btn-icon">邀</view>
-      <view class="btn-text">邀请家人</view>
-    </button>
-    <button class="floating-btn face-btn" bindtap="goToFaceRecognition">
-      <view class="btn-icon">识</view>
-      <view class="btn-text">人脸识别</view>
-    </button>
   </view>
 </view>

@@ -1,80 +1,169 @@
 .page {
   min-height: 100vh;
-  padding: 28rpx;
-  background: linear-gradient(180deg, #f7f9fc 0%, #eef3f8 100%);
+  padding: 32rpx 28rpx 40rpx;
   box-sizing: border-box;
+  background:
+    radial-gradient(circle at top left, rgba(255, 225, 182, 0.3), transparent 26%),
+    linear-gradient(180deg, #f8fbfc 0%, #eef4f5 100%);
 }
 
 .hero-card,
+.section-card,
 .request-card,
-.empty-card {
-  background: rgba(255, 255, 255, 0.96);
+.empty-card,
+.family-card {
   border-radius: 32rpx;
-  box-shadow: 0 18rpx 40rpx rgba(15, 23, 42, 0.06);
+  box-shadow: 0 18rpx 42rpx rgba(21, 32, 43, 0.08);
 }
 
 .hero-card {
-  padding: 34rpx 32rpx;
-  margin-bottom: 24rpx;
+  padding: 34rpx 30rpx;
+  margin-bottom: 28rpx;
+  background: linear-gradient(145deg, #25486f 0%, #386f8f 55%, #5da7a6 100%);
+  color: #fff;
+}
+
+.hero-badge {
+  display: inline-flex;
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.16);
+  font-size: 22rpx;
+  letter-spacing: 2rpx;
 }
 
 .hero-title {
-  font-size: 42rpx;
+  margin-top: 22rpx;
+  font-size: 50rpx;
   font-weight: 700;
-  color: #18324b;
-  margin-bottom: 12rpx;
 }
 
-.hero-desc,
-.request-meta,
-.request-time,
-.status,
-.empty-card {
-  font-size: 27rpx;
-  line-height: 1.7;
-  color: #667085;
+.hero-desc {
+  margin-top: 16rpx;
+  font-size: 28rpx;
+  line-height: 1.75;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.section-card {
+  padding: 28rpx 26rpx;
+  margin-bottom: 24rpx;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 18rpx;
+}
+
+.section-title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #1d2c3f;
+}
+
+.section-tag {
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  background: #eaf3ff;
+  color: #2563eb;
+  font-size: 23rpx;
+}
+
+.section-tag.soft {
+  background: #effaf3;
+  color: #276749;
+}
+
+.request-list,
+.family-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
 }
 
 .request-card {
-  padding: 28rpx;
-  margin-bottom: 22rpx;
+  padding: 28rpx 26rpx;
+  background: #f9fbfc;
 }
 
-.request-header {
+.request-top {
   display: flex;
-  align-items: flex-start;
   justify-content: space-between;
   gap: 18rpx;
 }
 
-.request-name {
-  font-size: 34rpx;
-  font-weight: 700;
-  color: #1f2a37;
+.request-main,
+.family-main {
+  flex: 1;
+  min-width: 0;
 }
 
-.request-meta {
+.request-badge {
+  display: inline-block;
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  margin-bottom: 16rpx;
+}
+
+.request-badge.pending {
+  background: #eaf3ff;
+  color: #2563eb;
+}
+
+.request-badge.approved {
+  background: #effaf3;
+  color: #276749;
+}
+
+.request-badge.rejected {
+  background: #fff1f0;
+  color: #d14343;
+}
+
+.request-name,
+.family-name {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #1d2c3f;
+}
+
+.request-meta,
+.request-time,
+.empty-desc,
+.family-meta {
+  font-size: 25rpx;
+  line-height: 1.7;
+  color: #6f8092;
+}
+
+.request-meta,
+.family-meta {
   margin-top: 8rpx;
 }
 
 .request-time {
-  color: #98a2b3;
   white-space: nowrap;
+  color: #98a2b3;
 }
 
 .action-row {
   display: flex;
-  gap: 18rpx;
-  margin-top: 20rpx;
+  gap: 16rpx;
+  margin-top: 22rpx;
 }
 
 .action-btn {
   flex: 1;
-  height: 84rpx;
-  line-height: 84rpx;
+  height: 86rpx;
+  line-height: 86rpx;
   border-radius: 999rpx;
   font-size: 29rpx;
-  font-weight: 600;
+  font-weight: 700;
   border: none;
 }
 
@@ -92,24 +181,46 @@
   color: #fff;
 }
 
-.status {
-  margin-top: 24rpx;
-  padding: 20rpx 22rpx;
-  border-radius: 24rpx;
-  background: #f8fafc;
+.family-card {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  padding: 24rpx;
+  background: linear-gradient(145deg, #eef6ff 0%, #ffffff 72%);
 }
 
-.status.approved {
+.family-icon {
+  width: 84rpx;
+  height: 84rpx;
+  border-radius: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34rpx;
+  background: rgba(255, 255, 255, 0.9);
+  flex-shrink: 0;
+}
+
+.family-status {
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
   background: #effaf3;
   color: #276749;
-}
-
-.status.rejected {
-  background: #fff1f0;
-  color: #d14343;
+  font-size: 23rpx;
 }
 
 .empty-card {
-  padding: 40rpx 32rpx;
+  padding: 44rpx 30rpx;
   text-align: center;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.empty-title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #1d2c3f;
+}
+
+.empty-desc {
+  margin-top: 10rpx;
 }

@@ -61,7 +61,7 @@ Page({
         elderName
       });
     } catch (error) {
-      console.error("加载回忆失败:", error);
+      console.error("load memories failed:", error);
       this.setData({ loading: false });
       const message = error && (error.message || error.msg);
       if (message && message.includes("绑定")) {
@@ -70,7 +70,7 @@ Page({
           content: message,
           showCancel: false,
           success: () => {
-            wx.redirectTo({ url: "/pages/family/bind" });
+            wx.redirectTo({ url: "/pages/family/bind/index" });
           }
         });
         return;
