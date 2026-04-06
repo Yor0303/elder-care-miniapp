@@ -46,6 +46,9 @@ const TYPE_ORDER = [
   "video"
 ];
 
+const BGM_SRC = "/assets/audio/memory-bgm.mp3";
+const AUTO_PLAY_INTERVAL = 3200;
+
 function getTypeLabel(type) {
   return TYPE_LABELS[type] || "其他";
 }
@@ -83,18 +86,108 @@ Page({
     activeTypeLabel: "",
     loading: false,
     errorMsg: "",
-    queryPerson: ""
+    queryPerson: "",
+    viewMode: "timeline",
+    currentIndex: 0,
+    flipMemory: null,
+    incomingMemory: null,
+    isFlipping: false,
+    isSettling: false,
+    flipDirection: "next",
+    isAutoPlaying: false,
+    autoPlayPaused: false,
+    bgmEnabled: false
   },
 
   onLoad(options = {}) {
+    this.autoPlayTimer = null;
+    this.bgmAudio = wx.createInnerAudioContext();
+    this.bgmAudio.loop = true;
+    this.bgmAudio.obeyMuteSwitch = false;
+    this.bgmAudio.src = BGM_SRC;
+    this.bgmAudio.onError(() => {
+      if (!this.data.bgmEnabled) return;
+      this.setData({ bgmEnabled: false });
+      wx.showToast({
+        title: "背景音乐暂时不可用",
+        icon: "none"
+      });
+    });
+
     this.setData({
       queryPerson: options.person || ""
     });
     this.loadMemories();
   },
 
+  onHide() {
+    this.clearAutoPlay();
+    this.stopBgm();
+  },
+
+  onUnload() {
+    this.clearAutoPlay();
+    this.stopBgm();
+    if (this.bgmAudio) {
+      this.bgmAudio.destroy();
+      this.bgmAudio = null;
+    }
+  },
+
+  getSafeIndex(list, index) {
+    if (!Array.isArray(list) || !list.length) {
+      return 0;
+    }
+    return Math.max(0, Math.min(Number(index) || 0, list.length - 1));
+  },
+
+  applyFilters(memories, decade, type) {
+    return (memories || []).filter((item) => {
+      if (decade && item.decade !== decade) {
+        return false;
+      }
+      if (type && item.type !== type) {
+        return false;
+      }
+      return true;
+    });
+  },
+
+  updateListState(extraData = {}) {
+    const nextDecade = Object.prototype.hasOwnProperty.call(extraData, "activeDecade")
+      ? extraData.activeDecade
+      : this.data.activeDecade;
+    const nextType = Object.prototype.hasOwnProperty.call(extraData, "activeType")
+      ? extraData.activeType
+      : this.data.activeType;
+
+    const list = this.applyFilters(this.data.memories, nextDecade, nextType);
+    const requestedIndex = Object.prototype.hasOwnProperty.call(extraData, "currentIndex")
+      ? extraData.currentIndex
+      : this.data.currentIndex;
+    const currentIndex = this.getSafeIndex(list, requestedIndex);
+
+    this.setData({
+      ...extraData,
+      list,
+      currentIndex,
+      flipMemory: list[currentIndex] || null,
+      incomingMemory: null,
+      isFlipping: false,
+      isSettling: false,
+      activeTypeLabel: getTypeLabel(nextType)
+    });
+  },
+
   async loadMemories() {
-    this.setData({ loading: true, errorMsg: "" });
+    this.clearAutoPlay();
+    this.stopBgm();
+    this.setData({
+      loading: true,
+      errorMsg: "",
+      isAutoPlaying: false,
+      autoPlayPaused: false
+    });
 
     try {
       const queryParams = {};
@@ -105,11 +198,14 @@ Page({
       const memoriesRaw = await getMemoriesAPI(queryParams);
       const memories = Array.isArray(memoriesRaw)
         ? memoriesRaw
-        : (memoriesRaw && Array.isArray(memoriesRaw.data) ? memoriesRaw.data : []);
+        : memoriesRaw && Array.isArray(memoriesRaw.data)
+          ? memoriesRaw.data
+          : [];
 
       const normalized = memories
         .map((item) => ({
           ...item,
+          id: item.id || item._id || "",
           year: item.year || "",
           decade: normalizeDecade(item.decade, item.year),
           type: item.type || "daily",
@@ -121,7 +217,9 @@ Page({
         }))
         .sort((a, b) => normalizeYear(b.year) - normalizeYear(a.year));
 
-      const decadeOptions = [...new Set(normalized.map((item) => item.decade).filter(Boolean))].sort((a, b) => Number(b) - Number(a));
+      const decadeOptions = [...new Set(normalized.map((item) => item.decade).filter(Boolean))].sort(
+        (a, b) => Number(b) - Number(a)
+      );
       const typeOptions = [...new Set(normalized.map((item) => item.type).filter(Boolean))]
         .sort((a, b) => {
           const aIndex = TYPE_ORDER.indexOf(a);
@@ -138,11 +236,19 @@ Page({
           label: getTypeLabel(type)
         }));
 
+      const list = this.applyFilters(normalized, this.data.activeDecade, this.data.activeType);
+      const currentIndex = this.getSafeIndex(list, this.data.currentIndex);
+
       this.setData({
         memories: normalized,
-        list: this.applyFilters(normalized, this.data.activeDecade, this.data.activeType),
+        list,
         decadeOptions,
         typeOptions,
+        currentIndex,
+        flipMemory: list[currentIndex] || null,
+        incomingMemory: null,
+        isFlipping: false,
+        isSettling: false,
         activeTypeLabel: getTypeLabel(this.data.activeType || ""),
         loading: false
       });
@@ -150,7 +256,7 @@ Page({
       console.error("加载回忆数据失败:", error);
       this.setData({
         loading: false,
-        errorMsg: error.message || "加载失败，请重试"
+        errorMsg: (error && error.message) || "加载失败，请重试"
       });
 
       wx.showToast({
@@ -160,21 +266,27 @@ Page({
     }
   },
 
-  applyFilters(memories, decade, type) {
-    return (memories || []).filter((item) => {
-      if (decade && item.decade !== decade) {
-        return false;
-      }
-      if (type && item.type !== type) {
-        return false;
-      }
-      return true;
-    });
-  },
-
   async onPullDownRefresh() {
     await this.loadMemories();
     wx.stopPullDownRefresh();
+  },
+
+  setViewMode(e) {
+    const mode = e.currentTarget.dataset.mode;
+    if (!mode || mode === this.data.viewMode) return;
+
+    this.clearAutoPlay();
+    this.stopBgm();
+    this.setData({
+      viewMode: mode,
+      currentIndex: this.getSafeIndex(this.data.list, this.data.currentIndex),
+      flipMemory: this.data.list[this.getSafeIndex(this.data.list, this.data.currentIndex)] || null,
+      incomingMemory: null,
+      isFlipping: false,
+      isSettling: false,
+      isAutoPlaying: false,
+      autoPlayPaused: false
+    });
   },
 
   openMemory(e) {
@@ -182,6 +294,14 @@ Page({
     this.setData({
       showDetail: true,
       currentMemory: item || {}
+    });
+  },
+
+  openCurrentMemory() {
+    if (!this.data.flipMemory) return;
+    this.setData({
+      showDetail: true,
+      currentMemory: this.data.flipMemory
     });
   },
 
@@ -215,32 +335,184 @@ Page({
 
   filterDecade(e) {
     const value = e.currentTarget.dataset.value || "";
-    this.setData({
+    this.stopAutoPlay();
+    this.updateListState({
       activeDecade: value,
-      list: this.applyFilters(this.data.memories, value, this.data.activeType)
+      currentIndex: 0
     });
   },
 
   filterType(e) {
     const value = e.currentTarget.dataset.value || "";
-    this.setData({
+    this.stopAutoPlay();
+    this.updateListState({
       activeType: value,
-      activeTypeLabel: getTypeLabel(value),
-      list: this.applyFilters(this.data.memories, this.data.activeDecade, value)
+      currentIndex: 0
     });
   },
 
   resetFilter() {
-    this.setData({
+    this.stopAutoPlay();
+    this.updateListState({
       activeDecade: "",
       activeType: "",
-      activeTypeLabel: "",
-      list: this.data.memories,
       showFilter: false,
-      expandedSection: ""
+      expandedSection: "",
+      currentIndex: 0
     });
   },
 
-  onUnload() {
+  startAutoPlay() {
+    if (!this.data.list.length) {
+      wx.showToast({
+        title: "暂无回忆可放映",
+        icon: "none"
+      });
+      return;
+    }
+
+    this.clearAutoPlay();
+    this.setData({
+      isAutoPlaying: true,
+      autoPlayPaused: false
+    });
+    this.playBgmIfNeeded();
+    this.runAutoPlay();
+  },
+
+  pauseAutoPlay() {
+    this.clearAutoPlay();
+    this.pauseBgm();
+    this.setData({
+      isAutoPlaying: false,
+      autoPlayPaused: true
+    });
+  },
+
+  resumeAutoPlay() {
+    if (!this.data.list.length) return;
+
+    this.clearAutoPlay();
+    this.setData({
+      isAutoPlaying: true,
+      autoPlayPaused: false
+    });
+    this.playBgmIfNeeded();
+    this.runAutoPlay();
+  },
+
+  stopAutoPlay() {
+    this.clearAutoPlay();
+    this.stopBgm();
+    this.setData({
+      isAutoPlaying: false,
+      autoPlayPaused: false
+    });
+  },
+
+  runAutoPlay() {
+    this.clearAutoPlay();
+    this.autoPlayTimer = setTimeout(() => {
+      if (!this.data.isAutoPlaying || this.data.isFlipping || this.data.showDetail) {
+        return;
+      }
+
+      if (this.data.currentIndex >= this.data.list.length - 1) {
+        this.stopAutoPlay();
+        wx.showToast({
+          title: "回忆放映完成",
+          icon: "none"
+        });
+        return;
+      }
+
+      this.switchFlipMemory("next", this.data.currentIndex + 1);
+      this.runAutoPlay();
+    }, AUTO_PLAY_INTERVAL);
+  },
+
+  clearAutoPlay() {
+    if (this.autoPlayTimer) {
+      clearTimeout(this.autoPlayTimer);
+      this.autoPlayTimer = null;
+    }
+  },
+
+  toggleBgm() {
+    const nextEnabled = !this.data.bgmEnabled;
+    this.setData({ bgmEnabled: nextEnabled });
+
+    if (!nextEnabled) {
+      this.stopBgm();
+      return;
+    }
+
+    if (this.data.isAutoPlaying) {
+      this.playBgmIfNeeded();
+    } else {
+      wx.showToast({
+        title: "开始放映时会自动播放背景音乐",
+        icon: "none"
+      });
+    }
+  },
+
+  playBgmIfNeeded() {
+    if (!this.data.bgmEnabled || !this.bgmAudio) return;
+    try {
+      this.bgmAudio.play();
+    } catch (_) {}
+  },
+
+  pauseBgm() {
+    if (!this.bgmAudio) return;
+    try {
+      this.bgmAudio.pause();
+    } catch (_) {}
+  },
+
+  stopBgm() {
+    if (!this.bgmAudio) return;
+    try {
+      this.bgmAudio.stop();
+    } catch (_) {}
+  },
+
+  prevMemory() {
+    if (this.data.isFlipping || this.data.currentIndex <= 0) return;
+    this.switchFlipMemory("prev", this.data.currentIndex - 1);
+  },
+
+  nextMemory() {
+    if (this.data.isFlipping || this.data.currentIndex >= this.data.list.length - 1) return;
+    this.switchFlipMemory("next", this.data.currentIndex + 1);
+  },
+
+  switchFlipMemory(direction, nextIndex) {
+    const nextMemory = this.data.list[nextIndex] || null;
+    if (!nextMemory) return;
+
+    this.setData({
+      flipDirection: direction,
+      isFlipping: true,
+      isSettling: false,
+      incomingMemory: nextMemory
+    });
+
+    setTimeout(() => {
+      this.setData({
+        currentIndex: nextIndex,
+        flipMemory: nextMemory,
+        isFlipping: false,
+        isSettling: true
+      });
+    }, 240);
+
+    setTimeout(() => {
+      this.setData({
+        incomingMemory: null,
+        isSettling: false
+      });
+    }, 520);
   }
 });

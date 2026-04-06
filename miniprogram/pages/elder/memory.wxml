@@ -1,6 +1,22 @@
 <view class="page">
   <view class="top-bar">
-    <view class="filter-btn" bindtap="openFilter">筛选回忆</view>
+    <view class="view-switch">
+      <view
+        class="switch-item {{viewMode === 'timeline' ? 'active' : ''}}"
+        data-mode="timeline"
+        bindtap="setViewMode"
+      >
+        列表模式
+      </view>
+      <view
+        class="switch-item {{viewMode === 'flip' ? 'active' : ''}}"
+        data-mode="flip"
+        bindtap="setViewMode"
+      >
+        翻页浏览
+      </view>
+    </view>
+    <view class="filter-btn" bindtap="openFilter">筛选</view>
   </view>
 
   <view wx:if="{{loading}}" class="loading-container">
@@ -17,26 +33,105 @@
     <view class="empty-desc">{{activeDecade || activeType ? "换一个年代或类型试试。" : "家属上传照片和故事后，这里就会慢慢丰富起来。"}}</view>
   </view>
 
-  <view wx:else class="timeline">
-    <block wx:for="{{list}}" wx:key="id">
-      <view class="timeline-item">
-        <view class="year">{{item.year}}</view>
+  <block wx:else>
+    <view wx:if="{{viewMode === 'timeline'}}" class="timeline">
+      <block wx:for="{{list}}" wx:key="id">
+        <view class="timeline-item">
+          <view class="year">{{item.year}}</view>
 
-        <view class="memory-card" bindtap="openMemory" data-item="{{item}}">
-          <image class="memory-img" src="{{item.img}}" mode="aspectFill" />
+          <view class="memory-card" bindtap="openMemory" data-item="{{item}}">
+            <image class="memory-img" src="{{item.img}}" mode="aspectFill" />
 
-          <view class="memory-content">
-            <view class="memory-title">{{item.title}}</view>
-            <view class="memory-meta">
-              <text class="memory-tag">{{item.typeLabel}}</text>
-              <text class="memory-person">{{item.person}}</text>
+            <view class="memory-content">
+              <view class="memory-title">{{item.title}}</view>
+              <view class="memory-meta">
+                <text class="memory-tag">{{item.typeLabel}}</text>
+                <text class="memory-person">{{item.person}}</text>
+              </view>
+              <view class="memory-story">{{item.story}}</view>
             </view>
-            <view class="memory-story">{{item.story}}</view>
+          </view>
+        </view>
+      </block>
+    </view>
+
+    <view wx:else class="flip-mode">
+      <view class="flip-hint">
+        <text>{{queryPerson ? "正在浏览与 " + queryPerson + " 有关的回忆" : "轻点卡片可以阅读完整故事"}}</text>
+      </view>
+
+      <view class="playback-bar">
+        <view class="playback-row">
+          <view wx:if="{{!isAutoPlaying && !autoPlayPaused}}" class="playback-btn primary" bindtap="startAutoPlay">
+            一键放映
+          </view>
+
+          <view wx:if="{{isAutoPlaying}}" class="playback-group">
+            <view class="playback-btn warn" bindtap="pauseAutoPlay">暂停</view>
+            <view class="playback-btn" bindtap="stopAutoPlay">结束</view>
+          </view>
+
+          <view wx:if="{{!isAutoPlaying && autoPlayPaused}}" class="playback-group">
+            <view class="playback-btn primary" bindtap="resumeAutoPlay">继续</view>
+            <view class="playback-btn" bindtap="stopAutoPlay">停止</view>
+          </view>
+
+          <view class="music-btn {{bgmEnabled ? 'active' : ''}}" bindtap="toggleBgm">
+            {{bgmEnabled ? "音乐已开" : "背景音乐"}}
+          </view>
+        </view>
+
+        <view wx:if="{{isAutoPlaying}}" class="playback-status">正在自动放映第 {{currentIndex + 1}} 页</view>
+        <view wx:elif="{{autoPlayPaused}}" class="playback-status">已暂停在第 {{currentIndex + 1}} 页</view>
+      </view>
+
+      <view class="flip-shell">
+        <view
+          wx:if="{{flipMemory}}"
+          class="flip-card current-card {{isFlipping ? 'is-flipping ' + flipDirection : ''}} {{isSettling ? 'is-settling' : ''}}"
+          bindtap="openCurrentMemory"
+        >
+          <image class="flip-image" src="{{flipMemory.img}}" mode="aspectFill" />
+          <view class="flip-overlay"></view>
+
+          <view class="flip-content">
+            <view class="flip-year">{{flipMemory.year}}</view>
+            <view class="flip-title">{{flipMemory.title}}</view>
+            <view class="flip-meta">
+              <text class="flip-tag">{{flipMemory.typeLabel}}</text>
+              <text class="flip-person">{{flipMemory.person}}</text>
+            </view>
+            <view class="flip-story">{{flipMemory.story}}</view>
+          </view>
+        </view>
+
+        <view
+          wx:if="{{isFlipping && incomingMemory}}"
+          class="flip-card incoming-card {{flipDirection}} {{isSettling ? 'is-hold' : ''}}"
+          bindtap="openCurrentMemory"
+        >
+          <image class="flip-image" src="{{incomingMemory.img}}" mode="aspectFill" />
+          <view class="flip-overlay"></view>
+
+          <view class="flip-content">
+            <view class="flip-year">{{incomingMemory.year}}</view>
+            <view class="flip-title">{{incomingMemory.title}}</view>
+            <view class="flip-meta">
+              <text class="flip-tag">{{incomingMemory.typeLabel}}</text>
+              <text class="flip-person">{{incomingMemory.person}}</text>
+            </view>
+            <view class="flip-story">{{incomingMemory.story}}</view>
           </view>
         </view>
       </view>
-    </block>
-  </view>
+
+      <view class="flip-footer">
+        <view class="page-action {{currentIndex === 0 ? 'disabled' : ''}}" bindtap="prevMemory">上一页</view>
+        <view class="page-indicator">{{currentIndex + 1}} / {{list.length}}</view>
+        <view class="page-action {{currentIndex >= list.length - 1 ? 'disabled' : ''}}" bindtap="nextMemory">下一页</view>
+      </view>
+    </view>
+  </block>
 
   <view wx:if="{{showFilter}}" class="mask" bindtap="closeFilter"></view>
 
@@ -48,7 +143,7 @@
         <view class="filter-row-label">年代</view>
         <view class="filter-row-value">
           <text>{{activeDecade ? activeDecade + "年代" : "全部"}}</text>
-          <text class="filter-row-arrow {{expandedSection === 'decade' ? 'filter-row-arrow--open' : ''}}">⌄</text>
+          <text class="filter-row-arrow {{expandedSection === 'decade' ? 'filter-row-arrow--open' : ''}}">⌃</text>
         </view>
       </view>
       <view wx:if="{{expandedSection === 'decade'}}" class="chip-list">
@@ -70,7 +165,7 @@
         <view class="filter-row-label">类型</view>
         <view class="filter-row-value">
           <text>{{activeType ? activeTypeLabel : "全部"}}</text>
-          <text class="filter-row-arrow {{expandedSection === 'type' ? 'filter-row-arrow--open' : ''}}">⌄</text>
+          <text class="filter-row-arrow {{expandedSection === 'type' ? 'filter-row-arrow--open' : ''}}">⌃</text>
         </view>
       </view>
       <view wx:if="{{expandedSection === 'type'}}" class="chip-list">
