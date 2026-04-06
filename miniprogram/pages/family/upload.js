@@ -5,6 +5,46 @@ const {
   createMemoryPairAPI
 } = require("../../api/user");
 
+const MEMORY_TYPE_LABELS = {
+  family: "家庭",
+  childhood: "童年",
+  school: "校园",
+  friend: "朋友",
+  travel: "旅行",
+  festival: "节日",
+  birthday: "生日",
+  wedding: "婚礼",
+  celebration: "庆祝",
+  work: "工作",
+  hometown: "家乡",
+  medical: "医疗",
+  daily: "日常",
+  life: "生活",
+  holiday: "假日",
+  milestone: "重要时刻",
+  portrait: "照片"
+};
+
+const MEMORY_TYPE_OPTIONS = [
+  "family",
+  "childhood",
+  "school",
+  "friend",
+  "travel",
+  "festival",
+  "birthday",
+  "wedding",
+  "celebration",
+  "work",
+  "hometown",
+  "medical",
+  "daily",
+  "life",
+  "holiday",
+  "milestone",
+  "portrait"
+];
+
 function inferPersonRole(person, role) {
   if (role === "self" || role === "family") {
     return role;
@@ -44,7 +84,11 @@ Page({
     mode: "single",
     fileUrl: "",
     cloudUrl: "",
-    type: "",
+    mediaType: "",
+    memoryType: "",
+    typeOptions: MEMORY_TYPE_OPTIONS,
+    typeLabels: MEMORY_TYPE_LABELS,
+    showTypePicker: false,
     title: "",
     story: "",
     eventDate: "",
@@ -108,7 +152,7 @@ Page({
       success: (res) => {
         this.setData({
           fileUrl: res.tempFilePaths[0],
-          type: "photo"
+          mediaType: "photo"
         });
       }
     });
@@ -119,7 +163,7 @@ Page({
       success: (res) => {
         this.setData({
           fileUrl: res.tempFilePath,
-          type: "video"
+          mediaType: "video"
         });
       }
     });
@@ -165,10 +209,28 @@ Page({
     });
   },
 
+  noop() {},
+
+  showTypePicker() {
+    this.setData({ showTypePicker: true });
+  },
+
+  hideTypePicker() {
+    this.setData({ showTypePicker: false });
+  },
+
+  onTypeSelect(e) {
+    const type = e.currentTarget.dataset.type || "";
+    this.setData({
+      memoryType: type,
+      showTypePicker: false
+    });
+  },
+
   removeFile() {
     this.setData({
       fileUrl: "",
-      type: ""
+      mediaType: ""
     });
   },
 
@@ -202,7 +264,7 @@ Page({
   },
 
   async submitMemory() {
-    const { title, story, eventDate, person, personRole, fileUrl, type, uploading } = this.data;
+    const { title, story, eventDate, person, personRole, fileUrl, memoryType, uploading } = this.data;
 
     if (!title.trim()) {
       wx.showToast({ title: "请输入标题", icon: "none" });
@@ -242,7 +304,7 @@ Page({
         year: Number(eventDate.slice(0, 4)),
         person: person.trim(),
         personRole: inferPersonRole(person.trim(), personRole),
-        type: type || "daily",
+        type: memoryType || "daily",
         img: cloudUrl || ""
       });
 
@@ -252,7 +314,8 @@ Page({
       this.setData({
         fileUrl: "",
         cloudUrl: "",
-        type: "",
+        mediaType: "",
+        memoryType: "",
         title: "",
         story: "",
         eventDate: "",

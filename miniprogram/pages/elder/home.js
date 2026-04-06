@@ -3,6 +3,8 @@ const {
   getVoiceMessagesAPI,
   markVoiceMessagesReadAPI,
   getHealthInfoAPI,
+  getTodayCompletedTasksAPI,
+  completeTodayTaskAPI,
   getBindingRequestsAPI,
   getElderInfoAPI,
   getBindingQRCodeAPI
@@ -34,18 +36,78 @@ function getSpeechPlugin() {
   }
 }
 
+function getWeekdayNumber(value = new Date()) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return 0;
+  const weekday = date.getDay();
+  return weekday === 0 ? 7 : weekday;
+}
+
+function normalizeWeekdays(value) {
+  if (!Array.isArray(value)) return [];
+  return Array.from(
+    new Set(
+      value
+        .map((item) => Number.parseInt(item, 10))
+        .filter((item) => item >= 1 && item <= 7)
+    )
+  ).sort((a, b) => a - b);
+}
+
+function isReminderActiveToday(item) {
+  if (!item || !item.reminderEnabled || !item.reminderTime) {
+    return false;
+  }
+
+  const today = new Date();
+  const dateKey = `${today.getFullYear()}-${`${today.getMonth() + 1}`.padStart(2, "0")}-${`${today.getDate()}`.padStart(2, "0")}`;
+  const weekday = getWeekdayNumber(today);
+  const type = item.reminderScheduleType || "daily";
+
+  if (type === "once") {
+    return !!item.reminderDate && item.reminderDate === dateKey;
+  }
+
+  if (type === "workday") {
+    return weekday >= 1 && weekday <= 5;
+  }
+
+  if (type === "weekly") {
+    return normalizeWeekdays(item.reminderWeekdays).includes(weekday);
+  }
+
+  return true;
+}
+
 function buildMedicationReminders(medications) {
   if (!Array.isArray(medications)) return [];
 
   return medications
-    .filter((item) => item && item.name)
+    .filter((item) => item && item.name && isReminderActiveToday(item))
     .map((item) => ({
       id: item.id || `${item.name}-${item.time || ""}`,
+      taskType: "medication",
       name: item.name || "",
       frequency: item.frequency || "",
-      time: item.time || "",
+      time: item.reminderTime || item.time || "",
       dosage: item.dosage || "",
       notes: item.notes || ""
+    }));
+}
+
+function buildMessageReminders(messages) {
+  if (!Array.isArray(messages)) return [];
+
+  return messages
+    .filter((item) => item && item.messageType === "reminder" && isReminderActiveToday(item))
+    .map((item) => ({
+      id: item.id || "",
+      taskType: "messageReminder",
+      name: item.note || "待办提醒",
+      frequency: item.senderName ? `来自 ${item.senderName}` : "",
+      time: item.reminderTime || "",
+      dosage: "",
+      notes: ""
     }));
 }
 
@@ -63,10 +125,17 @@ Page({
     playingMessageId: "",
     elderProfile: null,
     bindQrCodeFileID: "",
-    bindQrLoading: false
+    bindQrLoading: false,
+    previewMode: false,
+    previewFrom: "",
+    completingReminderId: ""
   },
 
-  onLoad() {
+  onLoad(options = {}) {
+    this.setData({
+      previewMode: options.preview === "1",
+      previewFrom: options.from || ""
+    });
     this.innerAudioContext = wx.createInnerAudioContext();
     this.promptAudioContext = wx.createInnerAudioContext();
     this.speechPlugin = getSpeechPlugin();
@@ -77,9 +146,13 @@ Page({
 
   onShow() {
     this.loadBoardData();
-    this.loadPendingCount();
+    if (this.data.previewMode) {
+      this.setData({ pendingCount: 0 });
+    } else {
+      this.loadPendingCount();
+    }
     this.loadElderProfile();
-    if (this.data.pageTab === "mine") {
+    if (this.data.pageTab === "mine" && !this.data.previewMode) {
       this.loadBindingQRCode();
     }
   },
@@ -186,7 +259,9 @@ Page({
       const res = await getVoiceMessagesAPI();
       const list = Array.isArray(res && res.list) ? res.list : [];
       const unreadMessageCount = Number((res && res.unreadCount) || 0);
-      const voiceMessages = await this.attachAudioUrls(list);
+      const voiceMessages = await this.attachAudioUrls(
+        list.filter((item) => item && item.messageType !== "reminder")
+      );
 
       this.setData({
         unreadMessageCount,
@@ -213,12 +288,58 @@ Page({
 
   async loadMedicationReminders() {
     try {
-      const healthInfo = await getHealthInfoAPI();
+      const [healthInfo, completed, messageRes] = await Promise.all([
+        getHealthInfoAPI(),
+        getTodayCompletedTasksAPI(),
+        getVoiceMessagesAPI()
+      ]);
+      const completedKeys = new Set(
+        ((completed && completed.items) || [])
+          .filter((item) => item && item.taskType && item.taskId)
+          .map((item) => `${item.taskType}:${item.taskId}`)
+      );
+      const medicationItems = buildMedicationReminders(healthInfo && healthInfo.medications);
+      const messageItems = buildMessageReminders(messageRes && messageRes.list);
+
       this.setData({
-        medicationReminders: buildMedicationReminders(healthInfo && healthInfo.medications)
+        medicationReminders: medicationItems
+          .concat(messageItems)
+          .filter((item) => !completedKeys.has(`${item.taskType}:${item.id}`))
+          .sort((a, b) => String(a.time || "").localeCompare(String(b.time || "")))
       });
     } catch (_) {
       this.setData({ medicationReminders: [] });
+    }
+  },
+
+  async completeReminder(e) {
+    const { id, taskType } = e.currentTarget.dataset;
+    if (!id || this.data.completingReminderId) return;
+
+    if (this.data.previewMode) {
+      wx.showToast({ title: "\u9884\u89c8\u6a21\u5f0f\u4e0b\u4e0d\u53ef\u7528", icon: "none" });
+      return;
+    }
+
+    this.setData({ completingReminderId: id });
+
+    try {
+      await completeTodayTaskAPI({
+        taskType: taskType || "medication",
+        taskId: id
+      });
+
+      this.setData({
+        medicationReminders: this.data.medicationReminders.filter((item) => item.id !== id),
+        completingReminderId: ""
+      });
+      wx.showToast({ title: "\u5df2\u5b8c\u6210", icon: "success" });
+    } catch (error) {
+      this.setData({ completingReminderId: "" });
+      wx.showToast({
+        title: (error && (error.message || error.msg)) || "\u64cd\u4f5c\u5931\u8d25",
+        icon: "none"
+      });
     }
   },
 
@@ -263,9 +384,18 @@ Page({
     if (!tab || tab === this.data.pageTab) return;
     this.setData({ pageTab: tab });
 
-    if (tab === "mine" && !this.data.bindQrCodeFileID) {
+    if (tab === "mine" && !this.data.previewMode && !this.data.bindQrCodeFileID) {
       this.loadBindingQRCode();
     }
+  },
+
+  exitPreview() {
+    if (!this.data.previewMode) return;
+    wx.navigateBack({
+      fail: () => {
+        wx.reLaunch({ url: "/pages/family/home" });
+      }
+    });
   },
 
   async markMessagesReadSilently() {
@@ -377,6 +507,10 @@ Page({
   },
 
   refreshBindingQRCode() {
+    if (this.data.previewMode) {
+      wx.showToast({ title: "预览模式下不可用", icon: "none" });
+      return;
+    }
     this.loadBindingQRCode(true);
   },
 
@@ -405,6 +539,10 @@ Page({
   },
 
   goToBindingRequests() {
+    if (this.data.previewMode) {
+      wx.showToast({ title: "预览模式下不可用", icon: "none" });
+      return;
+    }
     wx.navigateTo({ url: "/pages/elder/binding-requests" });
   },
 

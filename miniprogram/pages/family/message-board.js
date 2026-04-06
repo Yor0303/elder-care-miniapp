@@ -18,6 +18,51 @@ function formatDuration(seconds) {
   return `${minute}:${second}`;
 }
 
+function getTodayDateKey() {
+  const date = new Date();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+function normalizeWeekdays(value) {
+  if (!Array.isArray(value)) return [];
+  return Array.from(
+    new Set(
+      value
+        .map((item) => Number.parseInt(item, 10))
+        .filter((item) => item >= 1 && item <= 7)
+    )
+  ).sort((a, b) => a - b);
+}
+
+function getWeekdayLabel(day) {
+  return ["一", "二", "三", "四", "五", "六", "日"][day - 1] || "";
+}
+
+function buildScheduleText(item = {}) {
+  if (item.messageType !== "reminder") return "";
+  const time = item.reminderTime || "";
+  const type = item.reminderScheduleType || "daily";
+
+  if (type === "once") {
+    return `${time} 单次${item.reminderDate ? ` · ${item.reminderDate}` : ""}`;
+  }
+
+  if (type === "workday") {
+    return `${time} 工作日`;
+  }
+
+  if (type === "weekly") {
+    const days = normalizeWeekdays(item.reminderWeekdays)
+      .map((day) => `周${getWeekdayLabel(day)}`)
+      .join("、");
+    return `${time} ${days || "按星期"}`;
+  }
+
+  return `${time} 每天`;
+}
+
 function getSettingAsync() {
   return new Promise((resolve, reject) => {
     wx.getSetting({
@@ -47,7 +92,27 @@ Page({
     sending: false,
     loading: false,
     messages: [],
-    playingMessageId: ""
+    playingMessageId: "",
+    reminderMode: false,
+    reminderTime: "09:00",
+    reminderScheduleType: "daily",
+    reminderDate: getTodayDateKey(),
+    reminderWeekdays: [1, 2, 3, 4, 5],
+    reminderScheduleOptions: [
+      { value: "daily", label: "每天" },
+      { value: "once", label: "单次" },
+      { value: "workday", label: "工作日" },
+      { value: "weekly", label: "指定星期" }
+    ],
+    weekdayOptions: [
+      { value: 1, label: "周一" },
+      { value: 2, label: "周二" },
+      { value: 3, label: "周三" },
+      { value: 4, label: "周四" },
+      { value: 5, label: "周五" },
+      { value: 6, label: "周六" },
+      { value: 7, label: "周日" }
+    ]
   },
 
   onLoad() {
@@ -150,7 +215,9 @@ Page({
           hasAudio: !!item.fileID,
           note: item.note || "",
           displayTime: formatDateTime(item.createdAt),
-          durationText: item.fileID ? formatDuration(item.duration) : ""
+          durationText: item.fileID ? formatDuration(item.duration) : "",
+          typeLabel: item.messageType === "reminder" ? "提醒" : item.hasAudio ? "语音" : "文字",
+          scheduleText: buildScheduleText(item)
         }))
       });
     } catch (error) {
@@ -164,10 +231,7 @@ Page({
       return Promise.resolve([]);
     }
 
-    const fileList = list
-      .map((item) => item.fileID)
-      .filter(Boolean);
-
+    const fileList = list.map((item) => item.fileID).filter(Boolean);
     if (!fileList.length) {
       return Promise.resolve(list);
     }
@@ -205,7 +269,7 @@ Page({
         encodeBitRate: 96000,
         format: "mp3"
       });
-    } catch (error) {
+    } catch (_) {
       wx.showModal({
         title: "需要录音权限",
         content: "请先开启录音权限，才能给老人发送语音留言。",
@@ -231,6 +295,63 @@ Page({
     this.setData({ messageNote: e.detail.value });
   },
 
+  setComposerMode(e) {
+    const { mode } = e.currentTarget.dataset;
+    if (!mode) return;
+
+    this.setData({
+      reminderMode: mode === "reminder"
+    });
+  },
+
+  toggleReminderMode() {
+    this.setData({
+      reminderMode: !this.data.reminderMode
+    });
+  },
+
+  onReminderTimeInput(e) {
+    this.setData({ reminderTime: e.detail.value });
+  },
+
+  onReminderScheduleSelect(e) {
+    const { value } = e.currentTarget.dataset;
+    if (!value) return;
+
+    const nextData = {
+      reminderScheduleType: value
+    };
+
+    if (value === "weekly" && !normalizeWeekdays(this.data.reminderWeekdays).length) {
+      nextData.reminderWeekdays = [1, 2, 3, 4, 5];
+    }
+
+    if (value === "once" && !this.data.reminderDate) {
+      nextData.reminderDate = getTodayDateKey();
+    }
+
+    this.setData(nextData);
+  },
+
+  onReminderDateChange(e) {
+    this.setData({
+      reminderDate: e.detail.value
+    });
+  },
+
+  toggleReminderWeekday(e) {
+    const { day } = e.currentTarget.dataset;
+    const value = Number.parseInt(day, 10);
+    if (!value) return;
+
+    const current = normalizeWeekdays(this.data.reminderWeekdays);
+    const exists = current.includes(value);
+    const next = exists ? current.filter((item) => item !== value) : current.concat(value);
+    this.setData({
+      reminderWeekdays: normalizeWeekdays(next)
+    });
+  },
+
   uploadToCloud(tempFilePath) {
     return new Promise((resolve, reject) => {
       const extMatch = tempFilePath.match(/\.[^.]+$/);
@@ -248,12 +369,24 @@ Page({
 
   async sendVoiceMessage() {
     const note = (this.data.messageNote || "").trim();
-    if (this.data.sending) {
+    if (this.data.sending) return;
+
+    if (!this.data.tempVoicePath && !note) {
+      wx.showToast({ title: "请输入内容或录制语音", icon: "none" });
       return;
     }
 
-    if (!this.data.tempVoicePath && !note) {
-      wx.showToast({ title: "请先输入文字或录制语音", icon: "none" });
+    if (this.data.reminderMode && !note) {
+      wx.showToast({ title: "提醒内容不能为空", icon: "none" });
+      return;
+    }
+
+    if (
+      this.data.reminderMode &&
+      this.data.reminderScheduleType === "weekly" &&
+      !normalizeWeekdays(this.data.reminderWeekdays).length
+    ) {
+      wx.showToast({ title: "请选择提醒星期", icon: "none" });
       return;
     }
 
@@ -265,22 +398,33 @@ Page({
       if (this.data.tempVoicePath) {
         fileID = await this.uploadToCloud(this.data.tempVoicePath);
       }
+
       await addVoiceMessageAPI({
         fileID,
         duration: this.data.tempVoiceDuration,
-        note
+        note,
+        messageType: this.data.reminderMode ? "reminder" : "message",
+        reminderTime: this.data.reminderMode ? this.data.reminderTime.trim() : "",
+        reminderScheduleType: this.data.reminderMode ? this.data.reminderScheduleType : "daily",
+        reminderDate: this.data.reminderMode ? this.data.reminderDate : "",
+        reminderWeekdays: this.data.reminderMode ? normalizeWeekdays(this.data.reminderWeekdays) : []
       });
-      wx.hideLoading();
 
+      wx.hideLoading();
       this.setData({
         sending: false,
         tempVoicePath: "",
         tempVoiceDuration: 0,
         recordSeconds: 0,
-        messageNote: ""
+        messageNote: "",
+        reminderMode: false,
+        reminderTime: "09:00",
+        reminderScheduleType: "daily",
+        reminderDate: getTodayDateKey(),
+        reminderWeekdays: [1, 2, 3, 4, 5]
       });
 
-      wx.showToast({ title: "留言已发送", icon: "success" });
+      wx.showToast({ title: "已发送", icon: "success" });
       this.loadMessages();
     } catch (error) {
       wx.hideLoading();

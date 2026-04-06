@@ -174,7 +174,7 @@ function buildHealthViewModel(todayHealth, trend) {
 
 function buildReminderMedications(medications = []) {
   return (Array.isArray(medications) ? medications : [])
-    .filter((item) => item && item.reminderEnabled && item.reminderTime)
+    .filter((item) => item && item.activeToday && item.reminderEnabled && item.reminderTime)
     .slice()
     .sort((a, b) => String(a.reminderTime).localeCompare(String(b.reminderTime)));
 }

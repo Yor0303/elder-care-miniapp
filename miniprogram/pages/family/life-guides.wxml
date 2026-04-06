@@ -12,7 +12,7 @@
         <view class="card-desc">上传封面图、步骤说明和可选视频，老人端即可查看。</view>
       </view>
     </view>
-    <button class="primary-btn" bindtap="goToCreate">➕ 新增教程</button>
+    <button class="primary-btn" bindtap="goToCreate"> 新增教程</button>
   </view>
 
   <view class="card list-card">

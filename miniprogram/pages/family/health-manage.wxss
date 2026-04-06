@@ -291,6 +291,13 @@
   min-width: 0;
 }
 
+.record-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+  margin-left: 20rpx;
+}
+
 .record-name {
   font-size: 34rpx;
   font-weight: 700;
@@ -321,12 +328,19 @@
 }
 
 .delete-btn {
-  margin-left: 20rpx;
   padding: 10rpx 18rpx;
   font-size: 26rpx;
   color: #ff4d4f;
   border-radius: 999rpx;
   background: #fff5f5;
+}
+
+.edit-btn {
+  padding: 10rpx 18rpx;
+  font-size: 26rpx;
+  color: #2d6cdf;
+  border-radius: 999rpx;
+  background: #eef4ff;
 }
 
 .modal-mask {
@@ -398,6 +412,48 @@
   background: #f8f9fb;
   border-radius: 15rpx;
   box-sizing: border-box;
+}
+
+.picker-field {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 88rpx;
+  padding: 0 24rpx;
+  font-size: 30rpx;
+  color: #333;
+  background: #f8f9fb;
+  border-radius: 15rpx;
+  box-sizing: border-box;
+}
+
+.schedule-label {
+  margin-bottom: 14rpx;
+  font-size: 26rpx;
+  color: #6c7c90;
+}
+
+.schedule-options,
+.weekday-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14rpx;
+}
+
+.schedule-chip,
+.weekday-chip {
+  padding: 14rpx 20rpx;
+  border-radius: 999rpx;
+  background: #f1f4f7;
+  color: #6b7a8b;
+  font-size: 26rpx;
+  line-height: 1;
+}
+
+.schedule-chip-active,
+.weekday-chip-active {
+  background: #e8f1ff;
+  color: #2d6cdf;
 }
 
 .modal-actions {

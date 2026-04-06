@@ -2,6 +2,7 @@ const {
   getHealthInfoAPI,
   addMedicalHistoryAPI,
   addMedicationAPI,
+  updateMedicationAPI,
   updateTodayHealthAPI,
   deleteHealthRecordAPI
 } = require("../../api/user");
@@ -39,14 +40,6 @@ function formatFriendlyLabel(value) {
   }
 
   return raw;
-}
-
-function getPressureHeight(value) {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) {
-    return 24;
-  }
-
-  return Math.max(24, Math.round(Number(value) / 2));
 }
 
 function toSortableTime(item = {}) {
@@ -102,8 +95,10 @@ function buildMetricChart(trend, options) {
     changeText:
       previous && latest
         ? latest.value === previous.value
-          ? "较上一条保持稳定"
-          : `较上一条${latest.value > previous.value ? "上升" : "下降"} ${Math.abs(latest.value - previous.value).toFixed(options.decimals || 0)}${options.unit}`
+          ? "与上一条记录持平"
+          : `较上一条${latest.value > previous.value ? "上升" : "下降"} ${Math.abs(
+              latest.value - previous.value
+            ).toFixed(options.decimals || 0)}${options.unit}`
         : "记录满 2 条后显示变化",
     bars: values.map((item) => ({
       label: item.label,
@@ -176,6 +171,66 @@ function buildHealthViewModel(todayHealth, trend) {
   };
 }
 
+function getTodayDateKey() {
+  const date = new Date();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+function normalizeWeekdays(value) {
+  if (!Array.isArray(value)) return [];
+  return Array.from(
+    new Set(
+      value
+        .map((item) => Number.parseInt(item, 10))
+        .filter((item) => item >= 1 && item <= 7)
+    )
+  ).sort((a, b) => a - b);
+}
+
+function getWeekdayLabel(day) {
+  return ["一", "二", "三", "四", "五", "六", "日"][day - 1] || "";
+}
+
+function buildReminderScheduleText(item = {}) {
+  if (!item.reminderEnabled || !item.reminderTime) return "";
+
+  const type = item.reminderScheduleType || "daily";
+  if (type === "once") {
+    return `${item.reminderTime} 单次${item.reminderDate ? ` · ${item.reminderDate}` : ""}`;
+  }
+
+  if (type === "workday") {
+    return `${item.reminderTime} 工作日`;
+  }
+
+  if (type === "weekly") {
+    const days = normalizeWeekdays(item.reminderWeekdays)
+      .map((day) => `周${getWeekdayLabel(day)}`)
+      .join("、");
+    return `${item.reminderTime} ${days || "按星期"}`;
+  }
+
+  return `${item.reminderTime} 每天`;
+}
+
+function buildMedicationForm(item = {}) {
+  return {
+    name: item.name || "",
+    frequency: item.frequency || "",
+    dosage: item.dosage || "",
+    time: item.time || "",
+    reminderEnabled:
+      item.reminderEnabled === undefined || item.reminderEnabled === null ? true : !!item.reminderEnabled,
+    reminderTime: item.reminderTime || "09:00",
+    reminderScheduleType: item.reminderScheduleType || "daily",
+    reminderDate: item.reminderDate || getTodayDateKey(),
+    reminderWeekdays: normalizeWeekdays(item.reminderWeekdays || [1, 2, 3, 4, 5]),
+    notes: item.notes || ""
+  };
+}
+
 Page({
   data: {
     loading: false,
@@ -195,7 +250,23 @@ Page({
     pressureTrend: [],
     showAddModal: false,
     addType: "",
-    newRecord: {}
+    newRecord: {},
+    editingMedicationId: "",
+    reminderScheduleOptions: [
+      { value: "daily", label: "每天" },
+      { value: "once", label: "单次" },
+      { value: "workday", label: "工作日" },
+      { value: "weekly", label: "指定星期" }
+    ],
+    weekdayOptions: [
+      { value: 1, label: "周一" },
+      { value: 2, label: "周二" },
+      { value: 3, label: "周三" },
+      { value: 4, label: "周四" },
+      { value: 5, label: "周五" },
+      { value: 6, label: "周六" },
+      { value: 7, label: "周日" }
+    ]
   },
 
   onLoad() {
@@ -225,14 +296,17 @@ Page({
       this.setData({
         todayHealth,
         medicalHistory: Array.isArray(healthInfo.medicalHistory) ? healthInfo.medicalHistory : [],
-        medications: Array.isArray(healthInfo.medications) ? healthInfo.medications : [],
+        medications: (Array.isArray(healthInfo.medications) ? healthInfo.medications : []).map((item) => ({
+          ...item,
+          reminderScheduleText: buildReminderScheduleText(item)
+        })),
         chartCards: viewModel.chartCards,
         pressureOverview: viewModel.pressureOverview,
         pressureTrend: viewModel.pressureTrend,
         loading: false
       });
     } catch (error) {
-      console.error("加载健康信息失败:", error);
+      console.error("load health info failed:", error);
       this.setData({ loading: false });
       wx.showToast({ title: "加载失败", icon: "none" });
     }
@@ -253,7 +327,7 @@ Page({
           await updateTodayHealthAPI({ bloodPressure: res.content.trim() });
           await this.loadHealthInfo();
           wx.showToast({ title: "更新成功", icon: "success" });
-        } catch (error) {
+        } catch (_) {
           wx.showToast({ title: "更新失败", icon: "none" });
         }
       }
@@ -271,7 +345,7 @@ Page({
           await updateTodayHealthAPI({ heartRate: parseInt(res.content, 10) });
           await this.loadHealthInfo();
           wx.showToast({ title: "更新成功", icon: "success" });
-        } catch (error) {
+        } catch (_) {
           wx.showToast({ title: "更新失败", icon: "none" });
         }
       }
@@ -289,7 +363,7 @@ Page({
           await updateTodayHealthAPI({ bloodSugar: res.content.trim() });
           await this.loadHealthInfo();
           wx.showToast({ title: "更新成功", icon: "success" });
-        } catch (error) {
+        } catch (_) {
           wx.showToast({ title: "更新失败", icon: "none" });
         }
       }
@@ -300,6 +374,7 @@ Page({
     this.setData({
       showAddModal: true,
       addType: "history",
+      editingMedicationId: "",
       newRecord: {
         name: "",
         diagnoseYear: String(new Date().getFullYear()),
@@ -312,15 +387,21 @@ Page({
     this.setData({
       showAddModal: true,
       addType: "medication",
-      newRecord: {
-        name: "",
-        frequency: "",
-        dosage: "",
-        time: "",
-        reminderEnabled: true,
-        reminderTime: "09:00",
-        notes: ""
-      }
+      editingMedicationId: "",
+      newRecord: buildMedicationForm()
+    });
+  },
+
+  editMedication(e) {
+    const { id } = e.currentTarget.dataset;
+    const target = this.data.medications.find((item) => item.id === id);
+    if (!target) return;
+
+    this.setData({
+      showAddModal: true,
+      addType: "medication",
+      editingMedicationId: id,
+      newRecord: buildMedicationForm(target)
     });
   },
 
@@ -328,7 +409,8 @@ Page({
     this.setData({
       showAddModal: false,
       addType: "",
-      newRecord: {}
+      newRecord: {},
+      editingMedicationId: ""
     });
   },
 
@@ -345,8 +427,47 @@ Page({
     });
   },
 
+  onReminderScheduleSelect(e) {
+    const { value } = e.currentTarget.dataset;
+    if (!value) return;
+
+    const nextData = {
+      "newRecord.reminderScheduleType": value
+    };
+
+    if (value === "weekly" && !normalizeWeekdays(this.data.newRecord.reminderWeekdays).length) {
+      nextData["newRecord.reminderWeekdays"] = [1, 2, 3, 4, 5];
+    }
+
+    if (value === "once" && !this.data.newRecord.reminderDate) {
+      nextData["newRecord.reminderDate"] = getTodayDateKey();
+    }
+
+    this.setData(nextData);
+  },
+
+  onReminderDateChange(e) {
+    this.setData({
+      "newRecord.reminderDate": e.detail.value
+    });
+  },
+
+  toggleReminderWeekday(e) {
+    const { day } = e.currentTarget.dataset;
+    const value = Number.parseInt(day, 10);
+    if (!value) return;
+
+    const current = normalizeWeekdays(this.data.newRecord.reminderWeekdays || []);
+    const exists = current.includes(value);
+    const next = exists ? current.filter((item) => item !== value) : current.concat(value);
+
+    this.setData({
+      "newRecord.reminderWeekdays": normalizeWeekdays(next)
+    });
+  },
+
   async submitNewRecord() {
-    const { addType, newRecord } = this.data;
+    const { addType, newRecord, editingMedicationId } = this.data;
     if (!newRecord.name || !newRecord.name.trim()) {
       wx.showToast({ title: "请输入名称", icon: "none" });
       return;
@@ -360,23 +481,40 @@ Page({
           notes: (newRecord.notes || "").trim()
         });
       } else if (addType === "medication") {
-        await addMedicationAPI({
+        const payload = {
           name: newRecord.name.trim(),
           frequency: (newRecord.frequency || "").trim(),
           dosage: (newRecord.dosage || "").trim(),
           time: (newRecord.time || "").trim(),
           reminderEnabled: !!newRecord.reminderEnabled,
           reminderTime: newRecord.reminderEnabled ? (newRecord.reminderTime || "").trim() : "",
+          reminderScheduleType: newRecord.reminderEnabled ? newRecord.reminderScheduleType || "daily" : "daily",
+          reminderDate: newRecord.reminderEnabled ? newRecord.reminderDate || "" : "",
+          reminderWeekdays: newRecord.reminderEnabled ? normalizeWeekdays(newRecord.reminderWeekdays) : [],
           notes: (newRecord.notes || "").trim()
-        });
+        };
+
+        if (payload.reminderEnabled && payload.reminderScheduleType === "weekly" && !payload.reminderWeekdays.length) {
+          wx.showToast({ title: "请选择提醒星期", icon: "none" });
+          return;
+        }
+
+        if (editingMedicationId) {
+          await updateMedicationAPI({
+            recordId: editingMedicationId,
+            ...payload
+          });
+        } else {
+          await addMedicationAPI(payload);
+        }
       }
 
       this.closeModal();
       await this.loadHealthInfo();
-      wx.showToast({ title: "添加成功", icon: "success" });
+      wx.showToast({ title: editingMedicationId ? "已更新" : "添加成功", icon: "success" });
     } catch (error) {
-      console.error("添加健康记录失败:", error);
-      wx.showToast({ title: "添加失败", icon: "none" });
+      console.error("save health record failed:", error);
+      wx.showToast({ title: "保存失败", icon: "none" });
     }
   },
 
@@ -391,7 +529,7 @@ Page({
           await deleteHealthRecordAPI(id);
           await this.loadHealthInfo();
           wx.showToast({ title: "删除成功", icon: "success" });
-        } catch (error) {
+        } catch (_) {
           wx.showToast({ title: "删除失败", icon: "none" });
         }
       }

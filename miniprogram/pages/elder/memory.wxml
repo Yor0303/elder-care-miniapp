@@ -1,7 +1,6 @@
 <view class="page">
   <view class="top-bar">
-    <view class="filter-btn" bindtap="openFilter">筛选</view>
-    <view class="story-btn" bindtap="startStory">故事模式</view>
+    <view class="filter-btn" bindtap="openFilter">筛选回忆</view>
   </view>
 
   <view wx:if="{{loading}}" class="loading-container">
@@ -14,8 +13,8 @@
   </view>
 
   <view wx:elif="{{!list.length}}" class="empty-container">
-    <view class="empty-title">还没有回忆内容</view>
-    <view class="empty-desc">家属上传照片和故事后，这里就会慢慢丰富起来。</view>
+    <view class="empty-title">{{activeDecade || activeType ? "没有找到符合筛选的回忆" : "还没有回忆内容"}}</view>
+    <view class="empty-desc">{{activeDecade || activeType ? "换一个年代或类型试试。" : "家属上传照片和故事后，这里就会慢慢丰富起来。"}}</view>
   </view>
 
   <view wx:else class="timeline">
@@ -44,36 +43,61 @@
   <view wx:if="{{showFilter}}" class="filter-panel">
     <view class="panel-title">筛选回忆</view>
 
-    <view class="filter-item" bindtap="toggleDecade">
-      <text>年代</text>
-      <text>{{activeDecade || "全部"}}</text>
-    </view>
-    <view wx:if="{{showDecade}}" class="options">
-      <view class="option" bindtap="filterDecade" data-value="">全部年代</view>
-      <view wx:for="{{decadeOptions}}" wx:key="*this" class="option" data-value="{{item}}" bindtap="filterDecade">
-        {{item}}年代
+    <view class="filter-group">
+      <view class="filter-row" data-section="decade" bindtap="toggleSection">
+        <view class="filter-row-label">年代</view>
+        <view class="filter-row-value">
+          <text>{{activeDecade ? activeDecade + "年代" : "全部"}}</text>
+          <text class="filter-row-arrow {{expandedSection === 'decade' ? 'filter-row-arrow--open' : ''}}">⌄</text>
+        </view>
+      </view>
+      <view wx:if="{{expandedSection === 'decade'}}" class="chip-list">
+        <view class="chip {{!activeDecade ? 'chip--active' : ''}}" bindtap="filterDecade" data-value="">全部</view>
+        <view
+          wx:for="{{decadeOptions}}"
+          wx:key="*this"
+          class="chip {{activeDecade === item ? 'chip--active' : ''}}"
+          data-value="{{item}}"
+          bindtap="filterDecade"
+        >
+          {{item}}年代
+        </view>
       </view>
     </view>
 
-    <view class="filter-item" bindtap="toggleType">
-      <text>类型</text>
-      <text>{{activeType || "全部"}}</text>
-    </view>
-    <view wx:if="{{showType}}" class="options">
-      <view class="option" bindtap="filterType" data-value="">全部类型</view>
-      <view wx:for="{{typeOptions}}" wx:key="*this" class="option" data-value="{{item}}" bindtap="filterType">
-        {{item === "family" ? "家庭" : item === "travel" ? "旅行" : item === "festival" ? "节日" : item === "medical" ? "医疗" : "日常"}}
+    <view class="filter-group">
+      <view class="filter-row" data-section="type" bindtap="toggleSection">
+        <view class="filter-row-label">类型</view>
+        <view class="filter-row-value">
+          <text>{{activeType ? activeTypeLabel : "全部"}}</text>
+          <text class="filter-row-arrow {{expandedSection === 'type' ? 'filter-row-arrow--open' : ''}}">⌄</text>
+        </view>
+      </view>
+      <view wx:if="{{expandedSection === 'type'}}" class="chip-list">
+        <view class="chip {{!activeType ? 'chip--active' : ''}}" bindtap="filterType" data-value="">全部</view>
+        <view
+          wx:for="{{typeOptions}}"
+          wx:key="value"
+          class="chip {{activeType === item.value ? 'chip--active' : ''}}"
+          data-value="{{item.value}}"
+          bindtap="filterType"
+        >
+          {{item.label}}
+        </view>
       </view>
     </view>
 
-    <view class="reset" bindtap="resetFilter">重置筛选</view>
+    <view class="panel-actions">
+      <view class="panel-btn panel-btn--ghost" bindtap="resetFilter">重置</view>
+      <view class="panel-btn" bindtap="closeFilter">完成</view>
+    </view>
   </view>
 
-  <view wx:if="{{showStory}}" class="story-mask" bindtap="closeStory"></view>
-  <view wx:if="{{showStory}}" class="story-modal">
+  <view wx:if="{{showDetail}}" class="story-mask" bindtap="closeDetail"></view>
+  <view wx:if="{{showDetail}}" class="story-modal">
     <view class="story-header">
       <view class="story-title">{{currentMemory.title}}</view>
-      <view class="story-close" bindtap="closeStory">关闭</view>
+      <view class="story-close" bindtap="closeDetail">关闭</view>
     </view>
     <image class="story-image" src="{{currentMemory.img}}" mode="aspectFill" />
     <view class="story-info">

@@ -16,6 +16,7 @@ const COLLECTION_NAMES = {
   persons: "persons",
   memories: "memories",
   healthRecords: "healthRecords",
+  dailyTaskLogs: "daily_task_logs",
   bindingRequests: "binding_requests",
   elderUploads: "elder_uploads",
   memoryPairs: "memory_pairs",
@@ -31,6 +32,10 @@ function toIsoDate(value = new Date()) {
 
 function getDateKey(value = new Date()) {
   return normalizeDateOnly(value);
+}
+
+function buildTaskSubtitle({ time, frequency, dosage } = {}) {
+  return [time, frequency, dosage].filter(Boolean).join(" 路 ");
 }
 
 function getDateLabel(value) {
@@ -297,6 +302,104 @@ function normalizeDateOnly(value) {
   }
 
   return "";
+}
+
+function getWeekdayNumber(value = new Date()) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return 0;
+  const weekday = date.getDay();
+  return weekday === 0 ? 7 : weekday;
+}
+
+function normalizeReminderWeekdays(value) {
+  if (!Array.isArray(value)) return [];
+
+  return Array.from(
+    new Set(
+      value
+        .map((item) => Number.parseInt(item, 10))
+        .filter((item) => item >= 1 && item <= 7)
+    )
+  ).sort((a, b) => a - b);
+}
+
+function normalizeReminderRule(input = {}, fallback = {}) {
+  const reminderEnabled =
+    input.reminderEnabled !== undefined ? !!input.reminderEnabled : !!fallback.reminderEnabled;
+  const reminderTime = reminderEnabled
+    ? String(
+        input.reminderTime !== undefined ? input.reminderTime : fallback.reminderTime || ""
+      ).trim()
+    : "";
+
+  let reminderScheduleType = String(
+    input.reminderScheduleType !== undefined
+      ? input.reminderScheduleType
+      : fallback.reminderScheduleType || "daily"
+  ).trim();
+
+  if (!["daily", "once", "workday", "weekly"].includes(reminderScheduleType)) {
+    reminderScheduleType = "daily";
+  }
+
+  let reminderDate = reminderEnabled
+    ? normalizeDateOnly(
+        input.reminderDate !== undefined ? input.reminderDate : fallback.reminderDate || ""
+      )
+    : "";
+  let reminderWeekdays = reminderEnabled
+    ? normalizeReminderWeekdays(
+        input.reminderWeekdays !== undefined
+          ? input.reminderWeekdays
+          : fallback.reminderWeekdays
+      )
+    : [];
+
+  if (!reminderEnabled) {
+    reminderScheduleType = "daily";
+    reminderDate = "";
+    reminderWeekdays = [];
+  } else if (reminderScheduleType === "once") {
+    reminderDate = reminderDate || getDateKey(new Date());
+    reminderWeekdays = [];
+  } else if (reminderScheduleType === "weekly") {
+    reminderWeekdays = reminderWeekdays.length ? reminderWeekdays : [getWeekdayNumber(new Date())];
+    reminderDate = "";
+  } else {
+    reminderDate = "";
+    reminderWeekdays = [];
+  }
+
+  return {
+    reminderEnabled,
+    reminderTime,
+    reminderScheduleType,
+    reminderDate,
+    reminderWeekdays
+  };
+}
+
+function isReminderActiveOnDate(item = {}, value = new Date()) {
+  if (!item || !item.reminderEnabled || !item.reminderTime) {
+    return false;
+  }
+
+  const dateKey = getDateKey(value);
+  const weekday = getWeekdayNumber(value);
+  const scheduleType = item.reminderScheduleType || "daily";
+
+  switch (scheduleType) {
+    case "once":
+      return !!item.reminderDate && item.reminderDate === dateKey;
+    case "workday":
+      return weekday >= 1 && weekday <= 5;
+    case "weekly": {
+      const weekdays = normalizeReminderWeekdays(item.reminderWeekdays);
+      return weekdays.includes(weekday);
+    }
+    default:
+      return true;
+  }
 }
 
 function resolveMemoryEventDate(event = {}) {
@@ -1559,8 +1662,126 @@ async function getHealthInfo(event = {}) {
       time: item.time,
       notes: item.notes,
       reminderEnabled: !!item.reminderEnabled,
-      reminderTime: item.reminderTime || ""
+      reminderTime: item.reminderTime || "",
+      reminderScheduleType: item.reminderScheduleType || "daily",
+      reminderDate: item.reminderDate || "",
+      reminderWeekdays: normalizeReminderWeekdays(item.reminderWeekdays),
+      activeToday: isReminderActiveOnDate(item)
     }))
+  };
+}
+
+async function getTodayCompletedTasks(event = {}) {
+  await ensureCollections();
+
+  const user = await getCurrentUser();
+  const elderId = await resolveElderIdForEvent(user, event);
+  const dateKey = getDateKey(event.dateKey || new Date());
+
+  const res = await db
+    .collection(COLLECTION_NAMES.dailyTaskLogs)
+    .where({ elderId, dateKey })
+    .get();
+
+  return {
+    dateKey,
+    items: (res.data || [])
+      .slice()
+      .sort((a, b) => `${b.completedAt || ""}`.localeCompare(`${a.completedAt || ""}`))
+      .map((item) => ({
+      id: item._id,
+      taskType: item.taskType || "",
+      taskId: item.taskId || "",
+      title: item.title || "",
+      subtitle: item.subtitle || "",
+      time: item.time || "",
+      frequency: item.frequency || "",
+      dosage: item.dosage || "",
+      notes: item.notes || "",
+      completedAt: item.completedAt || "",
+      completedByRole: item.completedByRole || ""
+    }))
+  };
+}
+
+async function completeTodayTask(event = {}) {
+  await ensureCollections();
+
+  const user = await getCurrentUser();
+  if (normalizeUserType(user) !== "elder") {
+    throw new Error("只有老人本人可以标记完成");
+  }
+
+  const elderId = await resolveElderIdForEvent(user, event);
+  const taskType = String(event.taskType || "medication").trim();
+  const taskId = String(event.taskId || "").trim();
+  const dateKey = getDateKey(event.dateKey || new Date());
+
+  if (!taskId) {
+    throw new Error("缺少提醒ID");
+  }
+
+  if (taskType !== "medication") {
+    throw new Error("暂时只支持用药提醒");
+  }
+
+  const taskRes = await db.collection(COLLECTION_NAMES.healthRecords).doc(taskId).get();
+  const task = taskRes.data;
+
+  if (!task || task.elderId !== elderId || task.type !== "medication") {
+    throw new Error("提醒不存在");
+  }
+
+  const existing = await db
+    .collection(COLLECTION_NAMES.dailyTaskLogs)
+    .where({ elderId, dateKey, taskType, taskId })
+    .get();
+
+  if (existing.data && existing.data.length) {
+    return {
+      success: true,
+      id: existing.data[0]._id,
+      duplicated: true
+    };
+  }
+
+  const completedAt = new Date().toISOString();
+  const title = task.name || "今日提醒";
+  const subtitle = buildTaskSubtitle(task);
+
+  const res = await db.collection(COLLECTION_NAMES.dailyTaskLogs).add({
+    data: {
+      elderId,
+      dateKey,
+      taskType,
+      taskId,
+      title,
+      subtitle,
+      time: task.time || "",
+      frequency: task.frequency || "",
+      dosage: task.dosage || "",
+      notes: task.notes || "",
+      completedAt,
+      completedBy: user._id,
+      completedByRole: normalizeUserType(user)
+    }
+  });
+
+  return {
+    success: true,
+    id: res._id,
+    item: {
+      id: res._id,
+      taskType,
+      taskId,
+      title,
+      subtitle,
+      time: task.time || "",
+      frequency: task.frequency || "",
+      dosage: task.dosage || "",
+      notes: task.notes || "",
+      completedAt
+    }
   };
 }
 
@@ -2546,6 +2767,254 @@ async function loginAccountV2() {
   };
 }
 
+async function addMedication(event = {}) {
+  if (!event.name) {
+    throw new Error("药物名称不能为空");
+  }
+
+  const user = await getCurrentUser();
+  const elderId = await resolveElderIdForEvent(user, event);
+  const reminderRule = normalizeReminderRule(event);
+
+  const result = await db.collection(COLLECTION_NAMES.healthRecords).add({
+    data: {
+      elderId,
+      type: "medication",
+      name: String(event.name || "").trim(),
+      frequency: String(event.frequency || "").trim(),
+      dosage: String(event.dosage || "").trim(),
+      time: String(event.time || "").trim(),
+      notes: String(event.notes || "").trim(),
+      ...reminderRule,
+      createdAt: new Date().toISOString()
+    }
+  });
+
+  return { id: result._id, success: true };
+}
+
+async function updateMedication(event = {}) {
+  if (!event.recordId) {
+    throw new Error("缺少用药记录ID");
+  }
+
+  if (!event.name) {
+    throw new Error("药物名称不能为空");
+  }
+
+  const user = await getCurrentUser();
+  const elderId = await resolveElderIdForEvent(user, event);
+  const recordRes = await db.collection(COLLECTION_NAMES.healthRecords).doc(event.recordId).get();
+  const record = recordRes.data;
+
+  if (!record || record.elderId !== elderId || record.type !== "medication") {
+    throw new Error("用药记录不存在");
+  }
+
+  const reminderRule = normalizeReminderRule(event, record);
+
+  await db.collection(COLLECTION_NAMES.healthRecords).doc(event.recordId).update({
+    data: {
+      name: String(event.name || "").trim(),
+      frequency: String(event.frequency || "").trim(),
+      dosage: String(event.dosage || "").trim(),
+      time: String(event.time || "").trim(),
+      notes: String(event.notes || "").trim(),
+      ...reminderRule,
+      updatedAt: new Date().toISOString()
+    }
+  });
+
+  return { success: true };
+}
+
+async function addVoiceMessage(event = {}) {
+  await ensureCollections();
+
+  const fileID = typeof event.fileID === "string" ? event.fileID.trim() : "";
+  const note = typeof event.note === "string" ? event.note.trim().slice(0, 200) : "";
+  const messageType = event.messageType === "reminder" ? "reminder" : "message";
+
+  if (!fileID && !note) {
+    throw new Error("缺少留言内容");
+  }
+
+  if (messageType === "reminder" && !note) {
+    throw new Error("提醒内容不能为空");
+  }
+
+  const user = await getCurrentUser();
+  const elderId = await resolveElderIdForEvent(user, event);
+  const senderName = (user.name || "").trim() || "家人";
+  const senderRelation = (user.relation || "").trim() || "家人";
+  const duration = Number(event.duration || 0);
+  const reminderRule =
+    messageType === "reminder"
+      ? normalizeReminderRule(
+          {
+            reminderEnabled: true,
+            reminderTime: event.reminderTime,
+            reminderScheduleType: event.reminderScheduleType,
+            reminderDate: event.reminderDate,
+            reminderWeekdays: event.reminderWeekdays
+          },
+          { reminderEnabled: true, reminderTime: "09:00", reminderScheduleType: "daily" }
+        )
+      : normalizeReminderRule({ reminderEnabled: false });
+
+  const res = await db.collection(COLLECTION_NAMES.voiceMessages).add({
+    data: {
+      elderId,
+      fileID,
+      duration: fileID && Number.isFinite(duration) ? duration : 0,
+      senderName,
+      senderRelation,
+      senderRole: normalizeUserType(user),
+      note,
+      messageType,
+      ...reminderRule,
+      isReadByElder: messageType === "reminder",
+      createdAt: new Date().toISOString()
+    }
+  });
+
+  return { id: res._id, success: true };
+}
+
+async function getVoiceMessages(event = {}) {
+  await ensureCollections();
+
+  const user = await getCurrentUser();
+  const elderId = await resolveElderIdForEvent(user, event);
+  const res = await db
+    .collection(COLLECTION_NAMES.voiceMessages)
+    .where({ elderId })
+    .orderBy("createdAt", "desc")
+    .get();
+
+  const list = res.data || [];
+  const unreadCount = list.filter((item) => item.messageType !== "reminder" && !item.isReadByElder).length;
+
+  return {
+    unreadCount,
+    list: list.map((item) => ({
+      id: item._id,
+      fileID: item.fileID || "",
+      duration: item.duration || 0,
+      senderName: item.senderName || "家人",
+      senderRelation: item.senderRelation || "家人",
+      senderRole: item.senderRole || "family",
+      note: item.note || "",
+      hasAudio: !!item.fileID,
+      isReadByElder: !!item.isReadByElder,
+      messageType: item.messageType || "message",
+      reminderEnabled: !!item.reminderEnabled,
+      reminderTime: item.reminderTime || "",
+      reminderScheduleType: item.reminderScheduleType || "daily",
+      reminderDate: item.reminderDate || "",
+      reminderWeekdays: normalizeReminderWeekdays(item.reminderWeekdays),
+      activeToday: isReminderActiveOnDate(item),
+      createdAt: item.createdAt || "",
+      readAt: item.readAt || ""
+    }))
+  };
+}
+
+async function completeTodayTask(event = {}) {
+  await ensureCollections();
+
+  const user = await getCurrentUser();
+  if (normalizeUserType(user) !== "elder") {
+    throw new Error("只有老人本人可以标记完成");
+  }
+
+  const elderId = await resolveElderIdForEvent(user, event);
+  const taskType = String(event.taskType || "medication").trim();
+  const taskId = String(event.taskId || "").trim();
+  const dateKey = getDateKey(event.dateKey || new Date());
+
+  if (!taskId) {
+    throw new Error("缺少提醒ID");
+  }
+
+  let task = null;
+  let title = "";
+  let subtitle = "";
+
+  if (taskType === "medication") {
+    const taskRes = await db.collection(COLLECTION_NAMES.healthRecords).doc(taskId).get();
+    task = taskRes.data;
+
+    if (!task || task.elderId !== elderId || task.type !== "medication") {
+      throw new Error("提醒不存在");
+    }
+
+    title = task.name || "今日提醒";
+    subtitle = buildTaskSubtitle(task);
+  } else if (taskType === "messageReminder") {
+    const taskRes = await db.collection(COLLECTION_NAMES.voiceMessages).doc(taskId).get();
+    task = taskRes.data;
+
+    if (!task || task.elderId !== elderId || task.messageType !== "reminder") {
+      throw new Error("提醒不存在");
+    }
+
+    title = task.note || "待办提醒";
+    subtitle = [task.reminderTime || "", task.senderName || ""].filter(Boolean).join(" 路 ");
+  } else {
+    throw new Error("暂不支持该提醒类型");
+  }
+
+  const existing = await db
+    .collection(COLLECTION_NAMES.dailyTaskLogs)
+    .where({ elderId, dateKey, taskType, taskId })
+    .get();
+
+  if (existing.data && existing.data.length) {
+    return {
+      success: true,
+      id: existing.data[0]._id,
+      duplicated: true
+    };
+  }
+
+  const completedAt = new Date().toISOString();
+  const res = await db.collection(COLLECTION_NAMES.dailyTaskLogs).add({
+    data: {
+      elderId,
+      dateKey,
+      taskType,
+      taskId,
+      title,
+      subtitle,
+      time: task.reminderTime || task.time || "",
+      frequency: task.frequency || "",
+      dosage: task.dosage || "",
+      notes: task.notes || task.note || "",
+      completedAt,
+      completedBy: user._id,
+      completedByRole: normalizeUserType(user)
+    }
+  });
+
+  return {
+    success: true,
+    id: res._id,
+    item: {
+      id: res._id,
+      taskType,
+      taskId,
+      title,
+      subtitle,
+      time: task.reminderTime || task.time || "",
+      frequency: task.frequency || "",
+      dosage: task.dosage || "",
+      notes: task.notes || task.note || "",
+      completedAt
+    }
+  };
+}
+
 exports.main = async (event) => {
   try {
     switch (event.action) {
@@ -2599,10 +3068,16 @@ exports.main = async (event) => {
         return await deleteMemory(event);
       case "getHealthInfo":
         return await getHealthInfo(event);
+      case "getTodayCompletedTasks":
+        return await getTodayCompletedTasks(event);
+      case "completeTodayTask":
+        return await completeTodayTask(event);
       case "addMedicalHistory":
         return await addMedicalHistory(event);
       case "addMedication":
         return await addMedication(event);
+      case "updateMedication":
+        return await updateMedication(event);
       case "addHealthMeasurement":
         return await addHealthMeasurement(event);
       case "updateTodayHealth":

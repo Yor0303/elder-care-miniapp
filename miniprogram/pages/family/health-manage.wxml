@@ -1,5 +1,5 @@
 <view class="page">
-  <view class="title">🩺 健康数据管理</view>
+  <view class="title">健康数据管理</view>
 
   <view wx:if="{{loading}}" class="loading-container">
     <view class="loading">加载中...</view>
@@ -8,7 +8,7 @@
   <view wx:else>
     <view class="section">
       <view class="section-header">
-        <view class="section-title">📈 趋势概览</view>
+        <view class="section-title">趋势概览</view>
         <text class="tip">更新今日健康后会自动沉淀趋势记录</text>
       </view>
 
@@ -16,7 +16,7 @@
         <view class="overview-main">
           <view class="overview-label">血压</view>
           <view class="overview-value">{{pressureOverview.current}}</view>
-          <view class="overview-subtitle">适合快速观察近期状态</view>
+          <view class="overview-subtitle">适合快速查看最近状态</view>
         </view>
         <view class="overview-side">
           <view class="mini-metric">
@@ -85,33 +85,33 @@
 
     <view class="section">
       <view class="section-header">
-        <view class="section-title">❤️ 今日健康</view>
+        <view class="section-title">今日健康</view>
         <text class="tip">点击卡片可直接编辑</text>
       </view>
 
       <view class="data-card" bindtap="editTodayHealth">
         <view class="data-label">血压</view>
         <view class="data-value">{{todayHealth.bloodPressure || "--/--"}}</view>
-        <view class="edit-icon">✏️ 编辑</view>
+        <view class="edit-icon">编辑</view>
       </view>
 
       <view class="data-card" bindtap="editHeartRate">
         <view class="data-label">心率</view>
         <view class="data-value">{{todayHealth.heartRate || "--"}} 次/分</view>
-        <view class="edit-icon">✏️ 编辑</view>
+        <view class="edit-icon">编辑</view>
       </view>
 
       <view class="data-card" bindtap="editBloodSugar">
         <view class="data-label">血糖</view>
         <view class="data-value">{{todayHealth.bloodSugar || "--"}} mmol/L</view>
-        <view class="edit-icon">✏️ 编辑</view>
+        <view class="edit-icon">编辑</view>
       </view>
     </view>
 
     <view class="section">
       <view class="section-header">
-        <view class="section-title">📋 既往病史</view>
-        <view class="add-btn" bindtap="showAddHistory">➕ 添加</view>
+        <view class="section-title">既往病史</view>
+        <view class="add-btn" bindtap="showAddHistory">添加</view>
       </view>
 
       <view wx:if="{{medicalHistory.length === 0}}" class="empty-tip">
@@ -124,14 +124,16 @@
           <view class="record-meta">{{item.diagnoseYear}} 年确诊</view>
           <view wx:if="{{item.notes}}" class="record-notes">{{item.notes}}</view>
         </view>
-        <view class="delete-btn" catchtap="deleteRecord" data-id="{{item.id}}">🗑️ 删除</view>
+        <view class="record-actions">
+          <view class="delete-btn" catchtap="deleteRecord" data-id="{{item.id}}">删除</view>
+        </view>
       </view>
     </view>
 
     <view class="section">
       <view class="section-header">
-        <view class="section-title">💊 当前用药</view>
-        <view class="add-btn" bindtap="showAddMedication">➕ 添加</view>
+        <view class="section-title">当前用药</view>
+        <view class="add-btn" bindtap="showAddMedication">添加</view>
       </view>
 
       <view wx:if="{{medications.length === 0}}" class="empty-tip">
@@ -144,17 +146,22 @@
           <view class="record-meta">{{item.frequency || "未填写频率"}}</view>
           <view wx:if="{{item.dosage}}" class="record-notes">剂量：{{item.dosage}}</view>
           <view wx:if="{{item.time}}" class="record-notes">服用时间：{{item.time}}</view>
-          <view wx:if="{{item.reminderEnabled && item.reminderTime}}" class="record-tag">提醒时间：{{item.reminderTime}}</view>
+          <view wx:if="{{item.reminderEnabled && item.reminderScheduleText}}" class="record-tag">{{item.reminderScheduleText}}</view>
           <view wx:if="{{item.notes}}" class="record-notes">备注：{{item.notes}}</view>
         </view>
-        <view class="delete-btn" catchtap="deleteRecord" data-id="{{item.id}}">🗑️ 删除</view>
+        <view class="record-actions">
+          <view class="edit-btn" catchtap="editMedication" data-id="{{item.id}}">编辑</view>
+          <view class="delete-btn" catchtap="deleteRecord" data-id="{{item.id}}">删除</view>
+        </view>
       </view>
     </view>
   </view>
 
   <view class="modal-mask" wx:if="{{showAddModal}}" bindtap="closeModal">
     <view class="modal-content" catchtap="noop">
-      <view class="modal-title">{{addType === "history" ? "➕ 添加病史" : "➕ 添加用药"}}</view>
+      <view class="modal-title">
+        {{addType === "history" ? "添加病史" : (editingMedicationId ? "编辑用药" : "添加用药")}}
+      </view>
 
       <view wx:if="{{addType === 'history'}}">
         <view class="modal-item">
@@ -179,17 +186,50 @@
           <input class="modal-input" placeholder="剂量，如：1 片" data-field="dosage" value="{{newRecord.dosage}}" bindinput="onInputChange" />
         </view>
         <view class="modal-item">
-          <input class="modal-input" placeholder="服用时间，如：早饭后" data-field="time" value="{{newRecord.time}}" bindinput="onInputChange" />
+          <input class="modal-input" placeholder="服用说明，如：早餐后" data-field="time" value="{{newRecord.time}}" bindinput="onInputChange" />
         </view>
         <view class="modal-item switch-item">
           <view class="switch-copy">
-            <view class="switch-title">⏰ 开启用药提醒</view>
-            <view class="switch-desc">先把提醒时间记录下来，认证完成后可接通知能力。</view>
+            <view class="switch-title">开启用药提醒</view>
+            <view class="switch-desc">老人端备忘录会按照你设置的规则显示</view>
           </view>
           <switch color="#8b6a4d" checked="{{newRecord.reminderEnabled}}" bindchange="onReminderSwitch" />
         </view>
         <view wx:if="{{newRecord.reminderEnabled}}" class="modal-item">
-          <input class="modal-input" placeholder="提醒时间，如：19:00" data-field="reminderTime" value="{{newRecord.reminderTime}}" bindinput="onInputChange" />
+          <input class="modal-input" placeholder="提醒时间，如：09:00" data-field="reminderTime" value="{{newRecord.reminderTime}}" bindinput="onInputChange" />
+        </view>
+        <view wx:if="{{newRecord.reminderEnabled}}" class="modal-item">
+          <view class="schedule-label">提醒规则</view>
+          <view class="schedule-options">
+            <view
+              wx:for="{{reminderScheduleOptions}}"
+              wx:key="value"
+              class="schedule-chip {{newRecord.reminderScheduleType === item.value ? 'schedule-chip-active' : ''}}"
+              data-value="{{item.value}}"
+              bindtap="onReminderScheduleSelect"
+            >
+              {{item.label}}
+            </view>
+          </view>
+        </view>
+        <view wx:if="{{newRecord.reminderEnabled && newRecord.reminderScheduleType === 'once'}}" class="modal-item">
+          <picker mode="date" value="{{newRecord.reminderDate}}" bindchange="onReminderDateChange">
+            <view class="picker-field">{{newRecord.reminderDate || "选择提醒日期"}}</view>
+          </picker>
+        </view>
+        <view wx:if="{{newRecord.reminderEnabled && newRecord.reminderScheduleType === 'weekly'}}" class="modal-item">
+          <view class="schedule-label">选择星期</view>
+          <view class="weekday-options">
+            <view
+              wx:for="{{weekdayOptions}}"
+              wx:key="value"
+              class="weekday-chip {{newRecord.reminderWeekdays.indexOf(item.value) !== -1 ? 'weekday-chip-active' : ''}}"
+              data-day="{{item.value}}"
+              bindtap="toggleReminderWeekday"
+            >
+              {{item.label}}
+            </view>
+          </view>
         </view>
         <view class="modal-item">
           <input class="modal-input" placeholder="备注，可选" data-field="notes" value="{{newRecord.notes}}" bindinput="onInputChange" />

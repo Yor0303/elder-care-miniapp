@@ -5,15 +5,74 @@ const TYPE_LABELS = {
   travel: "旅行",
   festival: "节日",
   daily: "日常",
-  medical: "医疗"
+  medical: "医疗",
+  childhood: "童年",
+  school: "校园",
+  work: "工作",
+  hometown: "家乡",
+  friend: "朋友",
+  friendship: "朋友",
+  wedding: "婚礼",
+  birthday: "生日",
+  celebration: "庆祝",
+  milestone: "重要时刻",
+  portrait: "照片",
+  life: "生活",
+  holiday: "假日",
+  photo: "照片",
+  video: "视频"
 };
+
+const TYPE_ORDER = [
+  "family",
+  "childhood",
+  "school",
+  "friend",
+  "friendship",
+  "travel",
+  "festival",
+  "birthday",
+  "wedding",
+  "celebration",
+  "work",
+  "hometown",
+  "medical",
+  "daily",
+  "life",
+  "holiday",
+  "milestone",
+  "portrait",
+  "photo",
+  "video"
+];
+
+function getTypeLabel(type) {
+  return TYPE_LABELS[type] || "其他";
+}
+
+function normalizeYear(value) {
+  const match = String(value || "").match(/\d{4}/);
+  return match ? Number(match[0]) : 0;
+}
+
+function normalizeDecade(decade, year) {
+  if (decade !== null && decade !== undefined && decade !== "") {
+    return String(decade).replace(/[^\d]/g, "").slice(0, 4);
+  }
+
+  const numericYear = normalizeYear(year);
+  if (!numericYear) {
+    return "";
+  }
+
+  return String(Math.floor(numericYear / 10) * 10);
+}
 
 Page({
   data: {
     showFilter: false,
-    showDecade: false,
-    showType: false,
-    showStory: false,
+    showDetail: false,
+    expandedSection: "",
     currentMemory: {},
     memories: [],
     list: [],
@@ -21,6 +80,7 @@ Page({
     typeOptions: [],
     activeDecade: "",
     activeType: "",
+    activeTypeLabel: "",
     loading: false,
     errorMsg: "",
     queryPerson: ""
@@ -51,24 +111,39 @@ Page({
         .map((item) => ({
           ...item,
           year: item.year || "",
-          decade: item.decade || "",
+          decade: normalizeDecade(item.decade, item.year),
           type: item.type || "daily",
-          typeLabel: TYPE_LABELS[item.type] || "其他",
+          typeLabel: getTypeLabel(item.type || "daily"),
           img: item.img || "/assets/images/family.jpg",
           title: item.title || "未命名回忆",
           story: item.story || "暂无故事内容",
           person: item.person || "未标注人物"
         }))
-        .sort((a, b) => Number(b.year || 0) - Number(a.year || 0));
+        .sort((a, b) => normalizeYear(b.year) - normalizeYear(a.year));
 
-      const decadeOptions = [...new Set(normalized.map((item) => item.decade).filter(Boolean))];
-      const typeOptions = [...new Set(normalized.map((item) => item.type).filter(Boolean))];
+      const decadeOptions = [...new Set(normalized.map((item) => item.decade).filter(Boolean))].sort((a, b) => Number(b) - Number(a));
+      const typeOptions = [...new Set(normalized.map((item) => item.type).filter(Boolean))]
+        .sort((a, b) => {
+          const aIndex = TYPE_ORDER.indexOf(a);
+          const bIndex = TYPE_ORDER.indexOf(b);
+          const normalizedA = aIndex === -1 ? TYPE_ORDER.length : aIndex;
+          const normalizedB = bIndex === -1 ? TYPE_ORDER.length : bIndex;
+          if (normalizedA !== normalizedB) {
+            return normalizedA - normalizedB;
+          }
+          return getTypeLabel(a).localeCompare(getTypeLabel(b), "zh-CN");
+        })
+        .map((type) => ({
+          value: type,
+          label: getTypeLabel(type)
+        }));
 
       this.setData({
         memories: normalized,
         list: this.applyFilters(normalized, this.data.activeDecade, this.data.activeType),
         decadeOptions,
         typeOptions,
+        activeTypeLabel: getTypeLabel(this.data.activeType || ""),
         loading: false
       });
     } catch (error) {
@@ -105,43 +180,36 @@ Page({
   openMemory(e) {
     const item = e.currentTarget.dataset.item;
     this.setData({
-      showStory: true,
+      showDetail: true,
       currentMemory: item || {}
     });
   },
 
-  closeStory() {
+  closeDetail() {
     this.setData({
-      showStory: false,
+      showDetail: false,
       currentMemory: {}
     });
   },
 
   openFilter() {
     this.setData({
-      showFilter: true
+      showFilter: true,
+      expandedSection: ""
     });
   },
 
   closeFilter() {
     this.setData({
       showFilter: false,
-      showDecade: false,
-      showType: false
+      expandedSection: ""
     });
   },
 
-  toggleDecade() {
+  toggleSection(e) {
+    const section = e.currentTarget.dataset.section || "";
     this.setData({
-      showDecade: !this.data.showDecade,
-      showType: false
-    });
-  },
-
-  toggleType() {
-    this.setData({
-      showType: !this.data.showType,
-      showDecade: false
+      expandedSection: this.data.expandedSection === section ? "" : section
     });
   },
 
@@ -149,9 +217,7 @@ Page({
     const value = e.currentTarget.dataset.value || "";
     this.setData({
       activeDecade: value,
-      list: this.applyFilters(this.data.memories, value, this.data.activeType),
-      showFilter: false,
-      showDecade: false
+      list: this.applyFilters(this.data.memories, value, this.data.activeType)
     });
   },
 
@@ -159,9 +225,8 @@ Page({
     const value = e.currentTarget.dataset.value || "";
     this.setData({
       activeType: value,
-      list: this.applyFilters(this.data.memories, this.data.activeDecade, value),
-      showFilter: false,
-      showType: false
+      activeTypeLabel: getTypeLabel(value),
+      list: this.applyFilters(this.data.memories, this.data.activeDecade, value)
     });
   },
 
@@ -169,47 +234,13 @@ Page({
     this.setData({
       activeDecade: "",
       activeType: "",
+      activeTypeLabel: "",
       list: this.data.memories,
       showFilter: false,
-      showDecade: false,
-      showType: false
+      expandedSection: ""
     });
   },
 
-  startStory() {
-    if (!this.data.list.length) {
-      wx.showToast({
-        title: "暂无回忆可播放",
-        icon: "none"
-      });
-      return;
-    }
-
-    let index = 0;
-    if (this.timer) {
-      clearInterval(this.timer);
-    }
-
-    this.timer = setInterval(() => {
-      if (index >= this.data.list.length) {
-        clearInterval(this.timer);
-        this.timer = null;
-        return;
-      }
-
-      wx.pageScrollTo({
-        scrollTop: index * 360,
-        duration: 800
-      });
-
-      index += 1;
-    }, 4000);
-  },
-
   onUnload() {
-    if (this.timer) {
-      clearInterval(this.timer);
-      this.timer = null;
-    }
   }
 });

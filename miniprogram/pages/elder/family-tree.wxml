@@ -1,103 +1,132 @@
 <view class="page">
-  <view class="hero">
-    <view class="hero-title">家庭关系</view>
-  </view>
+  <view wx:if="{{loading}}" class="state-card">家人资料加载中...</view>
 
-  <view wx:if="{{loading}}" class="state-card">家人关系加载中...</view>
-
-  <block wx:elif="{{elderCard}}">
-    <view class="map-card">
-      <view class="relationship-map">
-        <block wx:for="{{orbitMembers}}" wx:key="id">
-          <view class="orbit-line" style="{{item.lineStyle}}"></view>
-        </block>
-
-        <view
-          class="center-node {{selectedNodeId === elderCard.id ? 'center-node--active' : ''}}"
-          data-id="{{elderCard.id}}"
-          data-name="{{elderCard.name}}"
-          data-self="{{true}}"
-          bindtap="handleSelectPerson"
+  <block wx:elif="{{familyMembers.length}}">
+    <view class="album-layout">
+      <view class="book-shell">
+        <swiper
+          class="album-swiper"
+          circular="false"
+          current="{{currentPage}}"
+          duration="360"
+          easing-function="easeInOutCubic"
+          disable-touch="true"
+          bindchange="handleSwiperChange"
         >
-          <view class="center-circle">
-            <view class="center-avatar-shell">
-              <image wx:if="{{elderCard.avatar}}" class="center-avatar" src="{{elderCard.avatar}}" mode="aspectFill"></image>
-              <view wx:else class="center-avatar center-avatar-fallback">{{elderCard.name.slice(0, 1)}}</view>
-            </view>
-          </view>
-          <view class="center-name">{{elderCard.name}}</view>
-          <view class="center-relation">{{elderCard.relation}}</view>
-        </view>
+          <swiper-item>
+            <view class="album-page overview-page">
+              <view class="page-sheet">
+                <view class="album-board album-board--overview">
+                  <view class="album-header">
+                    <view class="overview-title">家人相簿</view>
+                  </view>
 
-        <block wx:for="{{orbitMembers}}" wx:key="id">
-          <view
-            class="orbit-node {{selectedNodeId === item.id ? 'orbit-node--active' : ''}}"
-            style="{{item.nodeStyle}}"
-            data-id="{{item.id}}"
-            data-name="{{item.name}}"
-            data-self="{{false}}"
-            bindtap="handleSelectPerson"
-          >
-            <view class="orbit-avatar-shell">
-              <image wx:if="{{item.avatar}}" class="orbit-avatar" src="{{item.avatar}}" mode="aspectFill"></image>
-              <view wx:else class="orbit-avatar orbit-avatar-fallback">{{item.name.slice(0, 1)}}</view>
+                  <view class="overview-card">
+                    <view class="relationship-map">
+                      <block wx:for="{{overviewMembers}}" wx:key="id">
+                        <view class="orbit-line {{item.active ? 'orbit-line--active' : ''}}" style="{{item.lineStyle}}"></view>
+                      </block>
+
+                      <view class="center-node">
+                        <view class="center-circle">
+                          <view class="center-avatar-shell">
+                            <image wx:if="{{elderCard.avatar}}" class="center-avatar" src="{{elderCard.avatar}}" mode="aspectFill"></image>
+                            <view wx:else class="center-avatar center-avatar-fallback">{{elderCard.name.slice(0, 1)}}</view>
+                          </view>
+                        </view>
+                        <view class="center-name">{{elderCard.name}}</view>
+                        <view class="center-relation">{{elderCard.relation}}</view>
+                      </view>
+
+                      <block wx:for="{{overviewMembers}}" wx:key="id">
+                        <view
+                          class="orbit-node {{item.active ? 'orbit-node--active' : ''}}"
+                          style="{{item.nodeStyle}}"
+                          data-index="{{index}}"
+                          bindtap="handleSelectOverview"
+                        >
+                          <view class="orbit-avatar-shell">
+                            <image wx:if="{{item.avatar}}" class="orbit-avatar" src="{{item.avatar}}" mode="aspectFill"></image>
+                            <view wx:else class="orbit-avatar orbit-avatar-fallback">{{item.name.slice(0, 1)}}</view>
+                          </view>
+                          <view class="orbit-name">{{item.name}}</view>
+                          <view class="orbit-relation">{{item.relation}}</view>
+                        </view>
+                      </block>
+                    </view>
+                  </view>
+                </view>
+              </view>
             </view>
-            <view class="orbit-name">{{item.name}}</view>
-            <view class="orbit-relation">{{item.relation}}</view>
-          </view>
-        </block>
+          </swiper-item>
+
+          <swiper-item wx:for="{{familyMembers}}" wx:key="id">
+            <view class="album-page person-page">
+              <view class="page-sheet">
+                <view class="album-board album-board--photo">
+                  <view class="photo-card">
+                    <view class="photo-frame">
+                      <view class="photo-pin photo-pin--left"></view>
+                      <view class="photo-pin photo-pin--right"></view>
+                      <image wx:if="{{item.avatar}}" class="photo-image photo-image--square" src="{{item.avatar}}" mode="aspectFill"></image>
+                      <view wx:else class="photo-image photo-image--square photo-fallback">{{item.name.slice(0, 1)}}</view>
+                    </view>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </swiper-item>
+        </swiper>
+
+        <button class="corner-btn corner-btn--left" bindtap="handlePrevPage">
+          <view class="corner-btn-fold"></view>
+          <view class="corner-btn-arrow">‹</view>
+        </button>
+
+        <button class="corner-btn corner-btn--right" bindtap="handleNextPage">
+          <view class="corner-btn-fold"></view>
+          <view class="corner-btn-arrow">›</view>
+        </button>
       </view>
-    </view>
 
-    <view wx:if="{{selectedPerson}}" class="detail-card">
-      <view class="detail-top">
-        <view class="detail-avatar-shell">
-          <image wx:if="{{selectedPerson.avatar}}" class="detail-avatar" src="{{selectedPerson.avatar}}" mode="aspectFill"></image>
-          <view wx:else class="detail-avatar detail-avatar-fallback">{{selectedPerson.name.slice(0, 1)}}</view>
-        </view>
-
-        <view class="detail-meta">
-          <view class="detail-name">{{selectedPerson.name}}</view>
-          <view class="detail-relation">{{selectedPerson.relation}}</view>
+      <view wx:if="{{currentMember}}" class="detail-card">
+        <view class="detail-head">
+          <view>
+            <view class="detail-title">{{currentMember.name}}</view>
+          </view>
           <view class="detail-tags">
-            <text class="detail-tag" wx:if="{{selectedPerson.age}}">{{selectedPerson.age}} 岁</text>
-            <text class="detail-tag">{{selectedPerson.gender}}</text>
+            <text wx:if="{{currentMember.age}}" class="detail-tag">{{currentMember.age}} 岁</text>
+            <text class="detail-tag">{{currentMember.relation}}</text>
           </view>
         </view>
-      </view>
 
-      <view class="detail-block">
-        <view class="block-title">人物资料</view>
-        <view class="detail-description">{{selectedPerson.detailDescription}}</view>
-      </view>
-
-      <view class="detail-block">
-        <view class="block-title">健康摘要</view>
-        <view class="detail-description">{{selectedPerson.healthSummary}}</view>
-      </view>
-
-      <view class="detail-block">
-        <view class="memory-header">
-          <view class="block-title">相关回忆</view>
-          <button class="memory-link" size="mini" bindtap="handleOpenMemories">查看全部</button>
+        <view class="info-card">
+          <view class="block-title">详细资料</view>
+          <view wx:if="{{currentMember.loading}}" class="block-copy">资料加载中...</view>
+          <view wx:else class="block-copy">{{currentMember.detailDescription || "这位家人的介绍还没有补充。"}}</view>
         </view>
 
-        <view wx:if="{{memoryLoading}}" class="memory-state">回忆加载中...</view>
-        <view wx:elif="{{relatedMemories.length}}" class="memory-list">
-          <block wx:for="{{relatedMemories}}" wx:key="id">
-            <view class="memory-item">
-              <view class="memory-year">{{item.year}}</view>
-              <view class="memory-content">
+        <view class="info-card">
+          <view class="memory-head">
+            <view class="block-title">你们的回忆</view>
+            <button class="memory-link" size="mini" bindtap="handleOpenMemories">查看全部</button>
+          </view>
+
+          <view wx:if="{{currentMember.loading}}" class="block-copy">回忆加载中...</view>
+          <view wx:elif="{{currentMember.memories.length}}" class="memory-list">
+            <view wx:for="{{currentMember.memories}}" wx:key="id" class="memory-item">
+              <view class="memory-year">{{item.year || "回忆"}}</view>
+              <view class="memory-copy">
                 <view class="memory-title">{{item.title}}</view>
                 <view class="memory-story">{{item.story}}</view>
               </view>
             </view>
-          </block>
+          </view>
+          <view wx:else class="block-copy">还没有和这位家人相关的回忆。</view>
         </view>
-        <view wx:else class="memory-state">暂时还没有和这位家人相关的回忆。</view>
       </view>
     </view>
   </block>
 
-  <view wx:else class="state-card">当前还没有家庭成员数据。</view>
+  <view wx:else class="state-card">家人资料还没有整理好。</view>
 </view>

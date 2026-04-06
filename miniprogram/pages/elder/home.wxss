@@ -7,6 +7,65 @@
     linear-gradient(180deg, #f8fbfc 0%, #eef4f5 100%);
 }
 
+.preview-banner,
+.preview-panel {
+  border-radius: 30rpx;
+  box-shadow: 0 16rpx 36rpx rgba(21, 32, 43, 0.08);
+}
+
+.preview-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+  padding: 24rpx 24rpx;
+  margin-bottom: 24rpx;
+  background: linear-gradient(145deg, #fff4df 0%, #fffdfa 100%);
+}
+
+.preview-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.preview-title,
+.preview-panel-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #6e4d1f;
+}
+
+.preview-desc,
+.preview-panel-desc {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  line-height: 1.65;
+  color: #876d45;
+}
+
+.preview-btn {
+  flex-shrink: 0;
+  min-width: 176rpx;
+  height: 72rpx;
+  line-height: 72rpx;
+  padding: 0 18rpx;
+  border-radius: 999rpx;
+  background: #315f78;
+  color: #fff;
+  font-size: 26rpx;
+  font-weight: 700;
+  border: none;
+}
+
+.preview-btn::after {
+  border: none;
+}
+
+.preview-panel {
+  padding: 26rpx 24rpx;
+  background: linear-gradient(145deg, #fff7ea 0%, #ffffff 100%);
+}
+
 .hero-card,
 .memo-card,
 .feature-card,
@@ -251,15 +310,29 @@
   margin-top: 8rpx;
 }
 
-.reminder-tag {
-  min-width: 92rpx;
-  height: 54rpx;
-  line-height: 54rpx;
-  border-radius: 999rpx;
-  background: #dfeaff;
-  color: #3868b8;
-  font-size: 22rpx;
-  text-align: center;
+.reminder-check {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(145deg, #d9f2de 0%, #ecfbf0 100%);
+  color: #2f8f54;
+  font-size: 34rpx;
+  font-weight: 700;
+  box-shadow: inset 0 0 0 2rpx rgba(47, 143, 84, 0.12);
+}
+
+.reminder-check-loading {
+  color: #6d7c8c;
+  background: #eef3f7;
+  box-shadow: inset 0 0 0 2rpx rgba(109, 124, 140, 0.12);
+}
+
+.reminder-check-disabled {
+  opacity: 0.6;
 }
 
 .message-list-spaced {

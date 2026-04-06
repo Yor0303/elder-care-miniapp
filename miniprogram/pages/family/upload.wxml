@@ -25,8 +25,8 @@
         <text class="remove-btn" bindtap="removeFile">删除</text>
       </view>
       <view class="preview-content">
-        <image wx:if="{{type === 'photo'}}" src="{{fileUrl}}" mode="aspectFit" class="preview-image"></image>
-        <video wx:if="{{type === 'video'}}" src="{{fileUrl}}" controls class="preview-video"></video>
+        <image wx:if="{{mediaType === 'photo'}}" src="{{fileUrl}}" mode="aspectFit" class="preview-image"></image>
+        <video wx:if="{{mediaType === 'video'}}" src="{{fileUrl}}" controls class="preview-video"></video>
       </view>
     </view>
 
@@ -51,6 +51,14 @@
           bindinput="onStoryInput"
           maxlength="500"
         />
+      </view>
+
+      <view class="form-item" bindtap="showTypePicker">
+        <view class="form-label">回忆类型</view>
+        <view class="form-picker">
+          <text class="{{memoryType ? '' : 'placeholder'}}">{{typeLabels[memoryType] || "请选择类型"}}</text>
+          <text class="arrow">></text>
+        </view>
       </view>
 
       <view class="form-row">
@@ -132,5 +140,22 @@
     >
       {{pairUploading ? "保存中..." : "🧩 保存配对"}}
     </button>
+  </view>
+
+  <view class="picker-mask" wx:if="{{showTypePicker}}" bindtap="hideTypePicker">
+    <view class="picker-content" catchtap="noop">
+      <view class="picker-title">选择回忆类型</view>
+      <view class="picker-list">
+        <view
+          wx:for="{{typeOptions}}"
+          wx:key="*this"
+          class="picker-item {{memoryType === item ? 'active' : ''}}"
+          bindtap="onTypeSelect"
+          data-type="{{item}}"
+        >
+          {{typeLabels[item]}}
+        </view>
+      </view>
+    </view>
   </view>
 </view>

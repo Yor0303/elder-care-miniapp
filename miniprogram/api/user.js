@@ -12,8 +12,10 @@ const FAMILY_ELDER_ACTIONS = new Set([
   "updateMemory",
   "deleteMemory",
   "getHealthInfo",
+  "getTodayCompletedTasks",
   "addMedicalHistory",
   "addMedication",
+  "updateMedication",
   "addHealthMeasurement",
   "updateTodayHealth",
   "deleteHealthRecord",
@@ -192,6 +194,10 @@ function addMedicationAPI(medication) {
   return callService("addMedication", medication);
 }
 
+function updateMedicationAPI(medication) {
+  return callService("updateMedication", medication);
+}
+
 function addHealthMeasurementAPI(measurement) {
   return callService("addHealthMeasurement", measurement);
 }
@@ -349,6 +355,14 @@ function uploadAndRecognizeAPI(tempFilePath) {
   return callService("uploadAndRecognize", { tempFilePath });
 }
 
+function getTodayCompletedTasksAPI(options = {}) {
+  return callService("getTodayCompletedTasks", options);
+}
+
+function completeTodayTaskAPI(payload) {
+  return callService("completeTodayTask", payload || {});
+}
+
 module.exports = {
   registerAPI,
   loginAPI,
@@ -374,8 +388,11 @@ module.exports = {
   updateMemoryAPI,
   deleteMemoryAPI,
   getHealthInfoAPI,
+  getTodayCompletedTasksAPI,
+  completeTodayTaskAPI,
   addMedicalHistoryAPI,
   addMedicationAPI,
+  updateMedicationAPI,
   addHealthMeasurementAPI,
   updateTodayHealthAPI,
   deleteHealthRecordAPI,

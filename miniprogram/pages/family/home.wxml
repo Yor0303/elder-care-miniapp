@@ -1,87 +1,95 @@
 <view class="page">
-  <view class="section">
-    <view class="section-head">
-      <view class="section-title">核心操作</view>
-      <view class="section-desc">先处理最常用的三项内容，效率更高。</view>
+  <view class="hero-card">
+    <view class="hero-top">
+      <view class="hero-label">家属端</view>
+      <view class="hero-state {{hasBoundElder ? 'ready' : ''}}">
+        {{hasBoundElder ? "已连接" : "待绑定"}}
+      </view>
     </view>
 
-    <view class="primary-grid">
-      <view class="primary-card memory" bindtap="goToMemoryManage">
-        <view class="primary-icon">🖼️</view>
-        <view class="primary-title">回忆管理</view>
-        <view class="primary-desc">上传照片、整理故事，按时间线陪老人回看人生片段。</view>
+    <view class="hero-name">{{hasBoundElder ? elderName : "未绑定老人"}}</view>
+    <view class="hero-desc">
+      {{hasBoundElder ? "围绕建档、陪伴和照护整理好全部功能入口。" : "先完成绑定，再开始管理资料、回忆和健康内容。"}}
+    </view>
+
+    <view class="hero-actions">
+      <button class="hero-btn" bindtap="goToBindPage">{{hasBoundElder ? "管理绑定" : "立即绑定"}}</button>
+      <button class="hero-btn ghost-btn" bindtap="goToElderPreview">测试老人端</button>
+    </view>
+  </view>
+
+  <view wx:if="{{hasBoundElder}}" class="today-card">
+    <view class="today-card-head">
+      <view class="today-card-title">今天已完成</view>
+      <view wx:if="{{todayCompletedTasks.length}}" class="today-card-count">{{todayCompletedTasks.length}}</view>
+    </view>
+
+    <block wx:if="{{todayCompletedTasks.length}}">
+      <view wx:for="{{todayCompletedTasks}}" wx:key="id" class="today-item">
+        <view class="today-item-check">✓</view>
+        <view class="today-item-copy">
+          <view class="today-item-title">{{item.title}}</view>
+          <view wx:if="{{item.subtitle}}" class="today-item-meta">{{item.subtitle}}</view>
+        </view>
+      </view>
+    </block>
+
+    <view wx:else class="today-empty">今天还没有完成记录</view>
+  </view>
+
+  <view class="board-list">
+    <view
+      wx:for="{{sectionCards}}"
+      wx:key="key"
+      class="section-card tone-{{item.tone}}"
+      data-section="{{item.key}}"
+      bindtap="openSectionPopup"
+    >
+      <view class="section-aura"></view>
+      <view class="section-copy">
+        <view class="section-serial">{{item.serial}}</view>
+        <view class="section-title">{{item.title}}</view>
+        <view class="section-summary">{{item.summary}}</view>
       </view>
 
-      <view class="primary-card members" bindtap="goToMembers">
-        <view class="primary-icon">👨‍👩‍👧</view>
-        <view class="primary-title">家庭成员</view>
-        <view class="primary-desc">维护家属资料和关系信息，完善家庭陪伴网络。</view>
-      </view>
-
-      <view class="primary-card health" bindtap="goToHealthManage">
-        <view class="primary-icon">❤️</view>
-        <view class="primary-title">健康管理</view>
-        <view class="primary-desc">查看用药、健康记录和每日照护信息。</view>
+      <view class="section-side">
+        <view class="section-count">{{item.count}} 项</view>
+        <view class="section-arrow-shell">
+          <view class="section-arrow">></view>
+        </view>
       </view>
     </view>
   </view>
 
-  <view class="section">
-    <view class="section-head">
-      <view class="section-title">更多服务</view>
-      <view class="section-desc">资料完善、留言沟通和生活指引都放在这里。</view>
-    </view>
+  <view wx:if="{{popupVisible}}" class="popup-mask" bindtap="closeSectionPopup">
+    <view class="popup-sheet tone-{{popupTone}}" catchtap="noop">
+      <view class="popup-handle"></view>
 
-    <view class="service-list">
-      <view class="service-card" bindtap="goToProfile">
-        <view class="service-left">
-          <view class="service-icon profile">🪪</view>
-          <view class="service-copy">
-            <view class="service-title">老人资料</view>
-            <view class="service-desc">完善身份信息、联系电话和重要资料。</view>
-          </view>
+      <view class="popup-head">
+        <view class="popup-head-copy">
+          <view class="popup-title">{{popupTitle}}</view>
+          <view class="popup-subtitle">{{popupSubtitle}}</view>
         </view>
-        <view class="service-arrow">></view>
+        <view class="popup-close" bindtap="closeSectionPopup">x</view>
       </view>
 
-      <view class="service-card" bindtap="goToMessageBoard">
-        <view class="service-left">
-          <view class="service-icon message">💬</view>
-          <view class="service-copy">
-            <view class="service-title">家人留言板</view>
-            <view class="service-desc">给 {{elderName}} 留下语音和文字，保持温暖联系。</view>
+      <view class="popup-list">
+        <view
+          wx:for="{{popupItems}}"
+          wx:key="key"
+          wx:for-index="idx"
+          class="popup-item"
+          data-action="{{item.key}}"
+          bindtap="onSelectPopupItem"
+        >
+          <view class="popup-index">{{idx + 1 < 10 ? "0" + (idx + 1) : idx + 1}}</view>
+          <view class="popup-copy">
+            <view class="popup-item-title">{{item.title}}</view>
+            <view class="popup-item-desc">{{item.desc}}</view>
           </view>
+          <view class="popup-item-arrow">></view>
         </view>
-        <view class="service-arrow">></view>
-      </view>
-
-      <view class="service-card" bindtap="goToLifeGuides">
-        <view class="service-left">
-          <view class="service-icon guide">🧰</view>
-          <view class="service-copy">
-            <view class="service-title">生活小助手</view>
-            <view class="service-desc">上传家电和常用物品教程，帮助老人独立操作。</view>
-          </view>
-        </view>
-        <view class="service-arrow">></view>
-      </view>
-
-      <view class="service-card" bindtap="goToBindPage">
-        <view class="service-left">
-          <view class="service-icon bind">🔗</view>
-          <view class="service-copy">
-            <view class="service-title">绑定老人</view>
-            <view class="service-desc">{{hasBoundElder ? "查看当前绑定状态，必要时重新发起绑定流程。" : "先完成绑定，再开启后续管理功能。"}}</view>
-          </view>
-        </view>
-        <view class="service-arrow">></view>
       </view>
     </view>
-  </view>
-
-  <view class="tip-card">
-    <view class="tip-title">✨ 使用建议</view>
-    <view class="tip-line">先完善老人资料，再上传回忆内容，家属协作会更顺畅。</view>
-    <view class="tip-line">上传后的内容会同步显示在老人端，方便老人随时查看和回忆。</view>
   </view>
 </view>

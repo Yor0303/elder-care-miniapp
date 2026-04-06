@@ -7,6 +7,46 @@ const {
   deleteMemoryAPI
 } = require("../../api/user");
 
+const MEMORY_TYPE_LABELS = {
+  family: "家庭",
+  childhood: "童年",
+  school: "校园",
+  friend: "朋友",
+  travel: "旅行",
+  festival: "节日",
+  birthday: "生日",
+  wedding: "婚礼",
+  celebration: "庆祝",
+  work: "工作",
+  hometown: "家乡",
+  medical: "医疗",
+  daily: "日常",
+  life: "生活",
+  holiday: "假日",
+  milestone: "重要时刻",
+  portrait: "照片"
+};
+
+const MEMORY_TYPE_OPTIONS = [
+  "family",
+  "childhood",
+  "school",
+  "friend",
+  "travel",
+  "festival",
+  "birthday",
+  "wedding",
+  "celebration",
+  "work",
+  "hometown",
+  "medical",
+  "daily",
+  "life",
+  "holiday",
+  "milestone",
+  "portrait"
+];
+
 function normalizeDateValue(value) {
   if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value.trim())) {
     return value.trim();
@@ -60,13 +100,8 @@ Page({
     personRole: "",
     img: "",
     type: "",
-    typeOptions: ["family", "travel", "festival", "daily"],
-    typeLabels: {
-      family: "家庭",
-      travel: "旅行",
-      festival: "节日",
-      daily: "日常"
-    },
+    typeOptions: MEMORY_TYPE_OPTIONS,
+    typeLabels: MEMORY_TYPE_LABELS,
     showTypePicker: false,
     personOptions: [],
     personIndex: -1,

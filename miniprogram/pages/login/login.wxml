@@ -1,8 +1,6 @@
 <view class="page">
   <view class="hero">
     <view class="brand">忆站</view>
-    <view class="hero-title">先注册身份，再进入对应端</view>
-    <view class="hero-subtitle">注册后登录，系统会按你的身份进入老人端或家属端</view>
   </view>
 
   <view wx:if="{{inviteElderId}}" class="invite-banner">

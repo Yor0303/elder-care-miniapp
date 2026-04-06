@@ -1,97 +1,148 @@
 <view class="page">
-  <view class="header">
-    <view class="welcome">💬 家人留言板</view>
-    <view class="subtitle">子女和孙辈可以录制语音留言，最新内容会优先展示给老人。</view>
-  </view>
 
-  <view class="card composer-card">
-    <view class="card-left">
-      <view class="icon">🎙️</view>
-      <view class="card-content">
-        <view class="card-title">录制留言</view>
-        <view class="card-desc">给老人留下一段温和的问候</view>
+  <view class="composer-card">
+    <view class="composer-tabs">
+      <view
+        class="composer-tab {{!reminderMode ? 'composer-tab-active' : ''}}"
+        data-mode="message"
+        bindtap="setComposerMode"
+      >
+        普通留言
+      </view>
+      <view
+        class="composer-tab {{reminderMode ? 'composer-tab-active' : ''}}"
+        data-mode="reminder"
+        bindtap="setComposerMode"
+      >
+        提醒事项
       </view>
     </view>
 
-    <view class="panel note-panel">
-      <view class="note-label">文字备注</view>
+    <view class="composer-panel">
+      <view class="composer-head">
+        <view class="composer-title">{{reminderMode ? "提醒内容" : "留言内容"}}</view>
+        <view class="composer-state">{{reminderMode ? "会出现在老人端备忘录" : "会出现在老人端留言区"}}</view>
+      </view>
+
       <textarea
         class="note-input"
-        placeholder="可以补一句文字，例如“今天想你了”"
+        placeholder="{{reminderMode ? '例如：下午记得量血压、吃药' : '写一句想对老人说的话'}}"
         value="{{messageNote}}"
         bindinput="onNoteInput"
         maxlength="200"
       />
-      <button
-        wx:if="{{!tempVoicePath && !recording}}"
-        class="secondary-btn text-send-btn"
-        bindtap="sendVoiceMessage"
-        disabled="{{sending}}"
-      >
-        {{sending ? "发送中..." : "💬 仅发送文字留言"}}
+    </view>
+
+    <view wx:if="{{reminderMode}}" class="reminder-config">
+      <view class="config-row">
+        <view class="config-label">提醒时间</view>
+        <input class="field-input" placeholder="如 09:00" value="{{reminderTime}}" bindinput="onReminderTimeInput" />
+      </view>
+
+      <view class="config-row">
+        <view class="config-label">提醒规则</view>
+        <view class="schedule-options">
+          <view
+            wx:for="{{reminderScheduleOptions}}"
+            wx:key="value"
+            class="schedule-chip {{reminderScheduleType === item.value ? 'schedule-chip-active' : ''}}"
+            data-value="{{item.value}}"
+            bindtap="onReminderScheduleSelect"
+          >
+            {{item.label}}
+          </view>
+        </view>
+      </view>
+
+      <view wx:if="{{reminderScheduleType === 'once'}}" class="config-row">
+        <view class="config-label">提醒日期</view>
+        <picker mode="date" value="{{reminderDate}}" bindchange="onReminderDateChange">
+          <view class="picker-field">{{reminderDate || "选择日期"}}</view>
+        </picker>
+      </view>
+
+      <view wx:if="{{reminderScheduleType === 'weekly'}}" class="config-row">
+        <view class="config-label">选择星期</view>
+        <view class="weekday-options">
+          <view
+            wx:for="{{weekdayOptions}}"
+            wx:key="value"
+            class="weekday-chip {{reminderWeekdays.indexOf(item.value) !== -1 ? 'weekday-chip-active' : ''}}"
+            data-day="{{item.value}}"
+            bindtap="toggleReminderWeekday"
+          >
+            {{item.label}}
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{!tempVoicePath && !recording}}" class="action-bar">
+      <button class="text-btn" bindtap="sendVoiceMessage" disabled="{{sending}}">
+        {{sending ? "发送中..." : (reminderMode ? "发送提醒" : "发送文字")}}
       </button>
+      <button class="record-btn" bindtap="startRecord">录语音</button>
     </view>
 
-    <view wx:if="{{!tempVoicePath && !recording}}" class="panel">
-      <button class="primary-btn" bindtap="startRecord">🎙️ 开始录音</button>
-    </view>
-
-    <view wx:if="{{recording}}" class="panel panel-recording">
-      <view class="record-status">
+    <view wx:if="{{recording}}" class="recording-panel">
+      <view class="recording-row">
         <view class="record-dot"></view>
         <view class="record-text">录音中 {{recordSeconds}}s</view>
       </view>
-      <button class="danger-btn" bindtap="stopRecord">⏹️ 结束录音</button>
+      <button class="stop-btn" bindtap="stopRecord">结束录音</button>
     </view>
 
-    <view wx:if="{{tempVoicePath && !recording}}" class="panel">
-      <view class="draft-title">待发送语音</view>
-      <view class="draft-desc">时长 {{tempVoiceDuration}} 秒</view>
-      <view class="action-row">
-        <button class="secondary-btn" bindtap="clearDraft">🔁 重录</button>
-        <button class="primary-btn" bindtap="sendVoiceMessage" disabled="{{sending}}">
-          {{sending ? "发送中..." : "📨 发送给老人"}}
+    <view wx:if="{{tempVoicePath && !recording}}" class="draft-panel">
+      <view class="draft-head">
+        <view class="draft-title">待发送语音</view>
+        <view class="draft-desc">{{tempVoiceDuration}} 秒</view>
+      </view>
+      <view class="action-bar">
+        <button class="text-btn" bindtap="clearDraft">重录</button>
+        <button class="record-btn" bindtap="sendVoiceMessage" disabled="{{sending}}">
+          {{sending ? "发送中..." : (reminderMode ? "发送提醒" : "发送语音")}}
         </button>
       </view>
     </view>
   </view>
 
-  <view class="card list-card">
-    <view class="card-left">
-      <view class="icon">🕘</view>
-      <view class="card-content">
-        <view class="card-title">留言列表</view>
-        <view class="card-desc">按时间倒序展示，最新留言置顶</view>
-      </view>
+  <view class="list-card">
+    <view class="list-head">
+      <view class="list-title">已发送内容</view>
+      <view class="list-subtitle">最新内容会排在最前面</view>
     </view>
 
     <view wx:if="{{loading}}" class="empty-state">加载中...</view>
-    <view wx:elif="{{!messages.length}}" class="empty-state">暂无内容</view>
+    <view wx:elif="{{!messages.length}}" class="empty-state">还没有发送内容</view>
 
     <view wx:else class="message-list">
       <block wx:for="{{messages}}" wx:key="id">
         <view class="message-item">
           <view class="message-main">
-            <view class="message-header">
+            <view class="message-top">
               <view class="message-name">{{item.senderName}}</view>
               <view class="message-time">{{item.displayTime}}</view>
             </view>
-            <view class="message-desc">
-              {{item.hasAudio ? item.senderRelation + " · " + item.durationText : item.senderRelation + " · 文字留言"}}
+
+            <view class="message-meta-row">
+              <view class="message-type {{item.messageType === 'reminder' ? 'message-type-reminder' : ''}}">
+                {{item.typeLabel}}
+              </view>
+              <view class="message-desc">
+                {{item.hasAudio ? item.senderRelation + " · " + item.durationText : item.senderRelation + " · 文字内容"}}
+              </view>
             </view>
+
             <view wx:if="{{item.note}}" class="message-note">{{item.note}}</view>
+            <view wx:if="{{item.scheduleText}}" class="message-schedule">{{item.scheduleText}}</view>
           </view>
+
           <button wx:if="{{item.hasAudio}}" class="play-btn" bindtap="playMessage" data-id="{{item.id}}">
             {{playingMessageId === item.id ? "停止" : "播放"}}
           </button>
-          <view wx:else class="text-tag">文字</view>
+          <view wx:else class="text-tag">{{item.messageType === "reminder" ? "提醒" : "文字"}}</view>
         </view>
       </block>
     </view>
-  </view>
-
-  <view class="tips">
-    <view class="tips-title">✨ 温馨提示</view>
-    <view class="tips-content">建议在安静环境中录音，语速放慢一点，老人端听起来会更清晰。</view>
   </view>
 </view>
