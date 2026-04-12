@@ -1,0 +1,4 @@
+<text
+  class="app-icon app-icon-{{name}}"
+  style="font-size: {{size}}; color: {{color}};"
+></text>

@@ -1,4 +1,6 @@
 {
-  "usingComponents": {},
+  "usingComponents": {
+    "mp-loading": "weui-miniprogram/loading/loading"
+  },
   "navigationBarTitleText": "我的资料"
 }

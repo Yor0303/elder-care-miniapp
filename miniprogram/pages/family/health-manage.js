@@ -249,9 +249,13 @@ Page({
     },
     pressureTrend: [],
     showAddModal: false,
+    formDialogButtons: [],
     addType: "",
     newRecord: {},
     editingMedicationId: "",
+    showDeleteDialog: false,
+    deleteDialogButtons: [],
+    pendingDeleteRecordId: "",
     reminderScheduleOptions: [
       { value: "daily", label: "每天" },
       { value: "once", label: "单次" },
@@ -270,6 +274,16 @@ Page({
   },
 
   onLoad() {
+    this.setData({
+      formDialogButtons: [
+        { text: "取消", value: "cancel" },
+        { text: "确认", value: "confirm" }
+      ],
+      deleteDialogButtons: [
+        { text: "取消", value: "cancel" },
+        { text: "删除", value: "delete", className: "weui-dialog__btn_warn" }
+      ]
+    });
     this.loadHealthInfo();
   },
 
@@ -311,8 +325,6 @@ Page({
       wx.showToast({ title: "加载失败", icon: "none" });
     }
   },
-
-  noop() {},
 
   async editTodayHealth() {
     const { todayHealth } = this.data;
@@ -414,6 +426,16 @@ Page({
     });
   },
 
+  onFormDialogButtonTap(e) {
+    const item = e.detail.item || {};
+    if (item.value !== "confirm") {
+      this.closeModal();
+      return;
+    }
+
+    this.submitNewRecord();
+  },
+
   onInputChange(e) {
     const { field } = e.currentTarget.dataset;
     this.setData({
@@ -428,7 +450,7 @@ Page({
   },
 
   onReminderScheduleSelect(e) {
-    const { value } = e.currentTarget.dataset;
+    const value = (e.detail && e.detail.value) || (e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.value);
     if (!value) return;
 
     const nextData = {
@@ -520,19 +542,35 @@ Page({
 
   deleteRecord(e) {
     const { id } = e.currentTarget.dataset;
-    wx.showModal({
-      title: "确认删除",
-      content: "删除后无法恢复，确定要删除吗？",
-      success: async (res) => {
-        if (!res.confirm) return;
-        try {
-          await deleteHealthRecordAPI(id);
-          await this.loadHealthInfo();
-          wx.showToast({ title: "删除成功", icon: "success" });
-        } catch (_) {
-          wx.showToast({ title: "删除失败", icon: "none" });
-        }
-      }
+    this.setData({
+      showDeleteDialog: true,
+      pendingDeleteRecordId: id
     });
+  },
+
+  closeDeleteDialog() {
+    this.setData({
+      showDeleteDialog: false,
+      pendingDeleteRecordId: ""
+    });
+  },
+
+  async onDeleteDialogButtonTap(e) {
+    const item = e.detail.item || {};
+    if (item.value !== "delete") {
+      this.closeDeleteDialog();
+      return;
+    }
+
+    const recordId = this.data.pendingDeleteRecordId;
+    this.closeDeleteDialog();
+
+    try {
+      await deleteHealthRecordAPI(recordId);
+      await this.loadHealthInfo();
+      wx.showToast({ title: "删除成功", icon: "success" });
+    } catch (_) {
+      wx.showToast({ title: "删除失败", icon: "none" });
+    }
   }
 });

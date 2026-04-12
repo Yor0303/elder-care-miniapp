@@ -1,3 +1,6 @@
 {
-  "navigationBarTitleText": "编辑教程"
+  "navigationBarTitleText": "编辑教程",
+  "usingComponents": {
+    "mp-loading": "weui-miniprogram/loading/loading"
+  }
 }

@@ -1,14 +1,14 @@
 /* pages/elder/family.wxss */
 .page {
   padding: 40rpx;
-  background-color: #F8F9FB;
+  background-color: var(--yz-bg-page);
   min-height: 100vh;
 }
 
 .section-title {
   font-size: 36rpx;
   font-weight: 600;
-  color: #1A3A5F;
+  color: var(--yz-text-primary);
   margin-bottom: 20rpx;
 }
 

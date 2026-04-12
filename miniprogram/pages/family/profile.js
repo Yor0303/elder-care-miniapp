@@ -21,10 +21,24 @@ Page({
     notes: "",
 
     genderOptions: ["男", "女", "未填"],
-    genderIndex: -1
+    genderIndex: -1,
+    avatarFiles: [],
+    showGenderSheet: false,
+    genderActionItems: [],
+    selectAvatarFile: null,
+    uploadAvatarFile: null
   },
 
   onLoad() {
+    this.setData({
+      genderActionItems: this.data.genderOptions.map((item) => ({
+        text: item,
+        value: item
+      })),
+      selectAvatarFile: this.selectAvatarFile.bind(this),
+      uploadAvatarFile: this.uploadAvatarFile.bind(this)
+    });
+
     this.loadElderInfo();
   },
 
@@ -33,22 +47,24 @@ Page({
     try {
       const elder = await getElderInfoAPI();
       const genderIndex = this.getGenderIndex(elder && elder.gender);
+      const avatar = (elder && elder.avatar) || "";
 
       this.setData({
-        avatar: elder.avatar || "",
-        name: elder.name || "",
-        phone: elder.phone || "",
-        gender: elder.gender || "",
-        age: elder.age || "",
-        birthYear: elder.birthYear || "",
-        hometown: elder.hometown || "",
-        address: elder.address || "",
-        emergencyContactName: elder.emergencyContactName || "",
-        emergencyContactPhone: elder.emergencyContactPhone || "",
-        allergies: elder.allergies || "",
-        medications: elder.medications || "",
-        notes: elder.notes || "",
+        avatar,
+        name: (elder && elder.name) || "",
+        phone: (elder && elder.phone) || "",
+        gender: (elder && elder.gender) || "",
+        age: (elder && elder.age) || "",
+        birthYear: (elder && elder.birthYear) || "",
+        hometown: (elder && elder.hometown) || "",
+        address: (elder && elder.address) || "",
+        emergencyContactName: (elder && elder.emergencyContactName) || "",
+        emergencyContactPhone: (elder && elder.emergencyContactPhone) || "",
+        allergies: (elder && elder.allergies) || "",
+        medications: (elder && elder.medications) || "",
+        notes: (elder && elder.notes) || "",
         genderIndex,
+        avatarFiles: avatar ? [{ url: avatar }] : [],
         loading: false
       });
     } catch (error) {
@@ -60,6 +76,53 @@ Page({
   getGenderIndex(value) {
     const index = this.data.genderOptions.findIndex((item) => item === value);
     return index >= 0 ? index : -1;
+  },
+
+  selectAvatarFile() {
+    return true;
+  },
+
+  uploadAvatarFile({ tempFilePaths }) {
+    return Promise.all(tempFilePaths.map((item) => this.uploadToCloud(item, "avatars"))).then((urls) => ({ urls }));
+  },
+
+  onAvatarUploadSuccess(e) {
+    const url = (e.detail.urls && e.detail.urls[0]) || "";
+    this.setData({
+      avatar: url,
+      avatarFiles: url ? [{ url }] : []
+    });
+  },
+
+  onAvatarUploadFail() {
+    this.setData({
+      avatarFiles: this.data.avatar ? [{ url: this.data.avatar }] : []
+    });
+    wx.showToast({ title: "头像上传失败", icon: "none" });
+  },
+
+  onAvatarDelete() {
+    this.setData({
+      avatar: "",
+      avatarFiles: []
+    });
+  },
+
+  openGenderSheet() {
+    this.setData({ showGenderSheet: true });
+  },
+
+  closeGenderSheet() {
+    this.setData({ showGenderSheet: false });
+  },
+
+  onGenderActionTap(e) {
+    const gender = e.detail.value || "";
+    this.setData({
+      gender,
+      genderIndex: this.getGenderIndex(gender),
+      showGenderSheet: false
+    });
   },
 
   onNameInput(e) { this.setData({ name: e.detail.value }); },
@@ -74,26 +137,11 @@ Page({
   onMedicationsInput(e) { this.setData({ medications: e.detail.value }); },
   onNotesInput(e) { this.setData({ notes: e.detail.value }); },
 
-  onGenderChange(e) {
-    const index = Number(e.detail.value);
-    const gender = this.data.genderOptions[index] || "";
-    this.setData({ genderIndex: index, gender: gender === "未填" ? "" : gender });
-  },
-
-  chooseAvatar() {
-    wx.chooseImage({
-      count: 1,
-      success: (res) => {
-        this.setData({ avatar: res.tempFilePaths[0] });
-      }
-    });
-  },
-
-  uploadToCloud(tempFilePath) {
+  uploadToCloud(tempFilePath, folder = "avatars") {
     return new Promise((resolve, reject) => {
       const extMatch = tempFilePath.match(/\.[^.]+$/);
       const ext = extMatch ? extMatch[0] : ".jpg";
-      const cloudPath = `avatars/${Date.now()}-${Math.random().toString(36).substr(2, 9)}${ext}`;
+      const cloudPath = `${folder}/${Date.now()}-${Math.random().toString(36).substr(2, 9)}${ext}`;
 
       wx.cloud.uploadFile({
         cloudPath,
@@ -112,7 +160,7 @@ Page({
       let avatarUrl = this.data.avatar;
       if (avatarUrl && avatarUrl.startsWith("wxfile://")) {
         wx.showLoading({ title: "上传头像..." });
-        avatarUrl = await this.uploadToCloud(avatarUrl);
+        avatarUrl = await this.uploadToCloud(avatarUrl, "avatars");
       }
 
       const ageValue = parseInt(this.data.age, 10);
@@ -123,7 +171,7 @@ Page({
         avatar: avatarUrl || "",
         name: this.data.name.trim(),
         phone: this.data.phone.trim(),
-        gender: this.data.gender,
+        gender: this.data.gender === "未填" ? "" : this.data.gender,
         age: Number.isFinite(ageValue) ? ageValue : null,
         birthYear: Number.isFinite(birthYearValue) ? birthYearValue : "",
         hometown: this.data.hometown.trim(),

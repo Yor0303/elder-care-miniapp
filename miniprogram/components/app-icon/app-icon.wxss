@@ -1,0 +1,111 @@
+@font-face {
+  font-family: 'tdesign-icons';
+  src:
+    url('https://tdesign.gtimg.com/icon/0.4.1/fonts/t.woff') format('woff'),
+    url('https://tdesign.gtimg.com/icon/0.4.1/fonts/t.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+.app-icon {
+  display: inline-block;
+  font-family: 'tdesign-icons' !important;
+  font-style: normal;
+  font-weight: normal;
+  line-height: 1;
+  text-align: center;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.app-icon-book-open-filled::before {
+  content: '\E0C7';
+}
+
+.app-icon-browse-gallery-filled::before {
+  content: '\E0EC';
+}
+
+.app-icon-calendar-filled::before {
+  content: '\E11A';
+}
+
+.app-icon-camera-filled::before {
+  content: '\E130';
+}
+
+.app-icon-chat-filled::before {
+  content: '\E1AB';
+}
+
+.app-icon-chat-message-filled::before {
+  content: '\E1AE';
+}
+
+.app-icon-check::before {
+  content: '\E1BC';
+}
+
+.app-icon-chevron-right::before {
+  content: '\E1D8';
+}
+
+.app-icon-chevron-left::before {
+  content: '\E1D0';
+}
+
+.app-icon-check-circle-filled::before {
+  content: '\E1B7';
+}
+
+.app-icon-heart-filled::before {
+  content: '\E45E';
+}
+
+.app-icon-home-filled::before {
+  content: '\E46E';
+}
+
+.app-icon-member-filled::before {
+  content: '\E5B3';
+}
+
+.app-icon-personal-information-filled::before {
+  content: '\E68D';
+}
+
+.app-icon-play-circle-filled::before {
+  content: '\E69E';
+}
+
+.app-icon-qrcode::before {
+  content: '\E6BC';
+}
+
+.app-icon-relation::before {
+  content: '\E6D5';
+}
+
+.app-icon-scan::before {
+  content: '\E708';
+}
+
+.app-icon-system-messages-filled::before {
+  content: '\E7C3';
+}
+
+.app-icon-user-avatar-filled::before {
+  content: '\E892';
+}
+
+.app-icon-user-circle-filled::before {
+  content: '\E89C';
+}
+
+.app-icon-usergroup-filled::before {
+  content: '\E8D0';
+}
+
+.app-icon-video-camera-filled::before {
+  content: '\E8E0';
+}

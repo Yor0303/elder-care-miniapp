@@ -2,7 +2,7 @@
   <view class="title">健康数据管理</view>
 
   <view wx:if="{{loading}}" class="loading-container">
-    <view class="loading">加载中...</view>
+    <mp-loading type="circle" tips="加载健康数据中"></mp-loading>
   </view>
 
   <view wx:else>
@@ -157,12 +157,14 @@
     </view>
   </view>
 
-  <view class="modal-mask" wx:if="{{showAddModal}}" bindtap="closeModal">
-    <view class="modal-content" catchtap="noop">
-      <view class="modal-title">
-        {{addType === "history" ? "添加病史" : (editingMedicationId ? "编辑用药" : "添加用药")}}
-      </view>
-
+  <mp-dialog
+    title="{{addType === 'history' ? '添加病史' : (editingMedicationId ? '编辑用药' : '添加用药')}}"
+    show="{{showAddModal}}"
+    buttons="{{formDialogButtons}}"
+    bindclose="closeModal"
+    bindbuttontap="onFormDialogButtonTap"
+  >
+    <view class="dialog-body">
       <view wx:if="{{addType === 'history'}}">
         <view class="modal-item">
           <input class="modal-input" placeholder="病史名称，如：高血压" data-field="name" value="{{newRecord.name}}" bindinput="onInputChange" />
@@ -235,11 +237,16 @@
           <input class="modal-input" placeholder="备注，可选" data-field="notes" value="{{newRecord.notes}}" bindinput="onInputChange" />
         </view>
       </view>
-
-      <view class="modal-actions">
-        <button class="modal-btn cancel" bindtap="closeModal">取消</button>
-        <button class="modal-btn confirm" bindtap="submitNewRecord">确认</button>
-      </view>
     </view>
-  </view>
+  </mp-dialog>
+
+  <mp-dialog
+    title="确认删除"
+    show="{{showDeleteDialog}}"
+    buttons="{{deleteDialogButtons}}"
+    bindclose="closeDeleteDialog"
+    bindbuttontap="onDeleteDialogButtonTap"
+  >
+    删除后无法恢复，确定要删除这条记录吗？
+  </mp-dialog>
 </view>

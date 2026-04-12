@@ -1,42 +1,49 @@
 <view class="page">
-  <view class="title">👨‍👩‍👧 家庭成员</view>
-
-  <view wx:if="{{loading}}" class="loading-container">
-    <view class="loading">加载中...</view>
+  <view class="hero-card">
+    <view class="hero-copy">
+      <view class="title">家庭成员</view>
+      <view class="subtitle">把亲属关系、头像和补充说明整理在一起，后续建档和互动都会更顺手。</view>
+    </view>
+    <button class="hero-btn" bindtap="addMember">新增成员</button>
   </view>
 
-  <view wx:else>
-    <view class="member-list" wx:if="{{members.length > 0}}">
-      <view wx:for="{{members}}" wx:key="id" class="member-card">
-        <image
-          wx:if="{{item.avatar}}"
-          class="avatar"
-          src="{{item.avatar}}"
-          mode="aspectFill"
-        ></image>
-        <view wx:else class="avatar avatar-placeholder">🙂</view>
+  <view wx:if="{{loading}}" class="loading-card">
+    <mp-loading type="dot-gray"></mp-loading>
+  </view>
 
-        <view class="info">
-          <view class="name">{{item.name || "未命名成员"}}</view>
-          <view class="meta">
-            <text class="relation">{{item.relation || "关系未填"}}</text>
-            <text class="age" wx:if="{{item.age}}">{{item.age}}岁</text>
-          </view>
-          <view wx:if="{{item.description}}" class="desc">{{item.description}}</view>
-        </view>
-
-        <view class="edit-btn" catchtap="editMember" data-id="{{item.id}}">✏️ 编辑</view>
+  <view wx:elif="{{members.length > 0}}" class="member-list">
+    <view wx:for="{{members}}" wx:key="id" class="member-card">
+      <image
+        wx:if="{{item.avatar}}"
+        class="avatar"
+        src="{{item.avatar}}"
+        mode="aspectFill"
+      ></image>
+      <view wx:else class="avatar avatar-placeholder">
+        <app-icon name="user-avatar-filled" size="42rpx" color="#7a8a96"></app-icon>
       </view>
+
+      <view class="info">
+        <view class="name">{{item.name || "未命名成员"}}</view>
+        <view class="meta">
+          <text class="relation">{{item.relation || "关系未填"}}</text>
+          <text class="age" wx:if="{{item.age}}">{{item.age}} 岁</text>
+        </view>
+        <view wx:if="{{item.description}}" class="desc">{{item.description}}</view>
+      </view>
+
+      <view class="edit-btn" catchtap="editMember" data-id="{{item.id}}">编辑</view>
     </view>
 
-    <view wx:else class="empty-state">
-      <view class="empty-icon">👪</view>
-      <view class="empty-text">暂无家庭成员</view>
-    </view>
+    <button class="add-member-btn" bindtap="addMember">继续添加家庭成员</button>
+  </view>
 
-    <view class="add-member-btn" bindtap="addMember">
-      <text class="add-icon">＋</text>
-      <text>添加家庭成员</text>
+  <view wx:else class="empty-state">
+    <view class="empty-badge">
+      <app-icon name="usergroup-filled" size="32rpx" color="#6f8fc8"></app-icon>
     </view>
+    <view class="empty-title">还没有家庭成员</view>
+    <view class="empty-text">先添加常联系的家人，后面上传回忆、留言和资料会更完整。</view>
+    <button class="add-member-btn" bindtap="addMember">添加第一个家庭成员</button>
   </view>
 </view>

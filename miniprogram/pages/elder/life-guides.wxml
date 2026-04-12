@@ -4,7 +4,7 @@
     <view class="subtitle">家里的家电和常用物品，点开就能看怎么用。</view>
   </view>
 
-  <view wx:if="{{loading}}" class="empty-card">加载中...</view>
+  <view wx:if="{{loading}}" class="empty-card"><mp-loading type="dot-gray"></mp-loading></view>
   <view wx:elif="{{!guides.length}}" class="empty-card">无内容</view>
 
   <view wx:else class="guide-list">

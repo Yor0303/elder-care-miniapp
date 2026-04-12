@@ -1,15 +1,37 @@
 .page {
   min-height: 100vh;
-  padding: 40rpx;
-  background: linear-gradient(180deg, #f5f9ff 0%, #f8fbff 36%, #f8f9fb 100%);
+  padding: 28rpx 24rpx 40rpx;
+  background: var(--yz-bg-page);
+}
+
+.hero-panel,
+.hero-card,
+.chart-card,
+.info-card,
+.reminder-card,
+.loading-container,
+.error-container {
+  border-radius: 24rpx;
+  box-shadow: var(--yz-shadow-soft);
+}
+
+.hero-panel {
+  margin-bottom: 24rpx;
+  padding: 32rpx 28rpx;
+  background: var(--yz-gradient-hero);
 }
 
 .title {
-  margin-bottom: 36rpx;
-  font-size: 44rpx;
+  font-size: 42rpx;
   font-weight: 700;
-  text-align: center;
-  color: #17375d;
+  color: var(--yz-text-primary);
+}
+
+.subtitle {
+  margin-top: 10rpx;
+  font-size: 25rpx;
+  line-height: 1.7;
+  color: var(--yz-text-secondary);
 }
 
 .section {
@@ -20,17 +42,15 @@
   margin-bottom: 20rpx;
   font-size: 36rpx;
   font-weight: 700;
-  color: #3979cf;
+  color: var(--yz-text-primary);
 }
 
 .hero-card {
   display: flex;
   gap: 24rpx;
   padding: 36rpx;
-  background: linear-gradient(135deg, #377be7 0%, #69a6ff 100%);
-  border-radius: 32rpx;
-  color: #fff;
-  box-shadow: 0 20rpx 40rpx rgba(63, 121, 218, 0.18);
+  background: var(--yz-brand-primary);
+  color: var(--yz-bg-card);
 }
 
 .hero-main {
@@ -88,9 +108,7 @@
 .info-card {
   margin-bottom: 20rpx;
   padding: 32rpx;
-  background: #fff;
-  border-radius: 28rpx;
-  box-shadow: 0 10rpx 28rpx rgba(34, 71, 123, 0.07);
+  background: rgba(255, 255, 255, 0.96);
 }
 
 .reminder-card {
@@ -99,16 +117,14 @@
   gap: 24rpx;
   margin-bottom: 20rpx;
   padding: 28rpx 30rpx;
-  background: #fff;
-  border-radius: 28rpx;
-  box-shadow: 0 10rpx 28rpx rgba(34, 71, 123, 0.07);
+  background: rgba(255, 255, 255, 0.96);
 }
 
 .reminder-time {
   min-width: 140rpx;
   font-size: 40rpx;
   font-weight: 700;
-  color: #377be7;
+  color: var(--yz-brand-primary);
 }
 
 .reminder-content {
@@ -118,7 +134,7 @@
 .reminder-name {
   font-size: 34rpx;
   font-weight: 700;
-  color: #22395e;
+  color: var(--yz-text-primary);
 }
 
 .reminder-meta {
@@ -127,7 +143,7 @@
   gap: 12rpx 18rpx;
   margin-top: 10rpx;
   font-size: 26rpx;
-  color: #7b8ba1;
+  color: var(--yz-text-secondary);
 }
 
 .chart-header {
@@ -141,20 +157,20 @@
 .chart-title {
   font-size: 34rpx;
   font-weight: 700;
-  color: #22395e;
+  color: var(--yz-text-primary);
 }
 
 .chart-subtitle {
   margin-top: 8rpx;
   font-size: 24rpx;
   line-height: 1.5;
-  color: #7d8ca4;
+  color: var(--yz-text-secondary);
 }
 
 .chart-current {
   font-size: 40rpx;
   font-weight: 700;
-  color: #377be7;
+  color: var(--yz-brand-primary);
 }
 
 .chart-empty,
@@ -163,7 +179,7 @@
   font-size: 28rpx;
   line-height: 1.6;
   text-align: center;
-  color: #95a3b7;
+  color: var(--yz-text-secondary);
 }
 
 .pressure-track,
@@ -194,7 +210,7 @@
   margin-bottom: 16rpx;
   font-size: 26rpx;
   font-weight: 600;
-  color: #5a6f8d;
+  color: var(--yz-brand-primary);
 }
 
 .pressure-sticks {
@@ -207,24 +223,24 @@
 .pressure-stick {
   width: 24rpx;
   min-height: 16rpx;
-  border-radius: 999rpx;
+  border-radius: 0;
   transform-origin: bottom center;
-  box-shadow: 0 10rpx 18rpx rgba(55, 123, 231, 0.16);
+  box-shadow: 0 10rpx 18rpx rgba(111, 143, 200, 0.16);
 }
 
 .pressure-stick.systolic {
-  background: linear-gradient(180deg, #5a9bff 0%, #3979cf 100%);
+  background: #78c3a7;
 }
 
 .pressure-stick.diastolic {
-  background: linear-gradient(180deg, #80d7cb 0%, #41b9a5 100%);
+  background: #f4c97c;
 }
 
 .pressure-label,
 .bar-label {
   margin-top: 12rpx;
   font-size: 24rpx;
-  color: #8d9bb0;
+  color: var(--yz-text-tertiary);
 }
 
 .bar-column {
@@ -234,17 +250,17 @@
   width: 72rpx;
   height: 280rpx;
   padding: 6rpx;
-  border-radius: 28rpx;
-  background: linear-gradient(180deg, #f2f6fd 0%, #edf3fb 100%);
+  border-radius: 0;
+  background: var(--yz-bg-card-soft);
 }
 
 .bar-fill {
   width: 100%;
   min-height: 18rpx;
-  border-radius: 22rpx;
-  background: linear-gradient(180deg, #6fa9ff 0%, #377be7 100%);
+  border-radius: 0;
+  background: var(--yz-brand-primary);
   transform-origin: bottom center;
-  box-shadow: inset 0 10rpx 18rpx rgba(255, 255, 255, 0.28), 0 12rpx 22rpx rgba(55, 123, 231, 0.14);
+  box-shadow: inset 0 10rpx 18rpx rgba(255, 255, 255, 0.28), 0 12rpx 22rpx rgba(111, 143, 200, 0.14);
 }
 
 .animate-rise {
@@ -270,7 +286,7 @@
 
 .history {
   font-size: 32rpx;
-  color: #324763;
+  color: var(--yz-text-primary);
 }
 
 .medicine {
@@ -281,13 +297,13 @@
 .med-name {
   font-size: 34rpx;
   font-weight: 700;
-  color: #22395e;
+  color: var(--yz-text-primary);
 }
 
 .med-info {
   margin-top: 8rpx;
   font-size: 28rpx;
-  color: #556a87;
+  color: var(--yz-brand-primary);
 }
 
 .med-time,
@@ -295,7 +311,7 @@
   margin-top: 8rpx;
   font-size: 26rpx;
   line-height: 1.5;
-  color: #7b8ba1;
+  color: var(--yz-text-secondary);
 }
 
 .loading-container,
@@ -305,24 +321,20 @@
   align-items: center;
   justify-content: center;
   padding: 120rpx 0;
-}
-
-.loading {
-  font-size: 30rpx;
-  color: #7b8ba1;
+  background: rgba(255, 255, 255, 0.96);
 }
 
 .error-msg {
   margin-bottom: 24rpx;
   font-size: 30rpx;
-  color: #ff5c6c;
+  color: var(--yz-danger);
 }
 
 .retry-btn {
   padding: 0 40rpx;
   font-size: 28rpx;
-  color: #377be7;
-  background: #fff;
-  border: 2rpx solid #377be7;
-  border-radius: 999rpx;
+  color: var(--yz-brand-primary);
+  background: var(--yz-bg-card);
+  border: 2rpx solid var(--yz-brand-primary);
+  border-radius: 24rpx;
 }

@@ -1,5 +1,8 @@
 {
-  "usingComponents": {},
+  "usingComponents": {
+    "mp-loading": "weui-miniprogram/loading/loading",
+    "mp-dialog": "weui-miniprogram/dialog/dialog"
+  },
   "navigationBarTitleText": "健康数据管理",
   "enablePullDownRefresh": true
 }

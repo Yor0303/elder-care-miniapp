@@ -1,27 +1,130 @@
-/**app.wxss**/
+/** app.wxss **/
 .container {
   display: flex;
   flex-direction: column;
   align-items: center;
   box-sizing: border-box;
-} 
+}
 
 button {
   background: initial;
 }
 
-button:focus{
+button:focus {
   outline: 0;
 }
 
-button::after{
+button::after {
   border: none;
 }
 
-
 page {
-  background: #f6f6f6;
+  /* Yi Zhan global color tokens */
+  --yz-brand-primary: #6f8fc8;
+  --yz-brand-primary-pressed: #5d7bb1;
+  --yz-brand-primary-soft: #e9eef8;
+  --yz-brand-primary-border: #cad6ec;
+
+  --yz-accent-warm: #e2a45f;
+  --yz-accent-warm-soft: #f7ead9;
+
+  --yz-bg-page: #f5f6f8;
+  --yz-bg-page-secondary: #f5f6f8;
+  --yz-bg-card: #fbfbfc;
+  --yz-bg-card-soft: #f8f9fb;
+  --yz-bg-section: #f8f9fb;
+
+  --yz-text-primary: #2f3136;
+  --yz-text-secondary: #6f7480;
+  --yz-text-tertiary: #9aa0a8;
+
+  --yz-border: #d8dde6;
+  --yz-border-soft: #e7ebf0;
+
+  --yz-success: #7fc8a0;
+  --yz-success-soft: #e7f5ec;
+  --yz-warning: #e2a45f;
+  --yz-warning-soft: #fcf0df;
+  --yz-danger: #d87872;
+  --yz-danger-soft: #f7e8e5;
+  --yz-info: #7c98c8;
+  --yz-info-soft: #eef3fb;
+  --yz-rose: #c98d9a;
+  --yz-rose-soft: #f8eaef;
+  --yz-ink-soft: #eef1f5;
+
+  --yz-shadow-soft: 0 10rpx 24rpx rgba(47, 49, 54, 0.05);
+  --yz-shadow-medium: 0 14rpx 30rpx rgba(47, 49, 54, 0.07);
+
+  --yz-radius-sm: 10rpx;
+  --yz-radius-md: 16rpx;
+  --yz-radius-lg: 20rpx;
+  --yz-radius-pill: 999rpx;
+
+  --yz-gradient-hero: #fbfbfc;
+  --yz-gradient-primary: #6f8fc8;
+  --yz-gradient-soft: #f8f9fb;
+
+  background: var(--yz-bg-page);
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
+  color: var(--yz-text-primary);
+}
+
+.yz-card {
+  background: var(--yz-bg-card);
+  border-radius: var(--yz-radius-lg);
+  box-shadow: var(--yz-shadow-soft);
+}
+
+.yz-card-soft {
+  background: var(--yz-bg-card-soft);
+  border-radius: var(--yz-radius-md);
+}
+
+.yz-section {
+  background: var(--yz-bg-section);
+  border-radius: var(--yz-radius-md);
+}
+
+.yz-text-secondary {
+  color: var(--yz-text-secondary);
+}
+
+.yz-text-tertiary {
+  color: var(--yz-text-tertiary);
+}
+
+.yz-tag-success {
+  background: var(--yz-success-soft);
+  color: var(--yz-success);
+}
+
+.yz-tag-warning {
+  background: var(--yz-warning-soft);
+  color: var(--yz-warning);
+}
+
+.yz-tag-danger {
+  background: var(--yz-danger-soft);
+  color: var(--yz-danger);
+}
+
+.yz-btn-primary {
+  background: var(--yz-gradient-primary);
+  color: #ffffff;
+  border-radius: var(--yz-radius-pill);
+}
+
+.yz-btn-secondary {
+  background: var(--yz-brand-primary-soft);
+  color: var(--yz-brand-primary);
+  border-radius: var(--yz-radius-pill);
+}
+
+.yz-btn-danger {
+  background: var(--yz-danger-soft);
+  color: var(--yz-danger);
+  border-radius: var(--yz-radius-pill);
 }

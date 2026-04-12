@@ -1,65 +1,79 @@
 <view class="page">
-  <view class="hero">
-    <view class="brand">忆站</view>
+  <view class="nav-bar">
+    <view wx:if="{{showBack}}" class="back-button" bindtap="goBack">
+      <app-icon name="chevron-left" size="40rpx" color="#111111"></app-icon>
+    </view>
   </view>
 
-  <view wx:if="{{inviteElderId}}" class="invite-banner">
-    <view class="invite-title">📩 收到老人邀请</view>
-    <view class="invite-desc">建议注册或登录家属身份，登录后会直接进入绑定流程。</view>
+  <view class="brand-zone">
+    <image
+      class="brand-logo"
+      src="/assets/images/login-logo.png"
+      mode="aspectFit"
+    ></image>
+    <view class="brand-title">{{copy.welcomeTitle}}</view>
+    <view class="brand-subtitle">
+      {{inviteElderId ? copy.subtitleInvite : copy.subtitleDefault}}
+    </view>
   </view>
 
-  <view class="panel">
-    <view class="mode-switch">
-      <view class="mode-chip {{mode === 'register' ? 'active' : ''}}" data-mode="register" bindtap="switchMode">注册</view>
-      <view class="mode-chip {{mode === 'login' ? 'active' : ''}}" data-mode="login" bindtap="switchMode">登录</view>
+  <view class="action-zone">
+    <view class="role-panel">
+      <view class="role-header">
+        <text class="role-title">{{copy.roleTitle}}</text>
+        <text wx:if="{{inviteElderId}}" class="role-tip">{{copy.roleInviteTip}}</text>
+      </view>
+
+      <view class="role-switch">
+        <view class="role-slider {{selectedRole === 'family' ? 'is-family' : ''}}"></view>
+        <view
+          class="role-option {{selectedRole === 'elder' ? 'active' : ''}}"
+          data-role="elder"
+          bindtap="selectRole"
+        >
+          <text class="role-option-text">{{copy.roleElder}}</text>
+        </view>
+
+        <view
+          class="role-option {{selectedRole === 'family' ? 'active' : ''}}"
+          data-role="family"
+          bindtap="selectRole"
+        >
+          <text class="role-option-text">{{copy.roleFamily}}</text>
+        </view>
+      </view>
+
+      <view class="role-caption">
+        {{selectedRole === 'elder' ? copy.roleElderDesc : copy.roleFamilyDesc}}
+      </view>
     </view>
 
-    <block wx:if="{{mode === 'register'}}">
-      <view class="section-head">
-        <view class="section-title">选择注册身份</view>
-        <view class="section-desc">一个微信号对应一个身份，后续登录会按这个身份进入系统。</view>
+    <button class="primary-btn" loading="{{loading}}" bindtap="handlePrimaryAction">
+      {{copy.loginByWechat}}
+    </button>
+
+    <view class="helper-text">
+      {{copy.helperLogin}}
+    </view>
+  </view>
+
+  <view class="agreement-section">
+    <view class="agreement-row" bindtap="toggleAgreement">
+      <view class="agreement-check {{agreed ? 'checked' : ''}}">
+        <app-icon wx:if="{{agreed}}" name="check" size="18rpx" color="#ffffff"></app-icon>
       </view>
-
-      <view class="role-grid">
-        <view class="role-card {{selectedRole === 'elder' ? 'selected' : ''}}" data-role="elder" bindtap="selectRole">
-          <view class="role-icon">👴</view>
-          <view class="role-title">老人</view>
-          <view class="role-desc">查看回忆、家人消息和健康信息</view>
-        </view>
-
-        <view class="role-card {{selectedRole === 'family' ? 'selected' : ''}}" data-role="family" bindtap="selectRole">
-          <view class="role-icon">👨‍👩‍👧</view>
-          <view class="role-title">家属</view>
-          <view class="role-desc">上传资料、管理成员、陪伴老人</view>
-        </view>
+      <view class="agreement-copy">
+        {{copy.agreementPrefix}}
+        <text class="agreement-link" catchtap="openAgreement">{{copy.agreementUser}}</text>
+        {{copy.agreementJoiner}}
+        <text class="agreement-link" catchtap="openPrivacy">{{copy.agreementPrivacy}}</text>
       </view>
+    </view>
 
-      <button class="primary-btn" loading="{{loading}}" bindtap="submitRegister">
-        {{selectedRole === 'elder' ? '注册老人身份' : '注册家属身份'}}
-      </button>
-
-      <view class="switch-tip">
-        已经注册过了？
-        <text class="switch-link" data-mode="login" bindtap="switchMode">去登录</text>
-      </view>
-    </block>
-
-    <block wx:else>
-      <view class="section-head">
-        <view class="section-title">登录已注册账号</view>
-        <view class="section-desc">无需再次选择身份，登录后会自动进入对应页面。</view>
-      </view>
-
-      <view wx:if="{{registeredRoleLabel}}" class="registered-tip">
-        已注册身份：{{registeredRoleLabel}}
-      </view>
-
-      <button class="primary-btn" loading="{{loading}}" bindtap="submitLogin">微信一键登录</button>
-
-      <view class="switch-tip">
-        还没有注册？
-        <text class="switch-link" data-mode="register" bindtap="switchMode">去注册</text>
-      </view>
-    </block>
+    <view class="footer-links">
+      <text class="footer-link">{{copy.footerService}}</text>
+      <text class="footer-link">{{copy.footerHelp}}</text>
+      <text class="footer-link">{{copy.footerAbout}}</text>
+    </view>
   </view>
 </view>

@@ -27,9 +27,12 @@
     "components/tree-node/tree-node"
   ],
   "window": {
-    "navigationBarTitleText": "忆站",
+    "navigationBarTitleText": "\u6613\u5fc6\u7ad9",
     "navigationBarBackgroundColor": "#ffffff",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#F5F7FB"
+    "backgroundColor": "#F7F4EA"
+  },
+  "useExtendedLib": {
+    "weui": true
   }
 }

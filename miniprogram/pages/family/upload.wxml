@@ -1,81 +1,68 @@
 <view class="page">
-  <view class="title">🖼️ 上传回忆</view>
-
-  <view class="tabs">
-    <view class="tab {{mode==='single'?'active':''}}" bindtap="switchToSingle">📷 单图上传</view>
-    <view class="tab {{mode==='pair'?'active':''}}" bindtap="switchToPair">🧩 配对上传</view>
-  </view>
-
-  <view wx:if="{{mode==='single'}}">
-    <view class="upload-section">
-      <view class="card upload-btn" bindtap="chooseImage">
-        <view class="icon">🖼️</view>
-        <view class="text">上传照片</view>
-      </view>
-
-      <view class="card upload-btn" bindtap="chooseVideo">
-        <view class="icon">🎬</view>
-        <view class="text">上传视频</view>
-      </view>
+  <mp-form-page title="上传回忆" subtitle="新增照片故事或配对卡片，帮助老人回忆和识别。">
+    <view class="mode-switch">
+      <view class="mode-pill {{mode === 'single' ? 'mode-pill-active' : ''}}" bindtap="switchToSingle">单条回忆</view>
+      <view class="mode-pill {{mode === 'pair' ? 'mode-pill-active' : ''}}" bindtap="switchToPair">配对卡片</view>
     </view>
 
-    <view class="preview-section" wx:if="{{fileUrl}}">
-      <view class="preview-header">
-        <text>已选择文件</text>
-        <text class="remove-btn" bindtap="removeFile">删除</text>
-      </view>
-      <view class="preview-content">
-        <image wx:if="{{mediaType === 'photo'}}" src="{{fileUrl}}" mode="aspectFit" class="preview-image"></image>
-        <video wx:if="{{mediaType === 'video'}}" src="{{fileUrl}}" controls class="preview-video"></video>
-      </view>
-    </view>
+    <block wx:if="{{mode === 'single'}}">
+      <mp-form>
+        <mp-cells title="媒体内容">
+          <mp-cell ext-class="uploader-cell" has-footer="{{false}}">
+            <mp-uploader
+              title="回忆照片"
+              tips="可直接上传一张照片；如果改为视频，照片会自动清空。"
+              files="{{photoFiles}}"
+              max-count="1"
+              select="{{selectSingleImage}}"
+              upload="{{uploadSingleImage}}"
+              bindsuccess="onSingleImageUploadSuccess"
+              bindfail="onSingleImageUploadFail"
+              binddelete="onSingleImageDelete"
+            ></mp-uploader>
+          </mp-cell>
 
-    <view class="form-section">
-      <view class="form-item">
-        <view class="form-label">标题 *</view>
-        <input
-          class="form-input"
-          placeholder="给这段回忆起个名字"
-          value="{{title}}"
-          bindinput="onTitleInput"
-          maxlength="50"
-        />
-      </view>
-
-      <view class="form-item">
-        <view class="form-label">回忆内容 *</view>
-        <textarea
-          class="form-textarea"
-          placeholder="写下这段回忆的故事..."
-          value="{{story}}"
-          bindinput="onStoryInput"
-          maxlength="500"
-        />
-      </view>
-
-      <view class="form-item" bindtap="showTypePicker">
-        <view class="form-label">回忆类型</view>
-        <view class="form-picker">
-          <text class="{{memoryType ? '' : 'placeholder'}}">{{typeLabels[memoryType] || "请选择类型"}}</text>
-          <text class="arrow">></text>
-        </view>
-      </view>
-
-      <view class="form-row">
-        <view class="form-item half">
-          <view class="form-label">回忆日期 *</view>
-          <picker mode="date" value="{{eventDate}}" bindchange="onDateChange">
-            <view class="form-picker">
-              <text class="{{eventDate ? '' : 'placeholder'}}">
-                {{eventDate || "请选择日期"}}
-              </text>
-              <text class="arrow">></text>
+          <mp-cell title="视频文件" has-footer="{{false}}" ext-class="video-cell">
+            <view class="video-row">
+              <button class="secondary-btn" bindtap="chooseVideo">选择视频</button>
+              <view class="video-copy">{{mediaType === 'video' && fileUrl ? '已选择视频文件' : '也可以只上传照片'}}</view>
             </view>
-          </picker>
+          </mp-cell>
+        </mp-cells>
+
+        <view wx:if="{{mediaType === 'video' && fileUrl}}" class="video-preview-card">
+          <view class="preview-head">
+            <view class="preview-title">视频预览</view>
+            <view class="preview-remove" bindtap="removeFile">移除</view>
+          </view>
+          <video class="preview-video" src="{{fileUrl}}" controls></video>
         </view>
 
-        <view class="form-item half">
-          <view class="form-label">相关人物</view>
+        <mp-cells title="回忆内容">
+          <mp-cell title="标题" has-footer="{{false}}">
+            <input class="form-input-control" placeholder="给这段回忆起个名字" value="{{title}}" bindinput="onTitleInput" maxlength="50" />
+          </mp-cell>
+
+          <mp-cell title="回忆故事" inline="{{false}}" has-footer="{{false}}" ext-class="textarea-cell">
+            <textarea class="form-textarea-control" placeholder="写下这段回忆的故事..." value="{{story}}" bindinput="onStoryInput" maxlength="500" />
+          </mp-cell>
+
+          <view class="cell-trigger" bindtap="showTypePicker">
+            <mp-cell title="回忆类型" link>
+              <view slot="footer" class="picker-text {{memoryType ? '' : 'picker-placeholder'}}">
+                {{typeLabels[memoryType] || "请选择类型"}}
+              </view>
+            </mp-cell>
+          </view>
+
+          <picker mode="date" value="{{eventDate}}" bindchange="onDateChange">
+            <mp-cell title="回忆日期" link>
+              <view slot="footer" class="picker-text {{eventDate ? '' : 'picker-placeholder'}}">
+                {{eventDate || "请选择日期"}}
+              </view>
+            </mp-cell>
+          </picker>
+
           <picker
             mode="selector"
             range="{{personOptions}}"
@@ -83,79 +70,88 @@
             value="{{personIndex < 0 ? 0 : personIndex}}"
             bindchange="onPersonChange"
           >
-            <view class="form-picker">
-              <text class="{{personIndex < 0 ? 'placeholder' : ''}}">
+            <mp-cell title="相关人物" link>
+              <view slot="footer" class="picker-text {{personIndex < 0 ? 'picker-placeholder' : ''}}">
                 {{personIndex < 0 ? "请选择人物" : personOptions[personIndex].label}}
-              </text>
-              <text class="arrow">></text>
-            </view>
+              </view>
+            </mp-cell>
           </picker>
-        </view>
+        </mp-cells>
+      </mp-form>
+
+      <view slot="tips" class="page-tips">单条回忆支持纯文字、照片或视频。若未选择类型，系统会默认归类为“日常”。</view>
+
+      <view slot="button" class="button-wrap">
+        <button class="submit-btn" bindtap="submitMemory" loading="{{uploading}}" disabled="{{uploading || photoUploading}}">
+          {{uploading ? "保存中..." : "保存回忆"}}
+        </button>
       </view>
-    </view>
+    </block>
 
-    <button
-      class="submit-btn {{uploading ? 'disabled' : ''}}"
-      bindtap="submitMemory"
-      disabled="{{uploading}}"
-    >
-      {{uploading ? "保存中..." : "💾 保存回忆"}}
-    </button>
-  </view>
+    <block wx:else>
+      <mp-form>
+        <mp-cells title="左侧卡片">
+          <mp-cell ext-class="uploader-cell" has-footer="{{false}}">
+            <mp-uploader
+              title="左侧图片"
+              tips="上传配对卡片左侧图片。"
+              files="{{leftFiles}}"
+              max-count="1"
+              select="{{selectLeftImage}}"
+              upload="{{uploadLeftImage}}"
+              bindsuccess="onLeftImageUploadSuccess"
+              bindfail="onLeftImageUploadFail"
+              binddelete="onLeftImageDelete"
+            ></mp-uploader>
+          </mp-cell>
+        </mp-cells>
 
-  <view wx:if="{{mode==='pair'}}">
-    <view class="pair-section">
-      <view class="pair-row">
-        <view class="pair-card" bindtap="chooseLeftImage">
-          <image wx:if="{{leftFileUrl}}" src="{{leftFileUrl}}" mode="aspectFill" class="pair-image"></image>
-          <view wx:else class="pair-placeholder">🖼️ 选择左侧图片</view>
-        </view>
-        <view class="pair-card" bindtap="chooseRightImage">
-          <image wx:if="{{rightFileUrl}}" src="{{rightFileUrl}}" mode="aspectFill" class="pair-image"></image>
-          <view wx:else class="pair-placeholder">🖼️ 选择右侧图片</view>
-        </view>
+        <mp-cells title="右侧卡片">
+          <mp-cell ext-class="uploader-cell" has-footer="{{false}}">
+            <mp-uploader
+              title="右侧图片"
+              tips="上传配对卡片右侧图片。"
+              files="{{rightFiles}}"
+              max-count="1"
+              select="{{selectRightImage}}"
+              upload="{{uploadRightImage}}"
+              bindsuccess="onRightImageUploadSuccess"
+              bindfail="onRightImageUploadFail"
+              binddelete="onRightImageDelete"
+            ></mp-uploader>
+          </mp-cell>
+        </mp-cells>
+
+        <mp-cells title="卡片说明">
+          <mp-cell title="左侧名称" has-footer="{{false}}">
+            <input class="form-input-control" placeholder="如：王大爷" value="{{leftLabel}}" bindinput="onLeftLabelInput" />
+          </mp-cell>
+
+          <mp-cell title="右侧名称" has-footer="{{false}}">
+            <input class="form-input-control" placeholder="如：王大妈" value="{{rightLabel}}" bindinput="onRightLabelInput" />
+          </mp-cell>
+
+          <mp-cell title="提示说明" inline="{{false}}" has-footer="{{false}}" ext-class="textarea-cell">
+            <textarea class="form-textarea-control" placeholder="给这对卡片写点提示..." value="{{notes}}" bindinput="onNotesInput" maxlength="200" />
+          </mp-cell>
+        </mp-cells>
+      </mp-form>
+
+      <view slot="tips" class="page-tips">配对卡片适合人物辨认、物品匹配等记忆训练场景。</view>
+
+      <view slot="button" class="button-wrap">
+        <button class="submit-btn" bindtap="submitPair" loading="{{pairUploading}}" disabled="{{pairUploading || leftImageUploading || rightImageUploading}}">
+          {{pairUploading ? "保存中..." : "保存配对"}}
+        </button>
       </view>
+    </block>
+  </mp-form-page>
 
-      <view class="form-row">
-        <view class="form-item half">
-          <view class="form-label">左侧名称</view>
-          <input class="form-input" placeholder="如：王大爷" value="{{leftLabel}}" bindinput="onLeftLabelInput" />
-        </view>
-        <view class="form-item half">
-          <view class="form-label">右侧名称</view>
-          <input class="form-input" placeholder="如：王大妈" value="{{rightLabel}}" bindinput="onRightLabelInput" />
-        </view>
-      </view>
-
-      <view class="form-item">
-        <view class="form-label">提示/描述（可选）</view>
-        <textarea class="form-textarea" placeholder="给这对卡片写点提示..." value="{{notes}}" bindinput="onNotesInput" maxlength="200" />
-      </view>
-    </view>
-
-    <button
-      class="submit-btn {{pairUploading ? 'disabled' : ''}}"
-      bindtap="submitPair"
-      disabled="{{pairUploading}}"
-    >
-      {{pairUploading ? "保存中..." : "🧩 保存配对"}}
-    </button>
-  </view>
-
-  <view class="picker-mask" wx:if="{{showTypePicker}}" bindtap="hideTypePicker">
-    <view class="picker-content" catchtap="noop">
-      <view class="picker-title">选择回忆类型</view>
-      <view class="picker-list">
-        <view
-          wx:for="{{typeOptions}}"
-          wx:key="*this"
-          class="picker-item {{memoryType === item ? 'active' : ''}}"
-          bindtap="onTypeSelect"
-          data-type="{{item}}"
-        >
-          {{typeLabels[item]}}
-        </view>
-      </view>
-    </view>
-  </view>
+  <mp-actionSheet
+    show="{{showTypePicker}}"
+    title="选择回忆类型"
+    actions="{{typeActionItems}}"
+    bindclose="hideTypePicker"
+    bindactiontap="onTypeActionTap"
+  ></mp-actionSheet>
 </view>

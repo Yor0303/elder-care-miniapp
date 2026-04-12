@@ -128,7 +128,12 @@ Page({
     bindQrLoading: false,
     previewMode: false,
     previewFrom: "",
-    completingReminderId: ""
+    completingReminderId: "",
+    copy: {
+      refreshQr: "\u5237\u65b0\u4e8c\u7ef4\u7801",
+      generateQr: "\u751f\u6210\u4e8c\u7ef4\u7801",
+      viewBindingMessages: "\u67e5\u770b\u7ed1\u5b9a\u6d88\u606f"
+    }
   },
 
   onLoad(options = {}) {
@@ -569,7 +574,7 @@ Page({
     }
 
     return {
-      title: "邀请家人加入忆站，一起守护回忆与健康",
+      title: "\u9080\u8bf7\u5bb6\u4eba\u52a0\u5165\u6613\u5fc6\u7ad9\uff0c\u4e00\u8d77\u5b88\u62a4\u56de\u5fc6\u4e0e\u5065\u5eb7",
       path: elderId ? `/pages/login/login?inviteElderId=${elderId}` : "/pages/login/login"
     };
   }

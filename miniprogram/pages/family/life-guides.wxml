@@ -1,37 +1,39 @@
 <view class="page">
   <view class="header">
-    <view class="welcome">🧰 生活小助手</view>
+    <view class="welcome">生活小助手</view>
     <view class="subtitle">给老人准备家电和常用物品的使用教程，以图文为主，视频可选。</view>
   </view>
 
   <view class="card action-card">
     <view class="card-left">
-      <view class="icon">📝</view>
+      <view class="icon"><app-icon name="book-open-filled" size="42rpx" color="#6f8fc8"></app-icon></view>
       <view class="card-content">
         <view class="card-title">教程管理</view>
         <view class="card-desc">上传封面图、步骤说明和可选视频，老人端即可查看。</view>
       </view>
     </view>
-    <button class="primary-btn" bindtap="goToCreate"> 新增教程</button>
+    <button class="primary-btn" bindtap="goToCreate">新增教程</button>
   </view>
 
   <view class="card list-card">
     <view class="card-left">
-      <view class="icon">🗂️</view>
+      <view class="icon"><app-icon name="browse-gallery-filled" size="42rpx" color="#e2a45f"></app-icon></view>
       <view class="card-content">
         <view class="card-title">教程列表</view>
         <view class="card-desc">按最近更新时间排序，方便持续补充和修改。</view>
       </view>
     </view>
 
-    <view wx:if="{{loading}}" class="empty-state">加载中...</view>
-    <view wx:elif="{{!guides.length}}" class="empty-state">暂无内容</view>
+    <view wx:if="{{loading}}" class="empty-state loading-state">
+      <mp-loading type="dot-gray"></mp-loading>
+    </view>
+    <view wx:elif="{{!guides.length}}" class="empty-state">还没有教程内容</view>
 
     <view wx:else class="guide-list">
       <block wx:for="{{guides}}" wx:key="id">
         <view class="guide-item">
           <image wx:if="{{item.coverUrl}}" class="guide-cover" src="{{item.coverUrl}}" mode="aspectFill" />
-          <view wx:else class="guide-cover guide-cover-empty">🖼️</view>
+          <view wx:else class="guide-cover guide-cover-empty">暂无封面</view>
           <view class="guide-main">
             <view class="guide-header">
               <view class="guide-title">{{item.title}}</view>
@@ -41,15 +43,25 @@
             <view class="guide-desc">{{item.content}}</view>
             <view class="guide-tags">
               <view class="guide-tag">图文</view>
-              <view wx:if="{{item.hasVideo}}" class="guide-tag guide-tag-video">🎬 含视频</view>
+              <view wx:if="{{item.hasVideo}}" class="guide-tag guide-tag-video">含视频</view>
             </view>
           </view>
           <view class="guide-actions">
-            <button class="secondary-btn action-btn" bindtap="goToEdit" data-id="{{item.id}}">✏️ 编辑</button>
-            <button class="danger-btn action-btn" bindtap="deleteGuide" data-id="{{item.id}}">🗑️ 删除</button>
+            <button class="secondary-btn action-btn" bindtap="goToEdit" data-id="{{item.id}}">编辑</button>
+            <button class="danger-btn action-btn" bindtap="deleteGuide" data-id="{{item.id}}">删除</button>
           </view>
         </view>
       </block>
     </view>
   </view>
+
+  <mp-dialog
+    title="确认删除"
+    show="{{showDeleteDialog}}"
+    buttons="{{deleteDialogButtons}}"
+    bindclose="closeDeleteDialog"
+    bindbuttontap="onDeleteDialogButtonTap"
+  >
+    删除后老人端将无法再查看这份教程，确定继续吗？
+  </mp-dialog>
 </view>

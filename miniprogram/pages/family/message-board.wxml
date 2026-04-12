@@ -41,15 +41,12 @@
 
       <view class="config-row">
         <view class="config-label">提醒规则</view>
-        <view class="schedule-options">
-          <view
-            wx:for="{{reminderScheduleOptions}}"
-            wx:key="value"
-            class="schedule-chip {{reminderScheduleType === item.value ? 'schedule-chip-active' : ''}}"
-            data-value="{{item.value}}"
-            bindtap="onReminderScheduleSelect"
-          >
-            {{item.label}}
+        <view class="schedule-trigger" bindtap="openReminderScheduleSheet">
+          <view class="schedule-trigger-text">
+            {{reminderScheduleType === "daily" ? "每天" : reminderScheduleType === "once" ? "单次" : reminderScheduleType === "workday" ? "工作日" : "指定星期"}}
+          </view>
+          <view class="schedule-trigger-arrow">
+            <app-icon name="chevron-right" size="26rpx" color="#9aa7b3"></app-icon>
           </view>
         </view>
       </view>
@@ -112,7 +109,9 @@
       <view class="list-subtitle">最新内容会排在最前面</view>
     </view>
 
-    <view wx:if="{{loading}}" class="empty-state">加载中...</view>
+    <view wx:if="{{loading}}" class="empty-state loading-state">
+      <mp-loading type="dot-gray"></mp-loading>
+    </view>
     <view wx:elif="{{!messages.length}}" class="empty-state">还没有发送内容</view>
 
     <view wx:else class="message-list">
@@ -145,4 +144,12 @@
       </block>
     </view>
   </view>
+
+  <mp-actionSheet
+    show="{{showReminderScheduleSheet}}"
+    title="选择提醒规则"
+    actions="{{reminderScheduleActionItems}}"
+    bindclose="closeReminderScheduleSheet"
+    bindactiontap="onReminderScheduleSelect"
+  ></mp-actionSheet>
 </view>

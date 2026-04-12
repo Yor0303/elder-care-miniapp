@@ -1,143 +1,185 @@
-/* pages/family/members.wxss */
 .page {
-  padding: 40rpx;
-  background: #F8F9FB;
   min-height: 100vh;
+  padding: 28rpx 24rpx 40rpx;
+  box-sizing: border-box;
+  background: var(--yz-bg-page);
+}
+
+.hero-card,
+.loading-card,
+.member-card,
+.empty-state {
+  border-radius: 24rpx;
+  box-shadow: var(--yz-shadow-soft);
+}
+
+.hero-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+  padding: 30rpx 28rpx;
+  margin-bottom: 22rpx;
+  background: var(--yz-gradient-hero);
+}
+
+.hero-copy {
+  flex: 1;
+  min-width: 0;
 }
 
 .title {
-  font-size: 44rpx;
+  font-size: 42rpx;
   font-weight: 700;
-  text-align: center;
-  margin-bottom: 40rpx;
-  color: #1a3a5f;
+  color: var(--yz-text-primary);
 }
 
-.loading-container {
+.subtitle,
+.meta,
+.desc,
+.empty-text {
+  font-size: 25rpx;
+  line-height: 1.7;
+  color: var(--yz-text-secondary);
+}
+
+.subtitle {
+  margin-top: 10rpx;
+}
+
+.hero-btn,
+.add-member-btn {
+  height: 84rpx;
+  line-height: 84rpx;
+  border-radius: 24rpx;
+  border: none;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.hero-btn::after,
+.add-member-btn::after {
+  border: none;
+}
+
+.hero-btn {
+  flex-shrink: 0;
+  padding: 0 28rpx;
+  background: var(--yz-gradient-primary);
+  color: var(--yz-bg-card);
+}
+
+.loading-card {
   display: flex;
   justify-content: center;
-  padding: 100rpx 0;
+  padding: 64rpx 0;
+  margin-bottom: 22rpx;
+  background: rgba(255, 255, 255, 0.96);
 }
 
-.loading {
-  font-size: 30rpx;
-  color: #999;
-}
-
-/* 成员列表 */
 .member-list {
-  margin-bottom: 30rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
 }
 
 .member-card {
   display: flex;
   align-items: center;
-  background: #fff;
-  padding: 30rpx;
-  margin-bottom: 20rpx;
-  border-radius: 24rpx;
-  box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.06);
+  gap: 18rpx;
+  padding: 26rpx 24rpx;
+  background: rgba(255, 255, 255, 0.96);
 }
 
 .avatar {
   width: 108rpx;
   height: 108rpx;
-  border-radius: 24rpx;
-  margin-right: 25rpx;
-  background: #f0f0f0;
+  border-radius: 20rpx;
+  flex-shrink: 0;
+  background: var(--yz-info-soft);
 }
 
 .avatar-placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22rpx;
-  color: #9aa6b2;
-  background: #eef2f6;
-  border: 1rpx dashed #cfd8e3;
+  background: var(--yz-brand-primary-soft);
+  color: var(--yz-text-tertiary);
+  font-size: 24rpx;
+  font-weight: 700;
 }
 
 .info {
   flex: 1;
+  min-width: 0;
 }
 
 .name {
   font-size: 34rpx;
   font-weight: 700;
-  color: #333;
+  color: var(--yz-text-primary);
 }
 
 .meta {
-  margin-top: 10rpx;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14rpx;
+  margin-top: 8rpx;
 }
 
 .relation {
-  font-size: 28rpx;
-  color: #4A90E2;
-  margin-right: 20rpx;
-}
-
-.age {
-  font-size: 28rpx;
-  color: #999;
+  color: var(--yz-brand-primary);
+  font-weight: 700;
 }
 
 .desc {
-  font-size: 26rpx;
-  color: #999;
-  margin-top: 10rpx;
-}
-
-.arrow {
-  font-size: 40rpx;
-  color: #ccc;
+  margin-top: 8rpx;
 }
 
 .edit-btn {
-  font-size: 26rpx;
-  color: #4A90E2;
-  padding: 10rpx 20rpx;
-  border: 1rpx solid #4A90E2;
-  border-radius: 999rpx;
-  background: #f8fbff;
-}
-
-/* 空状态 */
-.empty-state {
-  text-align: center;
-  padding: 100rpx 24rpx;
-  background: #fff;
+  flex-shrink: 0;
+  padding: 14rpx 22rpx;
   border-radius: 24rpx;
-  box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.06);
+  background: var(--yz-brand-primary-soft);
+  color: var(--yz-brand-primary);
+  font-size: 26rpx;
+  font-weight: 700;
 }
 
-.empty-icon {
-  font-size: 44rpx;
-  color: #4A90E2;
+.empty-state {
+  padding: 56rpx 32rpx;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.empty-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 136rpx;
+  height: 64rpx;
+  padding: 0 22rpx;
+  border-radius: 24rpx;
+  background: var(--yz-brand-primary-soft);
+  color: var(--yz-brand-primary);
+  font-size: 24rpx;
   font-weight: 700;
-  margin-bottom: 20rpx;
+}
+
+.empty-title {
+  margin-top: 20rpx;
+  font-size: 34rpx;
+  font-weight: 700;
+  color: var(--yz-text-primary);
 }
 
 .empty-text {
-  font-size: 30rpx;
-  color: #999;
+  margin-top: 10rpx;
 }
 
-/* 添加按钮 */
 .add-member-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #fff;
-  padding: 35rpx;
-  border-radius: 24rpx;
-  border: 2rpx dashed #4A90E2;
-  color: #4A90E2;
-  font-size: 32rpx;
-  box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.06);
-}
-
-.add-icon {
-  font-size: 40rpx;
-  margin-right: 10rpx;
+  width: 100%;
+  margin-top: 18rpx;
+  background: var(--yz-brand-primary-soft);
+  color: var(--yz-brand-primary);
 }

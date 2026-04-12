@@ -1,4 +1,7 @@
 {
-  "usingComponents": {},
+  "usingComponents": {
+    "mp-actionSheet": "weui-miniprogram/actionsheet/actionsheet",
+    "mp-dialog": "weui-miniprogram/dialog/dialog"
+  },
   "navigationBarTitleText": "编辑回忆"
 }

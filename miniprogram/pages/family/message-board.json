@@ -1,5 +1,10 @@
 {
   "navigationBarTitleText": "家人留言板",
+  "usingComponents": {
+    "mp-loading": "weui-miniprogram/loading/loading",
+    "mp-actionSheet": "weui-miniprogram/actionsheet/actionsheet",
+    "app-icon": "/components/app-icon/app-icon"
+  },
   "permission": {
     "scope.record": {
       "desc": "用于录制语音留言发送给老人"

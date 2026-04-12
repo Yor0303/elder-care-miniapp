@@ -88,6 +88,7 @@ Page({
     memoryType: "",
     typeOptions: MEMORY_TYPE_OPTIONS,
     typeLabels: MEMORY_TYPE_LABELS,
+    typeActionItems: [],
     showTypePicker: false,
     title: "",
     story: "",
@@ -97,15 +98,40 @@ Page({
     personOptions: [],
     personIndex: -1,
     uploading: false,
-    leftFileUrl: "",
-    rightFileUrl: "",
+    photoUploading: false,
+    photoFiles: [],
+    selectSingleImage: null,
+    uploadSingleImage: null,
+    leftCloudUrl: "",
+    rightCloudUrl: "",
     leftLabel: "",
     rightLabel: "",
     notes: "",
-    pairUploading: false
+    pairUploading: false,
+    leftImageUploading: false,
+    rightImageUploading: false,
+    leftFiles: [],
+    rightFiles: [],
+    selectLeftImage: null,
+    uploadLeftImage: null,
+    selectRightImage: null,
+    uploadRightImage: null
   },
 
   onLoad() {
+    this.setData({
+      typeActionItems: MEMORY_TYPE_OPTIONS.map((item) => ({
+        text: MEMORY_TYPE_LABELS[item],
+        value: item
+      })),
+      selectSingleImage: this.selectSingleImage.bind(this),
+      uploadSingleImage: this.uploadSingleImage.bind(this),
+      selectLeftImage: this.selectLeftImage.bind(this),
+      uploadLeftImage: this.uploadLeftImage.bind(this),
+      selectRightImage: this.selectRightImage.bind(this),
+      uploadRightImage: this.uploadRightImage.bind(this)
+    });
+
     this.loadPersons();
   },
 
@@ -146,15 +172,48 @@ Page({
     this.setData({ personIndex: index });
   },
 
-  chooseImage() {
-    wx.chooseImage({
-      count: 1,
-      success: (res) => {
-        this.setData({
-          fileUrl: res.tempFilePaths[0],
-          mediaType: "photo"
-        });
-      }
+  selectSingleImage() {
+    this.setData({
+      photoUploading: true,
+      mediaType: "photo",
+      fileUrl: "",
+      cloudUrl: ""
+    });
+    return true;
+  },
+
+  uploadSingleImage({ tempFilePaths }) {
+    return Promise.all(tempFilePaths.map((item) => this.uploadToCloud(item, "memories"))).then((urls) => ({ urls }));
+  },
+
+  onSingleImageUploadSuccess(e) {
+    const url = (e.detail.urls && e.detail.urls[0]) || "";
+    this.setData({
+      photoFiles: url ? [{ url }] : [],
+      cloudUrl: url,
+      mediaType: "photo",
+      fileUrl: "",
+      photoUploading: false
+    });
+  },
+
+  onSingleImageUploadFail() {
+    this.setData({
+      photoFiles: [],
+      cloudUrl: "",
+      mediaType: "",
+      photoUploading: false
+    });
+    wx.showToast({ title: "图片上传失败", icon: "none" });
+  },
+
+  onSingleImageDelete() {
+    this.setData({
+      photoFiles: [],
+      fileUrl: "",
+      cloudUrl: "",
+      mediaType: "",
+      photoUploading: false
     });
   },
 
@@ -163,27 +222,82 @@ Page({
       success: (res) => {
         this.setData({
           fileUrl: res.tempFilePath,
-          mediaType: "video"
+          cloudUrl: "",
+          mediaType: "video",
+          photoFiles: [],
+          photoUploading: false
         });
       }
     });
   },
 
-  chooseLeftImage() {
-    wx.chooseImage({
-      count: 1,
-      success: (res) => {
-        this.setData({ leftFileUrl: res.tempFilePaths[0] });
-      }
+  selectLeftImage() {
+    this.setData({ leftImageUploading: true, leftCloudUrl: "" });
+    return true;
+  },
+
+  uploadLeftImage({ tempFilePaths }) {
+    return Promise.all(tempFilePaths.map((item) => this.uploadToCloud(item, "memory-pairs"))).then((urls) => ({ urls }));
+  },
+
+  onLeftImageUploadSuccess(e) {
+    const url = (e.detail.urls && e.detail.urls[0]) || "";
+    this.setData({
+      leftCloudUrl: url,
+      leftFiles: url ? [{ url }] : [],
+      leftImageUploading: false
     });
   },
 
-  chooseRightImage() {
-    wx.chooseImage({
-      count: 1,
-      success: (res) => {
-        this.setData({ rightFileUrl: res.tempFilePaths[0] });
-      }
+  onLeftImageUploadFail() {
+    this.setData({
+      leftCloudUrl: "",
+      leftFiles: [],
+      leftImageUploading: false
+    });
+    wx.showToast({ title: "左侧图片上传失败", icon: "none" });
+  },
+
+  onLeftImageDelete() {
+    this.setData({
+      leftCloudUrl: "",
+      leftFiles: [],
+      leftImageUploading: false
+    });
+  },
+
+  selectRightImage() {
+    this.setData({ rightImageUploading: true, rightCloudUrl: "" });
+    return true;
+  },
+
+  uploadRightImage({ tempFilePaths }) {
+    return Promise.all(tempFilePaths.map((item) => this.uploadToCloud(item, "memory-pairs"))).then((urls) => ({ urls }));
+  },
+
+  onRightImageUploadSuccess(e) {
+    const url = (e.detail.urls && e.detail.urls[0]) || "";
+    this.setData({
+      rightCloudUrl: url,
+      rightFiles: url ? [{ url }] : [],
+      rightImageUploading: false
+    });
+  },
+
+  onRightImageUploadFail() {
+    this.setData({
+      rightCloudUrl: "",
+      rightFiles: [],
+      rightImageUploading: false
+    });
+    wx.showToast({ title: "右侧图片上传失败", icon: "none" });
+  },
+
+  onRightImageDelete() {
+    this.setData({
+      rightCloudUrl: "",
+      rightFiles: [],
+      rightImageUploading: false
     });
   },
 
@@ -209,8 +323,6 @@ Page({
     });
   },
 
-  noop() {},
-
   showTypePicker() {
     this.setData({ showTypePicker: true });
   },
@@ -219,8 +331,8 @@ Page({
     this.setData({ showTypePicker: false });
   },
 
-  onTypeSelect(e) {
-    const type = e.currentTarget.dataset.type || "";
+  onTypeActionTap(e) {
+    const type = e.detail.value || "";
     this.setData({
       memoryType: type,
       showTypePicker: false
@@ -230,30 +342,19 @@ Page({
   removeFile() {
     this.setData({
       fileUrl: "",
-      mediaType: ""
+      cloudUrl: "",
+      mediaType: "",
+      photoFiles: [],
+      photoUploading: false
     });
   },
 
-  uploadToCloud(tempFilePath) {
+  uploadToCloud(tempFilePath, folder = "memories") {
     return new Promise((resolve, reject) => {
       const extMatch = tempFilePath.match(/\.[^.]+$/);
       const ext = extMatch ? extMatch[0] : ".jpg";
-      const cloudPath = `memories/${Date.now()}-${Math.random().toString(36).slice(2, 11)}${ext}`;
+      const cloudPath = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 11)}${ext}`;
 
-      wx.cloud.uploadFile({
-        cloudPath,
-        filePath: tempFilePath,
-        success: (res) => resolve(res.fileID),
-        fail: reject
-      });
-    });
-  },
-
-  uploadPairToCloud(tempFilePath) {
-    return new Promise((resolve, reject) => {
-      const extMatch = tempFilePath.match(/\.[^.]+$/);
-      const ext = extMatch ? extMatch[0] : ".jpg";
-      const cloudPath = `memory-pairs/${Date.now()}-${Math.random().toString(36).slice(2, 11)}${ext}`;
       wx.cloud.uploadFile({
         cloudPath,
         filePath: tempFilePath,
@@ -264,7 +365,7 @@ Page({
   },
 
   async submitMemory() {
-    const { title, story, eventDate, person, personRole, fileUrl, memoryType, uploading } = this.data;
+    const { title, story, eventDate, person, personRole, fileUrl, memoryType, uploading, mediaType, cloudUrl, photoUploading } = this.data;
 
     if (!title.trim()) {
       wx.showToast({ title: "请输入标题", icon: "none" });
@@ -281,6 +382,11 @@ Page({
       return;
     }
 
+    if (photoUploading) {
+      wx.showToast({ title: "图片仍在上传", icon: "none" });
+      return;
+    }
+
     if (uploading) {
       return;
     }
@@ -288,11 +394,11 @@ Page({
     this.setData({ uploading: true });
 
     try {
-      let cloudUrl = "";
+      let savedFileId = cloudUrl || "";
 
-      if (fileUrl) {
-        wx.showLoading({ title: "上传中..." });
-        cloudUrl = await this.uploadToCloud(fileUrl);
+      if (mediaType === "video" && fileUrl) {
+        wx.showLoading({ title: "上传视频中..." });
+        savedFileId = await this.uploadToCloud(fileUrl, "memories");
         wx.hideLoading();
       }
 
@@ -305,7 +411,7 @@ Page({
         person: person.trim(),
         personRole: inferPersonRole(person.trim(), personRole),
         type: memoryType || "daily",
-        img: cloudUrl || ""
+        img: savedFileId || ""
       });
 
       wx.hideLoading();
@@ -322,7 +428,9 @@ Page({
         person: "",
         personRole: "",
         personIndex: -1,
-        uploading: false
+        uploading: false,
+        photoUploading: false,
+        photoFiles: []
       });
     } catch (error) {
       wx.hideLoading();
@@ -348,25 +456,26 @@ Page({
   },
 
   async submitPair() {
-    const { leftFileUrl, rightFileUrl, leftLabel, rightLabel, pairUploading, notes } = this.data;
-    if (!leftFileUrl || !rightFileUrl) {
-      wx.showToast({ title: "请先选择两张图片", icon: "none" });
+    const { leftCloudUrl, rightCloudUrl, leftLabel, rightLabel, pairUploading, notes, leftImageUploading, rightImageUploading } = this.data;
+
+    if (!leftCloudUrl || !rightCloudUrl) {
+      wx.showToast({ title: "请先上传两张图片", icon: "none" });
       return;
     }
+
+    if (leftImageUploading || rightImageUploading) {
+      wx.showToast({ title: "图片仍在上传", icon: "none" });
+      return;
+    }
+
     if (pairUploading) return;
+
     this.setData({ pairUploading: true });
     try {
-      wx.showLoading({ title: "上传中..." });
-      const [leftId, rightId] = await Promise.all([
-        this.uploadPairToCloud(leftFileUrl),
-        this.uploadPairToCloud(rightFileUrl)
-      ]);
-      wx.hideLoading();
-
       wx.showLoading({ title: "保存中..." });
       await createMemoryPairAPI({
-        leftImgFileID: leftId,
-        rightImgFileID: rightId,
+        leftImgFileID: leftCloudUrl,
+        rightImgFileID: rightCloudUrl,
         leftLabel: (leftLabel || "").trim(),
         rightLabel: (rightLabel || "").trim(),
         notes: (notes || "").trim()
@@ -374,12 +483,16 @@ Page({
       wx.hideLoading();
       wx.showToast({ title: "保存成功", icon: "success" });
       this.setData({
-        leftFileUrl: "",
-        rightFileUrl: "",
+        leftCloudUrl: "",
+        rightCloudUrl: "",
+        leftFiles: [],
+        rightFiles: [],
         leftLabel: "",
         rightLabel: "",
         notes: "",
-        pairUploading: false
+        pairUploading: false,
+        leftImageUploading: false,
+        rightImageUploading: false
       });
     } catch (e) {
       wx.hideLoading();

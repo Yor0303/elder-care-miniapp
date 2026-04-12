@@ -82,17 +82,24 @@ function buildSectionCards(hasBoundElder, elderName) {
   }));
 }
 
+function buildSheetActions(section, hasBoundElder, elderName) {
+  const actionMap = getSectionActions(hasBoundElder, elderName);
+  return (actionMap[section] || []).map((item) => ({
+    text: item.title,
+    value: item.key
+  }));
+}
+
 Page({
   data: {
     elderName: "未绑定老人",
     hasBoundElder: false,
     todayCompletedTasks: [],
+    tasksLoading: false,
     sectionCards: buildSectionCards(false, "未绑定老人"),
-    popupVisible: false,
-    popupTitle: "",
-    popupSubtitle: "",
-    popupTone: "amber",
-    popupItems: [],
+    sectionSheetVisible: false,
+    sectionSheetTitle: "",
+    sectionSheetActions: [],
     currentSection: ""
   },
 
@@ -125,29 +132,35 @@ Page({
       this.loadTodayCompletedTasks();
     } catch (_) {
       wx.removeStorageSync("elderId");
-      this.setData({ elderName: "未绑定老人", hasBoundElder: false, todayCompletedTasks: [] });
+      this.setData({
+        elderName: "未绑定老人",
+        hasBoundElder: false,
+        todayCompletedTasks: [],
+        tasksLoading: false
+      });
       this.syncSectionState(false, "未绑定老人");
     }
   },
 
   async loadTodayCompletedTasks() {
+    this.setData({ tasksLoading: true });
     try {
       const result = await getTodayCompletedTasksAPI();
       this.setData({
-        todayCompletedTasks: Array.isArray(result && result.items) ? result.items : []
+        todayCompletedTasks: Array.isArray(result && result.items) ? result.items : [],
+        tasksLoading: false
       });
     } catch (_) {
-      this.setData({ todayCompletedTasks: [] });
+      this.setData({ todayCompletedTasks: [], tasksLoading: false });
     }
   },
 
   syncSectionState(hasBoundElder, elderName) {
-    const nextCards = buildSectionCards(hasBoundElder, elderName);
-    const sectionActions = getSectionActions(hasBoundElder, elderName);
-
     this.setData({
-      sectionCards: nextCards,
-      popupItems: this.data.popupVisible ? sectionActions[this.data.currentSection] || [] : this.data.popupItems
+      sectionCards: buildSectionCards(hasBoundElder, elderName),
+      sectionSheetActions: this.data.sectionSheetVisible
+        ? buildSheetActions(this.data.currentSection, hasBoundElder, elderName)
+        : this.data.sectionSheetActions
     });
   },
 
@@ -156,32 +169,25 @@ Page({
     const sectionCard = this.data.sectionCards.find((item) => item.key === section);
     if (!sectionCard) return;
 
-    const sectionActions = getSectionActions(this.data.hasBoundElder, this.data.elderName);
     this.setData({
       currentSection: section,
-      popupVisible: true,
-      popupTitle: sectionCard.title,
-      popupSubtitle: sectionCard.summary,
-      popupTone: sectionCard.tone,
-      popupItems: sectionActions[section] || []
+      sectionSheetVisible: true,
+      sectionSheetTitle: `${sectionCard.title} · ${sectionCard.summary}`,
+      sectionSheetActions: buildSheetActions(section, this.data.hasBoundElder, this.data.elderName)
     });
   },
 
   closeSectionPopup() {
     this.setData({
-      popupVisible: false,
-      popupTitle: "",
-      popupSubtitle: "",
-      popupTone: "amber",
-      popupItems: [],
+      sectionSheetVisible: false,
+      sectionSheetTitle: "",
+      sectionSheetActions: [],
       currentSection: ""
     });
   },
 
-  noop() {},
-
-  onSelectPopupItem(e) {
-    const { action } = e.currentTarget.dataset;
+  onSelectSectionAction(e) {
+    const action = e.detail.value;
     this.closeSectionPopup();
 
     switch (action) {
@@ -273,10 +279,10 @@ Page({
 
   goToElderPreview() {
     if (!this.ensureBoundElder()) return;
-    wx.navigateTo({
-      url: "/pages/elder/home?preview=1&from=family",
+    wx.reLaunch({
+      url: "/pages/elder/home",
       fail: (err) => {
-        console.error("navigate to elder preview failed:", err);
+        console.error("enter elder home failed:", err);
       }
     });
   },

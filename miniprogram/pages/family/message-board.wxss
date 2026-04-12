@@ -2,25 +2,20 @@
   min-height: 100vh;
   padding: 32rpx 24rpx 40rpx;
   box-sizing: border-box;
-  background:
-    radial-gradient(circle at top left, rgba(255, 221, 179, 0.4), transparent 28%),
-    radial-gradient(circle at 85% 10%, rgba(175, 214, 196, 0.28), transparent 22%),
-    linear-gradient(180deg, #f8f4eb 0%, #f2f6f4 46%, #eff3f8 100%);
+  background: var(--yz-bg-page);
 }
 
 .hero,
 .composer-card,
 .list-card {
-  border-radius: 32rpx;
-  box-shadow: 0 18rpx 42rpx rgba(30, 44, 58, 0.08);
+  border-radius: 24rpx;
+  box-shadow: var(--yz-shadow-medium);
 }
 
 .hero {
   padding: 30rpx 28rpx;
   margin-bottom: 20rpx;
-  background:
-    radial-gradient(circle at top right, rgba(255, 255, 255, 0.72), transparent 26%),
-    linear-gradient(135deg, #fff1d6 0%, #fffaf0 52%, #eef8f3 100%);
+  background: var(--yz-gradient-hero);
 }
 
 .hero-badge {
@@ -29,9 +24,9 @@
   justify-content: center;
   height: 46rpx;
   padding: 0 18rpx;
-  border-radius: 999rpx;
+  border-radius: 24rpx;
   background: rgba(255, 255, 255, 0.88);
-  color: #8f6028;
+  color: var(--yz-accent-warm);
   font-size: 22rpx;
   font-weight: 700;
 }
@@ -41,14 +36,14 @@
   font-size: 52rpx;
   line-height: 1.14;
   font-weight: 700;
-  color: #1f2a33;
+  color: var(--yz-text-primary);
 }
 
 .hero-desc {
   margin-top: 12rpx;
   font-size: 28rpx;
   line-height: 1.65;
-  color: #697a86;
+  color: var(--yz-text-secondary);
 }
 
 .composer-card,
@@ -62,26 +57,26 @@
   display: flex;
   gap: 12rpx;
   padding: 10rpx;
-  border-radius: 999rpx;
-  background: #f2f5f7;
+  border-radius: 24rpx;
+  background: var(--yz-bg-section);
 }
 
 .composer-tab {
   flex: 1;
   height: 72rpx;
-  border-radius: 999rpx;
+  border-radius: 24rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #748391;
+  color: var(--yz-text-secondary);
   font-size: 28rpx;
   font-weight: 700;
 }
 
 .composer-tab-active {
-  background: #ffffff;
-  color: #2c6b58;
-  box-shadow: 0 8rpx 20rpx rgba(44, 107, 88, 0.08);
+  background: var(--yz-bg-card);
+  color: var(--yz-brand-primary);
+  box-shadow: 0 8rpx 20rpx rgba(111, 143, 200, 0.08);
 }
 
 .composer-panel,
@@ -90,8 +85,8 @@
 .draft-panel {
   margin-top: 18rpx;
   padding: 24rpx;
-  border-radius: 26rpx;
-  background: #f8fafb;
+  border-radius: 18rpx;
+  background: var(--yz-bg-card-soft);
 }
 
 .composer-head,
@@ -109,7 +104,7 @@
 .draft-title {
   font-size: 32rpx;
   font-weight: 700;
-  color: #1f2a33;
+  color: var(--yz-text-primary);
 }
 
 .composer-state,
@@ -117,7 +112,7 @@
 .draft-desc,
 .message-time {
   font-size: 24rpx;
-  color: #8a97a4;
+  color: var(--yz-text-tertiary);
 }
 
 .note-input {
@@ -127,10 +122,10 @@
   padding: 24rpx;
   box-sizing: border-box;
   border-radius: 22rpx;
-  background: #ffffff;
+  background: var(--yz-bg-card);
   font-size: 30rpx;
   line-height: 1.7;
-  color: #24313a;
+  color: var(--yz-text-primary);
 }
 
 .config-row + .config-row {
@@ -140,7 +135,27 @@
 .config-label {
   margin-bottom: 12rpx;
   font-size: 26rpx;
-  color: #6d7c89;
+  color: var(--yz-text-secondary);
+}
+
+.schedule-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 88rpx;
+  padding: 0 24rpx;
+  border-radius: 18rpx;
+  background: var(--yz-bg-card);
+}
+
+.schedule-trigger-text {
+  font-size: 28rpx;
+  color: var(--yz-text-primary);
+}
+
+.schedule-trigger-arrow {
+  font-size: 30rpx;
+  color: var(--yz-text-tertiary);
 }
 
 .field-input,
@@ -150,8 +165,8 @@
   padding: 22rpx 24rpx;
   box-sizing: border-box;
   border-radius: 18rpx;
-  background: #ffffff;
-  color: #24313a;
+  background: var(--yz-bg-card);
+  color: var(--yz-text-primary);
   font-size: 28rpx;
 }
 
@@ -165,17 +180,17 @@
 .schedule-chip,
 .weekday-chip {
   padding: 14rpx 20rpx;
-  border-radius: 999rpx;
-  background: #eef2f5;
-  color: #70808f;
+  border-radius: 24rpx;
+  background: var(--yz-bg-section);
+  color: var(--yz-text-secondary);
   font-size: 26rpx;
   line-height: 1;
 }
 
 .schedule-chip-active,
 .weekday-chip-active {
-  background: #e8f4ee;
-  color: #2c6b58;
+  background: var(--yz-brand-primary-soft);
+  color: var(--yz-brand-primary);
 }
 
 .action-bar {
@@ -190,7 +205,7 @@
   border: none;
   height: 84rpx;
   line-height: 84rpx;
-  border-radius: 999rpx;
+  border-radius: 24rpx;
   font-size: 28rpx;
 }
 
@@ -200,25 +215,25 @@
   flex: 1;
   height: 84rpx;
   line-height: 84rpx;
-  border-radius: 999rpx;
+  border-radius: 24rpx;
   font-size: 28rpx;
   border: none;
 }
 
 .text-btn {
-  background: #eef2f5;
-  color: #677684;
+  background: var(--yz-bg-section);
+  color: var(--yz-text-secondary);
 }
 
 .record-btn {
-  background: linear-gradient(135deg, #2f7a63 0%, #215f4c 100%);
-  color: #ffffff;
+  background: var(--yz-gradient-primary);
+  color: var(--yz-bg-card);
 }
 
 .stop-btn {
   margin-top: 18rpx;
-  background: #ff8b70;
-  color: #ffffff;
+  background: var(--yz-danger);
+  color: var(--yz-bg-card);
 }
 
 .recording-row {
@@ -232,19 +247,24 @@
   width: 16rpx;
   height: 16rpx;
   border-radius: 50%;
-  background: #ff6d6d;
+  background: var(--yz-danger);
 }
 
 .record-text {
   font-size: 28rpx;
-  color: #5f6f7f;
+  color: var(--yz-text-secondary);
 }
 
 .empty-state {
   padding: 56rpx 0 24rpx;
   text-align: center;
   font-size: 28rpx;
-  color: #97a4b1;
+  color: var(--yz-text-tertiary);
+}
+
+.loading-state {
+  display: flex;
+  justify-content: center;
 }
 
 .message-list {
@@ -259,7 +279,7 @@
   padding: 22rpx;
   margin-bottom: 16rpx;
   border-radius: 24rpx;
-  background: #f8fafb;
+  background: var(--yz-bg-card-soft);
 }
 
 .message-item:last-child {
@@ -274,7 +294,7 @@
 .message-name {
   font-size: 30rpx;
   font-weight: 700;
-  color: #24313a;
+  color: var(--yz-text-primary);
 }
 
 .message-meta-row {
@@ -287,50 +307,50 @@
 
 .message-type {
   padding: 6rpx 14rpx;
-  border-radius: 999rpx;
-  background: #edf1f5;
-  color: #7d8c99;
+  border-radius: 24rpx;
+  background: var(--yz-bg-section);
+  color: var(--yz-text-secondary);
   font-size: 22rpx;
 }
 
 .message-type-reminder {
-  background: #fff2e6;
-  color: #d57b2e;
+  background: var(--yz-warning-soft);
+  color: var(--yz-warning);
 }
 
 .message-desc {
   font-size: 24rpx;
-  color: #8a97a4;
+  color: var(--yz-text-tertiary);
 }
 
 .message-note {
   margin-top: 14rpx;
   font-size: 28rpx;
   line-height: 1.65;
-  color: #435261;
+  color: var(--yz-info);
 }
 
 .message-schedule {
   margin-top: 14rpx;
   display: inline-flex;
   padding: 8rpx 14rpx;
-  border-radius: 999rpx;
-  background: #eaf6ed;
-  color: #3b8556;
+  border-radius: 24rpx;
+  background: var(--yz-success-soft);
+  color: var(--yz-success);
   font-size: 24rpx;
 }
 
 .play-btn {
   min-width: 128rpx;
   padding: 0 24rpx;
-  background: #e8f1ff;
-  color: #4a90e2;
+  background: var(--yz-info-soft);
+  color: var(--yz-info);
 }
 
 .text-tag {
   min-width: 128rpx;
   padding: 0 24rpx;
   text-align: center;
-  background: #eef2f5;
-  color: #738291;
+  background: var(--yz-bg-section);
+  color: var(--yz-text-secondary);
 }

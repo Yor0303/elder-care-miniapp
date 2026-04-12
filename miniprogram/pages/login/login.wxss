@@ -1,182 +1,223 @@
+page {
+  background: var(--yz-bg-page);
+  color: var(--yz-text-primary);
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
 .page {
   min-height: 100vh;
   box-sizing: border-box;
-  padding: 56rpx 32rpx 64rpx;
-  background:
-    radial-gradient(circle at top, rgba(246, 222, 190, 0.45), transparent 34%),
-    linear-gradient(180deg, #f8f2e8 0%, #f3ece1 50%, #efe6d7 100%);
-  color: #5a4331;
+  padding: 48rpx 42rpx 72rpx;
+  display: flex;
+  flex-direction: column;
 }
 
-.hero {
-  padding: 28rpx 12rpx 32rpx;
+.nav-bar {
+  height: 88rpx;
+  display: flex;
+  align-items: center;
 }
 
-.brand {
-  font-size: 64rpx;
-  font-weight: 700;
-  letter-spacing: 8rpx;
-  color: #7c5639;
+.back-button {
+  width: 72rpx;
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.hero-title {
+.brand-zone {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40rpx 0 20rpx;
+}
+
+.brand-logo {
+  width: 420rpx;
+  height: 420rpx;
+}
+
+.brand-title {
+  margin-top: 28rpx;
+  font-size: 46rpx;
+  font-weight: 600;
+  color: var(--yz-text-primary);
+}
+
+.brand-subtitle {
   margin-top: 18rpx;
-  font-size: 48rpx;
-  font-weight: 700;
-  line-height: 1.35;
-  color: #4f3727;
-}
-
-.hero-subtitle {
-  margin-top: 16rpx;
-  font-size: 28rpx;
-  line-height: 1.7;
-  color: #806657;
-}
-
-.invite-banner {
-  margin-top: 12rpx;
-  padding: 24rpx 28rpx;
-  border-radius: 28rpx;
-  background: rgba(255, 247, 232, 0.92);
-  border: 2rpx solid rgba(165, 127, 86, 0.18);
-}
-
-.invite-title {
-  font-size: 30rpx;
-  font-weight: 600;
-  color: #6b4d35;
-}
-
-.invite-desc {
-  margin-top: 10rpx;
-  font-size: 26rpx;
-  line-height: 1.7;
-  color: #886d5c;
-}
-
-.panel {
-  margin-top: 28rpx;
-  padding: 28rpx;
-  border-radius: 34rpx;
-  background: rgba(255, 251, 245, 0.95);
-  box-shadow: 0 22rpx 48rpx rgba(124, 86, 57, 0.08);
-}
-
-.mode-switch {
-  display: flex;
-  gap: 16rpx;
-  padding: 10rpx;
-  border-radius: 999rpx;
-  background: #f1e6d8;
-}
-
-.mode-chip {
-  flex: 1;
+  max-width: 520rpx;
   text-align: center;
-  padding: 20rpx 0;
-  border-radius: 999rpx;
+  color: var(--yz-text-secondary);
   font-size: 28rpx;
-  color: #8a6d5a;
-}
-
-.mode-chip.active {
-  background: #7c5639;
-  color: #fffaf5;
-  font-weight: 600;
-}
-
-.section-head {
-  margin-top: 30rpx;
-}
-
-.section-title {
-  font-size: 36rpx;
-  font-weight: 700;
-  color: #523a29;
-}
-
-.section-desc {
-  margin-top: 12rpx;
-  font-size: 26rpx;
   line-height: 1.7;
-  color: #8a6d5a;
 }
 
-.role-grid {
-  display: flex;
-  gap: 20rpx;
-  margin-top: 28rpx;
+.action-zone {
+  margin-top: auto;
 }
 
-.role-card {
-  flex: 1;
-  min-height: 260rpx;
-  padding: 30rpx 24rpx;
+.role-panel {
+  margin-bottom: 28rpx;
+  padding: 28rpx;
   border-radius: 28rpx;
-  border: 2rpx solid #e8d7c4;
-  background: #fffaf3;
-  box-sizing: border-box;
+  background: var(--yz-bg-card);
+  box-shadow: var(--yz-shadow-soft);
 }
 
-.role-card.selected {
-  border-color: #7c5639;
-  background: #f7ecdc;
-  box-shadow: 0 12rpx 28rpx rgba(124, 86, 57, 0.12);
-}
-
-.role-icon {
-  font-size: 60rpx;
+.role-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18rpx;
 }
 
 .role-title {
-  margin-top: 18rpx;
-  font-size: 32rpx;
-  font-weight: 700;
-  color: #523a29;
+  font-size: 28rpx;
+  color: var(--yz-text-primary);
+  font-weight: 600;
 }
 
-.role-desc {
-  margin-top: 12rpx;
+.role-tip {
+  font-size: 22rpx;
+  color: #07c060;
+}
+
+.role-switch {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 8rpx;
+  border-radius: 999rpx;
+  background: var(--yz-bg-card-soft);
+  overflow: hidden;
+}
+
+.role-slider {
+  position: absolute;
+  top: 8rpx;
+  left: 8rpx;
+  width: calc(50% - 8rpx);
+  height: calc(100% - 16rpx);
+  border-radius: 999rpx;
+  background: var(--yz-bg-card);
+  box-shadow: 0 12rpx 28rpx rgba(33, 32, 33, 0.1);
+  transition: transform 0.24s ease;
+}
+
+.role-slider.is-family {
+  transform: translateX(100%);
+}
+
+.role-option {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  height: 86rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.role-option-text {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--yz-text-secondary);
+  transition: color 0.24s ease;
+}
+
+.role-option.active .role-option-text {
+  color: var(--yz-text-primary);
+}
+
+.role-caption {
+  margin-top: 22rpx;
+  text-align: center;
+  color: var(--yz-text-secondary);
   font-size: 24rpx;
   line-height: 1.7;
-  color: #896b57;
 }
 
 .primary-btn {
-  margin-top: 32rpx;
+  width: 100%;
   height: 96rpx;
-  line-height: 96rpx;
-  border-radius: 999rpx;
-  border: none;
-  background: linear-gradient(135deg, #8e6544 0%, #6d4b34 100%);
-  color: #fffaf5;
-  font-size: 30rpx;
+  border-radius: 20rpx;
+  font-size: 36rpx;
   font-weight: 600;
+  line-height: 96rpx;
+  margin: 0;
 }
 
 .primary-btn::after {
   border: none;
 }
 
-.registered-tip {
-  margin-top: 24rpx;
-  padding: 24rpx 26rpx;
-  border-radius: 24rpx;
-  background: #f7ecdc;
-  color: #6e503c;
-  font-size: 28rpx;
+.primary-btn {
+  color: #ffffff;
+  background: #07c060;
+  box-shadow: 0 14rpx 28rpx rgba(7, 192, 96, 0.22);
 }
 
-.switch-tip {
-  margin-top: 26rpx;
+.helper-text {
   text-align: center;
-  font-size: 26rpx;
-  color: #8a6d5a;
+  margin-top: 28rpx;
+  color: var(--yz-text-secondary);
+  font-size: 24rpx;
+  line-height: 1.7;
 }
 
-.switch-link {
-  margin-left: 10rpx;
-  color: #6d4b34;
-  font-weight: 600;
+.agreement-section {
+  padding-top: 88rpx;
+}
+
+.agreement-row {
+  display: flex;
+  align-items: flex-start;
+  color: var(--yz-text-secondary);
+  font-size: 27rpx;
+  line-height: 1.8;
+}
+
+.agreement-check {
+  width: 34rpx;
+  height: 34rpx;
+  border-radius: 50%;
+  border: 2rpx solid var(--yz-border);
+  margin-right: 18rpx;
+  margin-top: 8rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.agreement-check.checked {
+  border-color: #07c060;
+  background: #07c060;
+}
+
+.agreement-copy {
+  flex: 1;
+}
+
+.agreement-link {
+  color: #07c060;
+}
+
+.footer-links {
+  margin-top: 60rpx;
+  display: flex;
+  justify-content: center;
+}
+
+.footer-link + .footer-link {
+  margin-left: 48rpx;
+}
+
+.footer-link {
+  color: var(--yz-text-secondary);
+  font-size: 28rpx;
 }

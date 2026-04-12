@@ -14,7 +14,13 @@ function formatDateTime(value) {
 Page({
   data: {
     loading: false,
-    guides: []
+    guides: [],
+    showDeleteDialog: false,
+    pendingDeleteGuideId: "",
+    deleteDialogButtons: [
+      { text: "取消", type: "default", value: "cancel" },
+      { text: "删除", type: "warn", value: "confirm" }
+    ]
   },
 
   onShow() {
@@ -80,20 +86,40 @@ Page({
     const { id } = e.currentTarget.dataset;
     if (!id) return;
 
-    wx.showModal({
-      title: "确认删除",
-      content: "删除后老人端将无法再查看这份教程，确定继续吗？",
-      success: async (res) => {
-        if (!res.confirm) return;
-
-        try {
-          await deleteLifeGuideAPI(id);
-          wx.showToast({ title: "已删除", icon: "success" });
-          this.loadGuides();
-        } catch (error) {
-          wx.showToast({ title: error.message || "删除失败", icon: "none" });
-        }
-      }
+    this.setData({
+      showDeleteDialog: true,
+      pendingDeleteGuideId: id
     });
+  },
+
+  closeDeleteDialog() {
+    this.setData({
+      showDeleteDialog: false,
+      pendingDeleteGuideId: ""
+    });
+  },
+
+  async onDeleteDialogButtonTap(e) {
+    const value = e.detail && e.detail.value;
+    if (value !== "confirm") {
+      this.closeDeleteDialog();
+      return;
+    }
+
+    const { pendingDeleteGuideId } = this.data;
+    if (!pendingDeleteGuideId) {
+      this.closeDeleteDialog();
+      return;
+    }
+
+    try {
+      await deleteLifeGuideAPI(pendingDeleteGuideId);
+      wx.showToast({ title: "已删除", icon: "success" });
+      this.closeDeleteDialog();
+      this.loadGuides();
+    } catch (error) {
+      this.closeDeleteDialog();
+      wx.showToast({ title: error.message || "删除失败", icon: "none" });
+    }
   }
 });

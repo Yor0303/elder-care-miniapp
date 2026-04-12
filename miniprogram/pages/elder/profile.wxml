@@ -1,8 +1,15 @@
 <!-- pages/elder/profile.wxml -->
 <view class="page">
-  <view wx:if="{{loading}}" class="loading">加载中...</view>
+  <view wx:if="{{loading}}" class="loading-card">
+    <mp-loading type="dot-gray"></mp-loading>
+  </view>
 
   <view wx:elif="{{elder}}">
+    <view class="hero-card">
+      <view class="hero-badge">我的资料</view>
+      <view class="hero-desc">这里会展示个人信息、绑定手机号以及本人回忆。</view>
+    </view>
+
     <view class="identity-card">
       <image class="avatar" src="{{elder.avatar || '/assets/images/avatar1.png'}}" mode="aspectFill"></image>
       <view class="name">{{elder.name || "未填写姓名"}}</view>

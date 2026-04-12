@@ -8,6 +8,7 @@ const {
 
 Page({
   data: {
+    loading: false,
     isEdit: false,
     personId: "",
     name: "",
@@ -20,14 +21,36 @@ Page({
     facePhoto: "",
     relationOptions: ["祖父", "祖母", "父亲", "母亲", "叔叔", "姑姑", "本人", "儿子", "女儿", "孙子", "孙女", "其他"],
     genderOptions: ["男", "女"],
-    showRelationPicker: false,
-    showGenderPicker: false,
-    saving: false
+    showRelationSheet: false,
+    showGenderSheet: false,
+    showDeleteDialog: false,
+    saving: false,
+    avatarFiles: [],
+    facePhotoFiles: [],
+    relationActionItems: [],
+    genderActionItems: [],
+    deleteDialogButtons: [],
+    selectAvatarFile: null,
+    uploadAvatarFile: null,
+    selectFacePhotoFile: null,
+    uploadFacePhotoFile: null
   },
 
-  noop() {},
-
   onLoad(options) {
+    this.setData({
+      relationActionItems: this.data.relationOptions.map((item) => ({ text: item, value: item })),
+      genderActionItems: this.data.genderOptions.map((item) => ({ text: item, value: item })),
+      deleteDialogButtons: [
+        { text: "取消", value: "cancel" },
+        { text: "删除", value: "delete", className: "weui-dialog__btn_warn" }
+      ],
+      selectAvatarFile: this.selectAvatarFile.bind(this),
+      uploadAvatarFile: this.uploadAvatarFile.bind(this),
+      selectFacePhotoFile: this.selectFacePhotoFile.bind(this),
+      uploadFacePhotoFile: this.uploadFacePhotoFile.bind(this),
+      loading: !!options.id
+    });
+
     if (options.id) {
       this.setData({ isEdit: true, personId: options.id });
       this.loadPersonDetail(options.id);
@@ -38,6 +61,8 @@ Page({
     try {
       wx.showLoading({ title: "加载中..." });
       const person = await getPersonDetailAPI(personId);
+      const avatar = person.avatar || "";
+      const facePhoto = person.facePhoto || person.avatar || "";
 
       this.setData({
         name: person.name || "",
@@ -46,12 +71,16 @@ Page({
         gender: person.gender || "",
         health: person.health || "",
         description: person.description || "",
-        avatar: person.avatar || "",
-        facePhoto: person.facePhoto || person.avatar || ""
+        avatar,
+        facePhoto,
+        avatarFiles: avatar ? [{ url: avatar }] : [],
+        facePhotoFiles: facePhoto ? [{ url: facePhoto }] : [],
+        loading: false
       });
 
       wx.hideLoading();
     } catch (error) {
+      this.setData({ loading: false });
       wx.hideLoading();
       wx.showToast({ title: "加载失败", icon: "none" });
     }
@@ -73,64 +102,94 @@ Page({
     this.setData({ description: e.detail.value });
   },
 
-  showRelationPicker() {
-    this.setData({ showRelationPicker: true });
+  selectAvatarFile() {
+    return true;
   },
 
-  hideRelationPicker() {
-    this.setData({ showRelationPicker: false });
+  uploadAvatarFile({ tempFilePaths }) {
+    return Promise.all(tempFilePaths.map((item) => this.uploadToCloud(item, "member-avatars"))).then((urls) => ({ urls }));
   },
 
-  showGenderPicker() {
-    this.setData({ showGenderPicker: true });
+  selectFacePhotoFile() {
+    return true;
   },
 
-  hideGenderPicker() {
-    this.setData({ showGenderPicker: false });
+  uploadFacePhotoFile({ tempFilePaths }) {
+    return Promise.all(tempFilePaths.map((item) => this.uploadToCloud(item, "member-faces"))).then((urls) => ({ urls }));
   },
 
-  onRelationChange(e) {
-    const index = Number(e.currentTarget.dataset.index);
-    const relation = this.data.relationOptions[index] || "";
-    this.setData({ relation, showRelationPicker: false });
-  },
-
-  onGenderChange(e) {
-    const index = Number(e.currentTarget.dataset.index);
-    const gender = this.data.genderOptions[index] || "";
-    this.setData({ gender, showGenderPicker: false });
-  },
-
-  chooseAvatar() {
-    wx.chooseImage({
-      count: 1,
-      sizeType: ["compressed"],
-      sourceType: ["album", "camera"],
-      success: (res) => {
-        const tempPath = res.tempFilePaths[0];
-        this.setData({ avatar: tempPath });
-      }
+  onAvatarUploadSuccess(e) {
+    const url = (e.detail.urls && e.detail.urls[0]) || "";
+    this.setData({
+      avatar: url,
+      avatarFiles: url ? [{ url }] : []
     });
   },
 
-  chooseFacePhoto() {
-    wx.chooseImage({
-      count: 1,
-      sizeType: ["compressed"],
-      sourceType: ["album", "camera"],
-      success: (res) => {
-        const tempPath = res.tempFilePaths[0];
-        this.setData({ facePhoto: tempPath });
-      }
+  onFacePhotoUploadSuccess(e) {
+    const url = (e.detail.urls && e.detail.urls[0]) || "";
+    this.setData({
+      facePhoto: url,
+      facePhotoFiles: url ? [{ url }] : []
     });
   },
 
-  removeAvatar() {
-    this.setData({ avatar: "" });
+  onAvatarUploadFail() {
+    this.setData({
+      avatarFiles: this.data.avatar ? [{ url: this.data.avatar }] : []
+    });
+    wx.showToast({ title: "头像上传失败", icon: "none" });
   },
 
-  removeFacePhoto() {
-    this.setData({ facePhoto: "" });
+  onFacePhotoUploadFail() {
+    this.setData({
+      facePhotoFiles: this.data.facePhoto ? [{ url: this.data.facePhoto }] : []
+    });
+    wx.showToast({ title: "人脸照上传失败", icon: "none" });
+  },
+
+  onAvatarDelete() {
+    this.setData({
+      avatar: "",
+      avatarFiles: []
+    });
+  },
+
+  onFacePhotoDelete() {
+    this.setData({
+      facePhoto: "",
+      facePhotoFiles: []
+    });
+  },
+
+  openRelationSheet() {
+    this.setData({ showRelationSheet: true });
+  },
+
+  closeRelationSheet() {
+    this.setData({ showRelationSheet: false });
+  },
+
+  onRelationActionTap(e) {
+    this.setData({
+      relation: e.detail.value || "",
+      showRelationSheet: false
+    });
+  },
+
+  openGenderSheet() {
+    this.setData({ showGenderSheet: true });
+  },
+
+  closeGenderSheet() {
+    this.setData({ showGenderSheet: false });
+  },
+
+  onGenderActionTap(e) {
+    this.setData({
+      gender: e.detail.value || "",
+      showGenderSheet: false
+    });
   },
 
   uploadToCloud(tempFilePath, folder = "member-avatars") {
@@ -220,25 +279,31 @@ Page({
     this.setData({ saving: false });
   },
 
-  delete() {
-    wx.showModal({
-      title: "确认删除",
-      content: "删除后无法恢复，确定要删除这位成员吗？",
-      success: async (res) => {
-        if (!res.confirm) {
-          return;
-        }
+  openDeleteDialog() {
+    this.setData({ showDeleteDialog: true });
+  },
 
-        try {
-          await deletePersonAPI(this.data.personId);
-          wx.showToast({ title: "删除成功", icon: "success" });
-          setTimeout(() => {
-            wx.navigateBack();
-          }, 1200);
-        } catch (error) {
-          wx.showToast({ title: "删除失败", icon: "none" });
-        }
-      }
-    });
+  closeDeleteDialog() {
+    this.setData({ showDeleteDialog: false });
+  },
+
+  async onDeleteDialogButtonTap(e) {
+    const item = e.detail.item || {};
+    if (item.value !== "delete") {
+      this.setData({ showDeleteDialog: false });
+      return;
+    }
+
+    this.setData({ showDeleteDialog: false });
+
+    try {
+      await deletePersonAPI(this.data.personId);
+      wx.showToast({ title: "删除成功", icon: "success" });
+      setTimeout(() => {
+        wx.navigateBack();
+      }, 1200);
+    } catch (error) {
+      wx.showToast({ title: "删除失败", icon: "none" });
+    }
   }
 });

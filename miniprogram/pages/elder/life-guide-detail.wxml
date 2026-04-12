@@ -1,5 +1,5 @@
 <view class="page">
-  <view wx:if="{{loading}}" class="empty-card">加载中...</view>
+  <view wx:if="{{loading}}" class="empty-card"><mp-loading type="dot-gray"></mp-loading></view>
 
   <view wx:elif="{{guide}}" class="guide-card">
     <view class="content-wrap">

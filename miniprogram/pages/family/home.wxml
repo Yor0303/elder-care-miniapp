@@ -14,7 +14,7 @@
 
     <view class="hero-actions">
       <button class="hero-btn" bindtap="goToBindPage">{{hasBoundElder ? "管理绑定" : "立即绑定"}}</button>
-      <button class="hero-btn ghost-btn" bindtap="goToElderPreview">测试老人端</button>
+      <button class="hero-btn ghost-btn" bindtap="goToElderPreview">进入老人端</button>
     </view>
   </view>
 
@@ -24,9 +24,15 @@
       <view wx:if="{{todayCompletedTasks.length}}" class="today-card-count">{{todayCompletedTasks.length}}</view>
     </view>
 
-    <block wx:if="{{todayCompletedTasks.length}}">
+    <view wx:if="{{tasksLoading}}" class="today-loading">
+      <mp-loading type="dot-gray"></mp-loading>
+    </view>
+
+    <block wx:elif="{{todayCompletedTasks.length}}">
       <view wx:for="{{todayCompletedTasks}}" wx:key="id" class="today-item">
-        <view class="today-item-check">✓</view>
+        <view class="today-item-check">
+          <app-icon name="check" size="28rpx" color="#2f8f54"></app-icon>
+        </view>
         <view class="today-item-copy">
           <view class="today-item-title">{{item.title}}</view>
           <view wx:if="{{item.subtitle}}" class="today-item-meta">{{item.subtitle}}</view>
@@ -55,41 +61,19 @@
       <view class="section-side">
         <view class="section-count">{{item.count}} 项</view>
         <view class="section-arrow-shell">
-          <view class="section-arrow">></view>
-        </view>
-      </view>
-    </view>
-  </view>
-
-  <view wx:if="{{popupVisible}}" class="popup-mask" bindtap="closeSectionPopup">
-    <view class="popup-sheet tone-{{popupTone}}" catchtap="noop">
-      <view class="popup-handle"></view>
-
-      <view class="popup-head">
-        <view class="popup-head-copy">
-          <view class="popup-title">{{popupTitle}}</view>
-          <view class="popup-subtitle">{{popupSubtitle}}</view>
-        </view>
-        <view class="popup-close" bindtap="closeSectionPopup">x</view>
-      </view>
-
-      <view class="popup-list">
-        <view
-          wx:for="{{popupItems}}"
-          wx:key="key"
-          wx:for-index="idx"
-          class="popup-item"
-          data-action="{{item.key}}"
-          bindtap="onSelectPopupItem"
-        >
-          <view class="popup-index">{{idx + 1 < 10 ? "0" + (idx + 1) : idx + 1}}</view>
-          <view class="popup-copy">
-            <view class="popup-item-title">{{item.title}}</view>
-            <view class="popup-item-desc">{{item.desc}}</view>
+          <view class="section-arrow">
+            <app-icon name="chevron-right" size="30rpx" color="#96a4ae"></app-icon>
           </view>
-          <view class="popup-item-arrow">></view>
         </view>
       </view>
     </view>
   </view>
+
+  <mp-actionSheet
+    show="{{sectionSheetVisible}}"
+    title="{{sectionSheetTitle}}"
+    actions="{{sectionSheetActions}}"
+    bindclose="closeSectionPopup"
+    bindactiontap="onSelectSectionAction"
+  ></mp-actionSheet>
 </view>

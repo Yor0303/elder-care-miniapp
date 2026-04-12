@@ -103,10 +103,19 @@ Page({
     typeOptions: MEMORY_TYPE_OPTIONS,
     typeLabels: MEMORY_TYPE_LABELS,
     showTypePicker: false,
+    typeActionItems: MEMORY_TYPE_OPTIONS.map((item) => ({
+      text: MEMORY_TYPE_LABELS[item],
+      value: item
+    })),
     personOptions: [],
     personIndex: -1,
     fileList: [],
-    saving: false
+    saving: false,
+    showDeleteDialog: false,
+    deleteDialogButtons: [
+      { text: "取消", type: "default", value: "cancel" },
+      { text: "删除", type: "warn", value: "confirm" }
+    ]
   },
 
   noop() {},
@@ -209,8 +218,8 @@ Page({
   },
 
   onTypeSelect(e) {
-    const { type } = e.currentTarget.dataset;
-    this.setData({ type, showTypePicker: false });
+    const type = (e.detail && e.detail.value) || (e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.type);
+    this.setData({ type: type || "", showTypePicker: false });
   },
 
   chooseImage() {
@@ -309,24 +318,30 @@ Page({
   },
 
   delete() {
-    wx.showModal({
-      title: "确认删除",
-      content: "删除后无法恢复，确定要删除这条回忆吗？",
-      success: async (res) => {
-        if (!res.confirm) {
-          return;
-        }
+    this.setData({ showDeleteDialog: true });
+  },
 
-        try {
-          await deleteMemoryAPI(this.data.memoryId);
-          wx.showToast({ title: "删除成功", icon: "success" });
-          setTimeout(() => {
-            wx.navigateBack();
-          }, 1200);
-        } catch (error) {
-          wx.showToast({ title: "删除失败", icon: "none" });
-        }
-      }
-    });
+  closeDeleteDialog() {
+    this.setData({ showDeleteDialog: false });
+  },
+
+  async onDeleteDialogTap(e) {
+    const value = e.detail && e.detail.value;
+    if (value !== "confirm") {
+      this.closeDeleteDialog();
+      return;
+    }
+
+    try {
+      await deleteMemoryAPI(this.data.memoryId);
+      this.closeDeleteDialog();
+      wx.showToast({ title: "删除成功", icon: "success" });
+      setTimeout(() => {
+        wx.navigateBack();
+      }, 1200);
+    } catch (error) {
+      this.closeDeleteDialog();
+      wx.showToast({ title: "删除失败", icon: "none" });
+    }
   }
 });

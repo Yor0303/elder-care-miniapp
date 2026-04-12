@@ -104,6 +104,8 @@ Page({
       { value: "workday", label: "工作日" },
       { value: "weekly", label: "指定星期" }
     ],
+    reminderScheduleActionItems: [],
+    showReminderScheduleSheet: false,
     weekdayOptions: [
       { value: 1, label: "周一" },
       { value: 2, label: "周二" },
@@ -119,6 +121,12 @@ Page({
     this.recorderManager = wx.getRecorderManager();
     this.innerAudioContext = wx.createInnerAudioContext();
     this.recordTimer = null;
+    this.setData({
+      reminderScheduleActionItems: this.data.reminderScheduleOptions.map((item) => ({
+        text: item.label,
+        value: item.value
+      }))
+    });
     this.initRecorder();
     this.initAudioPlayer();
   },
@@ -314,12 +322,21 @@ Page({
     this.setData({ reminderTime: e.detail.value });
   },
 
+  openReminderScheduleSheet() {
+    this.setData({ showReminderScheduleSheet: true });
+  },
+
+  closeReminderScheduleSheet() {
+    this.setData({ showReminderScheduleSheet: false });
+  },
+
   onReminderScheduleSelect(e) {
-    const { value } = e.currentTarget.dataset;
+    const value = (e.detail && e.detail.value) || (e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.value);
     if (!value) return;
 
     const nextData = {
-      reminderScheduleType: value
+      reminderScheduleType: value,
+      showReminderScheduleSheet: false
     };
 
     if (value === "weekly" && !normalizeWeekdays(this.data.reminderWeekdays).length) {

@@ -20,7 +20,7 @@
   </view>
 
   <view wx:if="{{loading}}" class="loading-container">
-    <view class="loading-text">正在加载回忆...</view>
+    <mp-loading type="dot-gray"></mp-loading>
   </view>
 
   <view wx:elif="{{errorMsg}}" class="error-container">

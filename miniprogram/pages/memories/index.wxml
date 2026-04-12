@@ -11,7 +11,9 @@
     <view class="filter-btn {{filterType==='other' ? 'active' : ''}}" bindtap="setFilterOther">家人回忆</view>
   </view>
 
-  <view wx:if="{{loading}}" class="loading">加载中...</view>
+  <view wx:if="{{loading}}" class="loading-card">
+    <mp-loading type="dot-gray"></mp-loading>
+  </view>
 
   <view wx:else class="timeline">
     <block wx:for="{{list}}" wx:key="id">
@@ -44,8 +46,5 @@
     <view wx:if="{{list.length === 0}}" class="empty">暂无回忆</view>
   </view>
 
-  <view class="floating-btn" bindtap="uploadMemory">
-    <text class="plus">+</text>
-    <text class="label">上传回忆</text>
-  </view>
+  <view class="floating-btn" bindtap="uploadMemory">上传回忆</view>
 </view>

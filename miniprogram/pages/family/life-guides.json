@@ -1,3 +1,8 @@
 {
-  "navigationBarTitleText": "生活小助手"
+  "navigationBarTitleText": "生活小助手",
+  "usingComponents": {
+    "mp-loading": "weui-miniprogram/loading/loading",
+    "mp-dialog": "weui-miniprogram/dialog/dialog",
+    "app-icon": "/components/app-icon/app-icon"
+  }
 }

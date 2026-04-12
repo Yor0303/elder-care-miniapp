@@ -1,3 +1,6 @@
 {
-  "navigationBarTitleText": "绑定申请"
+  "navigationBarTitleText": "绑定申请",
+  "usingComponents": {
+    "app-icon": "/components/app-icon/app-icon"
+  }
 }

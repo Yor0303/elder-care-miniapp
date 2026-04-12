@@ -38,7 +38,7 @@
 
     <view class="family-list">
       <view wx:for="{{approvedRequests}}" wx:key="id" class="family-card">
-        <view class="family-icon">👪</view>
+        <view class="family-icon"><app-icon name="usergroup-filled" size="38rpx" color="#6f8fc8"></app-icon></view>
         <view class="family-main">
           <view class="family-name">{{item.applicantName}}</view>
           <view class="family-meta">{{item.relation}} · {{item.phone || "未留电话"}}</view>

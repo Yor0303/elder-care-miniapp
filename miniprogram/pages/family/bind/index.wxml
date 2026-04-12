@@ -9,7 +9,7 @@
     </view>
 
     <view class="person-summary">
-      <view class="person-avatar">长者</view>
+      <view class="person-avatar"><app-icon name="user-circle-filled" size="42rpx" color="#6f8fc8"></app-icon></view>
       <view class="person-main">
         <view class="person-name">{{currentBoundElder.name || "未命名老人"}}</view>
         <view class="person-meta">
@@ -38,7 +38,7 @@
     </view>
 
     <view wx:if="{{mode === 'scan'}}" class="action-card scan-card">
-      <view class="action-mark">扫码</view>
+      <view class="action-mark"><app-icon name="scan" size="48rpx" color="#ffffff"></app-icon></view>
       <view class="action-title">扫描老人端二维码</view>
       <view class="action-desc">面对面绑定更快</view>
       <button class="primary-btn" bindtap="scanBindCode">立即扫码</button>
@@ -55,11 +55,16 @@
         bindinput="onPhoneInput"
       />
       <button class="primary-btn soft-btn" bindtap="lookupByPhone" loading="{{loading}}">查找老人</button>
+      <view wx:if="{{loading && requestSource !== 'share'}}" class="state-card loading-state">
+        <mp-loading type="dot-gray"></mp-loading>
+      </view>
     </view>
 
     <view wx:if="{{mode === 'invite'}}" class="action-card">
       <view class="action-title">通过邀请链接进入</view>
-      <view wx:if="{{loading && requestSource === 'share'}}" class="state-card">正在读取邀请信息</view>
+      <view wx:if="{{loading && requestSource === 'share'}}" class="state-card loading-state">
+        <mp-loading type="dot-gray"></mp-loading>
+      </view>
       <view wx:elif="{{!loading && !sharedElder}}" class="state-card">暂无可用邀请信息</view>
     </view>
   </view>
@@ -76,7 +81,7 @@
     </view>
 
     <view class="person-summary person-summary-strong">
-      <view class="person-avatar accent">匹配</view>
+      <view class="person-avatar accent"><app-icon name="relation" size="42rpx" color="#a5641f"></app-icon></view>
       <view class="person-main">
         <view class="person-name">{{sharedElder.name}}</view>
         <view class="person-meta">
@@ -89,12 +94,10 @@
 
     <view class="picker-block">
       <view class="picker-label">你与老人的关系</view>
-      <picker mode="selector" range="{{relationOptions}}" value="{{relationIndex < 0 ? 0 : relationIndex}}" bindchange="onRelationChange">
-        <view class="relation-picker">
-          <text class="{{relation ? '' : 'placeholder'}}">{{relation || "请选择关系"}}</text>
-          <text class="arrow">></text>
-        </view>
-      </picker>
+      <view class="relation-picker" bindtap="openRelationSheet">
+        <text class="{{relation ? '' : 'placeholder'}}">{{relation || "请选择关系"}}</text>
+        <text class="arrow">></text>
+      </view>
     </view>
 
     <button wx:if="{{!requestSent}}" class="primary-btn" bindtap="submitInviteRequest">提交绑定申请</button>
@@ -118,4 +121,12 @@
 
     <view wx:else class="empty-inline">暂无申请记录</view>
   </view>
+
+  <mp-actionSheet
+    show="{{showRelationSheet}}"
+    title="选择你与老人的关系"
+    actions="{{relationActionItems}}"
+    bindclose="closeRelationSheet"
+    bindactiontap="onRelationActionTap"
+  ></mp-actionSheet>
 </view>

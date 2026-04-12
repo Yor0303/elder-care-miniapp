@@ -1,3 +1,8 @@
 {
-  "navigationBarTitleText": "家属端首页"
+  "navigationBarTitleText": "家属端首页",
+  "usingComponents": {
+    "mp-actionSheet": "weui-miniprogram/actionsheet/actionsheet",
+    "mp-loading": "weui-miniprogram/loading/loading",
+    "app-icon": "/components/app-icon/app-icon"
+  }
 }

@@ -10,6 +10,13 @@ const {
 
 const RELATION_OPTIONS = ["配偶", "子女", "孙辈", "兄弟姐妹", "亲属", "朋友", "护工", "其他"];
 
+function buildRelationActionItems() {
+  return RELATION_OPTIONS.map((item) => ({
+    text: item,
+    value: item
+  }));
+}
+
 function getStatusClass(status) {
   switch (status) {
     case "approved":
@@ -45,7 +52,9 @@ Page({
     requestSource: "",
     relationOptions: RELATION_OPTIONS,
     relationIndex: -1,
-    relation: ""
+    relation: "",
+    showRelationSheet: false,
+    relationActionItems: buildRelationActionItems()
   },
 
   onLoad(options = {}) {
@@ -84,6 +93,24 @@ Page({
     });
   },
 
+  openRelationSheet() {
+    this.setData({ showRelationSheet: true });
+  },
+
+  closeRelationSheet() {
+    this.setData({ showRelationSheet: false });
+  },
+
+  onRelationActionTap(e) {
+    const relation = (e.detail && e.detail.value) || "";
+    const relationIndex = this.data.relationOptions.indexOf(relation);
+    this.setData({
+      relation,
+      relationIndex,
+      showRelationSheet: false
+    });
+  },
+
   async loadCurrentBinding() {
     try {
       const elder = await getElderInfoAPI();
@@ -117,7 +144,8 @@ Page({
   async loadSharedElder(elderId, source = "invite") {
     this.setData({
       loading: true,
-      requestSent: false
+      requestSent: false,
+      requestSource: source
     });
     try {
       const elder = await getElderBindInfoAPI(elderId);
@@ -144,7 +172,8 @@ Page({
 
     this.setData({
       loading: true,
-      requestSent: false
+      requestSent: false,
+      requestSource: "phone"
     });
 
     try {

@@ -1,110 +1,112 @@
 <view class="page">
-  <view class="title">{{isEdit ? "✏️ 编辑成员" : "➕ 新增成员"}}</view>
-
-  <view class="form">
-    <view class="form-item">
-      <view class="form-label">展示照片</view>
-      <view class="avatar-section">
-        <view wx:if="{{avatar}}" class="avatar-preview">
-          <image class="avatar-image" src="{{avatar}}" mode="aspectFill"></image>
-          <view class="remove-avatar" catchtap="removeAvatar">X</view>
-        </view>
-        <view wx:else class="avatar-upload" bindtap="chooseAvatar">
-          <text class="avatar-plus">+</text>
-          <text class="avatar-text">🖼️ 上传照片</text>
-        </view>
-      </view>
-    </view>
-
-    <view class="form-item">
-      <view class="form-label">识别人脸照</view>
-      <view class="field-tip">建议上传清晰正脸照，便于摄像头识别时命中。</view>
-      <view class="avatar-section">
-        <view wx:if="{{facePhoto}}" class="avatar-preview">
-          <image class="avatar-image" src="{{facePhoto}}" mode="aspectFill"></image>
-          <view class="remove-avatar" catchtap="removeFacePhoto">X</view>
-        </view>
-        <view wx:else class="avatar-upload" bindtap="chooseFacePhoto">
-          <text class="avatar-plus">+</text>
-          <text class="avatar-text">📸 上传人脸照</text>
-        </view>
-      </view>
-    </view>
-
-    <view class="form-item">
-      <view class="form-label">姓名 *</view>
-      <input class="form-input" placeholder="请输入姓名" value="{{name}}" bindinput="onNameInput" />
-    </view>
-
-    <view class="form-item" bindtap="showRelationPicker">
-      <view class="form-label">家庭关系</view>
-      <view class="form-picker">
-        <text class="{{relation ? '' : 'placeholder'}}">{{relation || "请选择关系"}}</text>
-        <text class="arrow">></text>
-      </view>
-    </view>
-
-    <view class="form-item" bindtap="showGenderPicker">
-      <view class="form-label">性别</view>
-      <view class="form-picker">
-        <text class="{{gender ? '' : 'placeholder'}}">{{gender || "请选择性别"}}</text>
-        <text class="arrow">></text>
-      </view>
-    </view>
-
-    <view class="form-item">
-      <view class="form-label">年龄</view>
-      <input class="form-input" type="number" placeholder="请输入年龄" value="{{age}}" bindinput="onAgeInput" />
-    </view>
-
-    <view class="form-item">
-      <view class="form-label">健康状况</view>
-      <input class="form-input" placeholder="如：良好、一般" value="{{health}}" bindinput="onHealthInput" />
-    </view>
-
-    <view class="form-item">
-      <view class="form-label">简介</view>
-      <textarea class="form-textarea" placeholder="简单介绍一下这位家人..." value="{{description}}" bindinput="onDescriptionInput" />
-    </view>
+  <view wx:if="{{loading}}" class="loading-shell">
+    <mp-loading type="circle" tips="加载成员资料中"></mp-loading>
   </view>
 
-  <button class="save-btn" bindtap="save" disabled="{{saving}}">
-    {{saving ? "保存中..." : "💾 保存"}}
-  </button>
+  <mp-form-page wx:else title="{{isEdit ? '编辑成员' : '新增成员'}}" subtitle="把成员信息整理规范，后续回忆关联和人脸识别都会更顺。">
+    <mp-form>
+      <mp-cells title="展示照片">
+        <mp-cell ext-class="uploader-cell" has-footer="{{false}}">
+          <mp-uploader
+            title="成员照片"
+            tips="用于家人列表和回忆展示，建议上传清晰近照。"
+            files="{{avatarFiles}}"
+            max-count="1"
+            select="{{selectAvatarFile}}"
+            upload="{{uploadAvatarFile}}"
+            bindsuccess="onAvatarUploadSuccess"
+            bindfail="onAvatarUploadFail"
+            binddelete="onAvatarDelete"
+          ></mp-uploader>
+        </mp-cell>
+      </mp-cells>
 
-  <button wx:if="{{isEdit}}" class="delete-btn" bindtap="delete">🗑️ 删除成员</button>
+      <mp-cells title="识别人脸照">
+        <mp-cell ext-class="uploader-cell" has-footer="{{false}}">
+          <mp-uploader
+            title="人脸识别照片"
+            tips="建议上传正脸、无遮挡照片，提升摄像头识别命中率。"
+            files="{{facePhotoFiles}}"
+            max-count="1"
+            select="{{selectFacePhotoFile}}"
+            upload="{{uploadFacePhotoFile}}"
+            bindsuccess="onFacePhotoUploadSuccess"
+            bindfail="onFacePhotoUploadFail"
+            binddelete="onFacePhotoDelete"
+          ></mp-uploader>
+        </mp-cell>
+      </mp-cells>
 
-  <view class="picker-mask" wx:if="{{showRelationPicker}}" bindtap="hideRelationPicker">
-    <view class="picker-content" catchtap="noop">
-      <view class="picker-title">选择关系</view>
-      <scroll-view scroll-y class="picker-list">
-        <view
-          wx:for="{{relationOptions}}"
-          wx:key="*this"
-          class="picker-item {{relation === item ? 'active' : ''}}"
-          bindtap="onRelationChange"
-          data-index="{{index}}"
-        >
-          {{item}}
+      <mp-cells title="基础信息">
+        <mp-cell title="姓名" has-footer="{{false}}">
+          <input class="form-input-control" placeholder="请输入姓名" value="{{name}}" bindinput="onNameInput" />
+        </mp-cell>
+
+        <view class="cell-trigger" bindtap="openRelationSheet">
+          <mp-cell title="家庭关系" link>
+            <view slot="footer" class="picker-text {{relation ? '' : 'picker-placeholder'}}">
+              {{relation || "请选择关系"}}
+            </view>
+          </mp-cell>
         </view>
-      </scroll-view>
-    </view>
-  </view>
 
-  <view class="picker-mask" wx:if="{{showGenderPicker}}" bindtap="hideGenderPicker">
-    <view class="picker-content" catchtap="noop">
-      <view class="picker-title">选择性别</view>
-      <view class="picker-list">
-        <view
-          wx:for="{{genderOptions}}"
-          wx:key="*this"
-          class="picker-item {{gender === item ? 'active' : ''}}"
-          bindtap="onGenderChange"
-          data-index="{{index}}"
-        >
-          {{item}}
+        <view class="cell-trigger" bindtap="openGenderSheet">
+          <mp-cell title="性别" link>
+            <view slot="footer" class="picker-text {{gender ? '' : 'picker-placeholder'}}">
+              {{gender || "请选择性别"}}
+            </view>
+          </mp-cell>
         </view>
-      </view>
+
+        <mp-cell title="年龄" has-footer="{{false}}">
+          <input class="form-input-control" type="number" placeholder="请输入年龄" value="{{age}}" bindinput="onAgeInput" />
+        </mp-cell>
+
+        <mp-cell title="健康状况" has-footer="{{false}}">
+          <input class="form-input-control" placeholder="如：良好、一般" value="{{health}}" bindinput="onHealthInput" />
+        </mp-cell>
+      </mp-cells>
+
+      <mp-cells title="人物简介">
+        <mp-cell title="介绍说明" inline="{{false}}" has-footer="{{false}}" ext-class="textarea-cell">
+          <textarea class="form-textarea-control" placeholder="简单介绍一下这位家人，后续在老人端会更容易辨认..." value="{{description}}" bindinput="onDescriptionInput" maxlength="300" />
+        </mp-cell>
+      </mp-cells>
+    </mp-form>
+
+    <view slot="tips" class="page-tips">姓名是必填项。人脸识别照片可以和展示照片不同，建议单独上传更清晰的正脸照。</view>
+
+    <view slot="button" class="button-group">
+      <button class="submit-btn" bindtap="save" loading="{{saving}}" disabled="{{saving}}">
+        {{saving ? "保存中..." : "保存成员"}}
+      </button>
+      <button wx:if="{{isEdit}}" class="delete-btn" bindtap="openDeleteDialog" disabled="{{saving}}">删除成员</button>
     </view>
-  </view>
+  </mp-form-page>
+
+  <mp-actionSheet
+    show="{{showRelationSheet}}"
+    title="选择家庭关系"
+    actions="{{relationActionItems}}"
+    bindclose="closeRelationSheet"
+    bindactiontap="onRelationActionTap"
+  ></mp-actionSheet>
+
+  <mp-actionSheet
+    show="{{showGenderSheet}}"
+    title="选择性别"
+    actions="{{genderActionItems}}"
+    bindclose="closeGenderSheet"
+    bindactiontap="onGenderActionTap"
+  ></mp-actionSheet>
+
+  <mp-dialog
+    title="确认删除成员"
+    show="{{showDeleteDialog}}"
+    buttons="{{deleteDialogButtons}}"
+    bindclose="closeDeleteDialog"
+    bindbuttontap="onDeleteDialogButtonTap"
+  >
+    删除后无法恢复，这位成员关联的识别信息也会一起失效。
+  </mp-dialog>
 </view>

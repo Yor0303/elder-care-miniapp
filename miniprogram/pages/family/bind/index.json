@@ -1,3 +1,8 @@
 {
-  "navigationBarTitleText": "绑定老人"
+  "navigationBarTitleText": "绑定老人",
+  "usingComponents": {
+    "mp-actionSheet": "weui-miniprogram/actionsheet/actionsheet",
+    "mp-loading": "weui-miniprogram/loading/loading",
+    "app-icon": "/components/app-icon/app-icon"
+  }
 }
