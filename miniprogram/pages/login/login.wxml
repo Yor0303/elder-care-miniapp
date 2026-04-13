@@ -50,7 +50,13 @@
       </view>
     </view>
 
-    <button class="primary-btn" loading="{{loading}}" bindtap="handlePrimaryAction">
+    <button
+      class="primary-btn"
+      loading="{{loading}}"
+      disabled="{{loading}}"
+      open-type="getPhoneNumber"
+      bindgetphonenumber="handlePrimaryAction"
+    >
       {{copy.loginPrimary}}
     </button>
 

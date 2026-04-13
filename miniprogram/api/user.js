@@ -68,6 +68,14 @@ function loginAPI() {
   return callService("login");
 }
 
+function quickLoginWithPhoneAPI(role, phoneCode, cloudID) {
+  return callService("quickLoginWithPhone", {
+    role,
+    phoneCode,
+    cloudID
+  });
+}
+
 function getPersonListAPI() {
   return callService("getPersonList");
 }
@@ -366,6 +374,7 @@ function completeTodayTaskAPI(payload) {
 module.exports = {
   registerAPI,
   loginAPI,
+  quickLoginWithPhoneAPI,
   getElderListAPI,
   getElderBindInfoAPI,
   getBindingQRCodeAPI,

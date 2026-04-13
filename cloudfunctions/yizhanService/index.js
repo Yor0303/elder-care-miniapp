@@ -2767,6 +2767,188 @@ async function loginAccountV2() {
   };
 }
 
+function buildAuthResult(user, wxContext, fallbackRole = "elder") {
+  return {
+    success: true,
+    token: `cloud-${wxContext.OPENID}`,
+    userType: user.userType || fallbackRole || "elder",
+    userId: user._id,
+    boundElderId: user.boundElderId || "",
+    phone: user.phone || ""
+  };
+}
+
+function normalizePhoneInfo(raw = {}) {
+  const phoneNumber = raw.phoneNumber || raw.phone_number || "";
+  const purePhoneNumber = raw.purePhoneNumber || raw.pure_phone_number || "";
+  const countryCode = String(raw.countryCode || raw.country_code || "").trim();
+  const normalizedPhone = normalizePhone(purePhoneNumber || phoneNumber);
+
+  if (!normalizedPhone) {
+    return null;
+  }
+
+  return {
+    phoneNumber: phoneNumber || normalizedPhone,
+    purePhoneNumber: normalizedPhone,
+    countryCode
+  };
+}
+
+function extractPhoneInfo(payload) {
+  const candidates = [
+    payload,
+    payload && payload.phoneInfo,
+    payload && payload.phone_info,
+    payload && payload.phoneInfo && payload.phoneInfo.phoneInfo,
+    payload && payload.phone_info && payload.phone_info.phone_info,
+    payload && payload.result,
+    payload && payload.result && payload.result.phoneInfo,
+    payload && payload.result && payload.result.phone_info,
+    payload && payload.result && payload.result.phoneInfo && payload.result.phoneInfo.phoneInfo,
+    payload && payload.result && payload.result.phone_info && payload.result.phone_info.phone_info,
+    payload && payload.list && payload.list[0],
+    payload && payload.list && payload.list[0] && payload.list[0].phoneInfo,
+    payload && payload.list && payload.list[0] && payload.list[0].phone_info,
+    payload && payload.list && payload.list[0] && payload.list[0].data,
+    payload && payload.list && payload.list[0] && payload.list[0].data && payload.list[0].data.phoneInfo,
+    payload && payload.list && payload.list[0] && payload.list[0].data && payload.list[0].data.phone_info
+  ];
+
+  for (const item of candidates) {
+    const normalized = normalizePhoneInfo(item || {});
+    if (normalized) {
+      return normalized;
+    }
+  }
+
+  return null;
+}
+
+async function getPhoneInfoFromPhoneCredential(event = {}) {
+  if (event.phoneCode) {
+    let primaryError = null;
+
+    try {
+      const result = await cloud.openapi.phonenumber.getPhoneNumber({
+        code: event.phoneCode
+      });
+      const phoneInfo = extractPhoneInfo(result);
+      if (phoneInfo) {
+        return phoneInfo;
+      }
+      primaryError = new Error("openapi response does not contain phone info");
+    } catch (error) {
+      primaryError = error;
+    }
+
+    try {
+      const fallbackResult = await cloud.callOpenAPI({
+        api: "wxa/business/getuserphonenumber",
+        data: {
+          code: event.phoneCode
+        }
+      });
+      const phoneInfo = extractPhoneInfo(fallbackResult);
+      if (phoneInfo) {
+        return phoneInfo;
+      }
+    } catch (_) {
+      const detail =
+        (primaryError && (primaryError.errMsg || primaryError.message)) ||
+        "getPhoneNumber failed";
+      throw new Error(`鑾峰彇寰俊鎵嬫満鍙峰け璐ワ細${detail}`);
+    }
+  }
+
+  if (event.cloudID) {
+    const openData = await cloud.getOpenData({
+      list: [event.cloudID]
+    });
+    const phoneInfo = extractPhoneInfo(openData);
+    if (phoneInfo) {
+      return phoneInfo;
+    }
+  }
+
+  throw new Error("缂哄皯鍙敤鐨勬墜鏈哄彿鎺堟潈鍑瘉");
+}
+
+async function quickLoginWithPhoneV2(event = {}) {
+  await ensureCollections();
+
+  const wxContext = cloud.getWXContext();
+  const userCollection = db.collection(COLLECTION_NAMES.users);
+  const role = event.role;
+
+  if (role !== "elder" && role !== "family") {
+    throw new Error("娉ㄥ唽鏃惰閫夋嫨韬唤");
+  }
+
+  const phoneInfo = await getPhoneInfoFromPhoneCredential(event);
+  const phone = normalizePhone((phoneInfo && phoneInfo.purePhoneNumber) || "");
+  if (!phone || phone.length !== 11) {
+    throw new Error("鏈幏鍙栧埌鏈夋晥鐨勬墜鏈哄彿");
+  }
+
+  const existingUser = await userCollection.where({ openId: wxContext.OPENID }).get();
+  const now = new Date().toISOString();
+
+  if (existingUser.data.length) {
+    const user = existingUser.data[0];
+    if (user.userType && user.userType !== role) {
+      throw new Error(`褰撳墠寰俊鍙峰凡娉ㄥ唽涓?{user.userType === "elder" ? "鑰佷汉" : "瀹跺睘"}`);
+    }
+
+    await userCollection.doc(user._id).update({
+      data: {
+        phone,
+        updatedAt: now
+      }
+    });
+
+    return buildAuthResult(
+      {
+        ...user,
+        phone
+      },
+      wxContext,
+      role
+    );
+  }
+
+  const addResult = await userCollection.add({
+    data: {
+      openId: wxContext.OPENID,
+      name: "",
+      avatar: "",
+      age: null,
+      phone,
+      gender: "",
+      userType: role,
+      relation: role === "family" ? "瀹跺睘" : "鏈汉",
+      healthStatus: {
+        bloodPressure: "",
+        heartRate: null,
+        bloodSugar: ""
+      },
+      createdAt: now,
+      updatedAt: now
+    }
+  });
+
+  return buildAuthResult(
+    {
+      _id: addResult._id,
+      userType: role,
+      boundElderId: "",
+      phone
+    },
+    wxContext,
+    role
+  );
+}
+
 async function addMedication(event = {}) {
   if (!event.name) {
     throw new Error("药物名称不能为空");
@@ -3022,6 +3204,8 @@ exports.main = async (event) => {
         return await registerAccountV2(event);
       case "login":
         return await loginAccountV2();
+      case "quickLoginWithPhone":
+        return await quickLoginWithPhoneV2(event);
       case "getElderList":
         return await getElderList();
       case "getElderBindInfo":
