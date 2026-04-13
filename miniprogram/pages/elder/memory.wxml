@@ -21,6 +21,7 @@
 
   <view wx:if="{{loading}}" class="loading-container">
     <mp-loading type="dot-gray"></mp-loading>
+    <view class="loading-text">正在加载回忆</view>
   </view>
 
   <view wx:elif="{{errorMsg}}" class="error-container">
@@ -57,7 +58,7 @@
 
     <view wx:else class="flip-mode">
       <view class="flip-hint">
-        <text>{{queryPerson ? "正在浏览与 " + queryPerson + (queryRelation ? "（" + queryRelation + "）" : "") + " 有关的回忆" : "轻点卡片可以阅读完整故事"}}</text>
+        <text>{{flipHintText}}</text>
       </view>
 
       <view class="playback-bar">
@@ -68,21 +69,25 @@
 
           <view wx:if="{{isAutoPlaying}}" class="playback-group">
             <view class="playback-btn warn" bindtap="pauseAutoPlay">暂停</view>
-            <view class="playback-btn" bindtap="stopAutoPlay">结束</view>
+            <view class="playback-btn" bindtap="stopAutoPlay">结束放映</view>
           </view>
 
           <view wx:if="{{!isAutoPlaying && autoPlayPaused}}" class="playback-group">
-            <view class="playback-btn primary" bindtap="resumeAutoPlay">继续</view>
-            <view class="playback-btn" bindtap="stopAutoPlay">停止</view>
+            <view class="playback-btn primary" bindtap="resumeAutoPlay">继续放映</view>
+            <view class="playback-btn" bindtap="stopAutoPlay">结束放映</view>
           </view>
 
-          <view class="music-btn {{bgmEnabled ? 'active' : ''}}" bindtap="toggleBgm">
+          <view
+            class="music-btn {{bgmEnabled ? 'active' : ''}} {{!bgmReady ? 'disabled' : ''}}"
+            bindtap="toggleBgm"
+          >
             {{bgmEnabled ? "音乐已开" : "背景音乐"}}
           </view>
         </view>
 
-        <view wx:if="{{isAutoPlaying}}" class="playback-status">正在自动放映第 {{currentIndex + 1}} 页</view>
+        <view wx:if="{{isAutoPlaying}}" class="playback-status">正在自动播放第 {{currentIndex + 1}} 页</view>
         <view wx:elif="{{autoPlayPaused}}" class="playback-status">已暂停在第 {{currentIndex + 1}} 页</view>
+        <view wx:elif="{{!bgmReady}}" class="playback-status">未配置云端背景音乐，放映时将静音播放</view>
       </view>
 
       <view class="flip-shell">

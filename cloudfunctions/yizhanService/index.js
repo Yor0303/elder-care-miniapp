@@ -1,6 +1,7 @@
 const cloud = require("wx-server-sdk");
 const { iai } = require("tencentcloud-sdk-nodejs");
 const demoData = require("./demo-data.json");
+const appConfig = require("./config.json");
 
 const IaiClient = iai.v20200303.Client;
 
@@ -82,6 +83,19 @@ function getBindingRequestStatusText(status) {
 const FACE_MODEL_VERSION = "3.0";
 const DEFAULT_FACE_SCORE_THRESHOLD = 85;
 const DEMO_ELDER_ID = "elder_demo_001";
+
+function getMemoryPlaybackConfig() {
+  const memoryPlayback = (appConfig && appConfig.memoryPlayback) || {};
+  const bgmFileID = String(memoryPlayback.bgmFileID || "").trim();
+  const bgmName = String(memoryPlayback.bgmName || "回忆背景音乐").trim() || "回忆背景音乐";
+
+  return {
+    success: true,
+    enabled: Boolean(bgmFileID),
+    bgmFileID,
+    bgmName
+  };
+}
 
 function getFaceRecognitionConfig() {
   const secretId = process.env.TENCENTCLOUD_SECRET_ID || "";
@@ -3212,6 +3226,8 @@ exports.main = async (event) => {
         return await getElderBindInfo(event);
       case "getBindingQRCode":
         return await getBindingQRCodeSafe(event);
+      case "getMemoryPlaybackConfig":
+        return getMemoryPlaybackConfig();
       case "findElderByPhone":
         return await findElderByPhone(event);
       case "bindElder":

@@ -1,4 +1,9 @@
-const { getMemoriesAPI, getPersonListAPI, getElderInfoAPI } = require("../../api/user");
+const {
+  getMemoriesAPI,
+  getPersonListAPI,
+  getElderInfoAPI,
+  getMemoryPlaybackConfigAPI
+} = require("../../api/user");
 
 const TYPE_LABELS = {
   family: "家庭",
@@ -46,8 +51,8 @@ const TYPE_ORDER = [
   "video"
 ];
 
-const BGM_SRC = "/assets/audio/memory-bgm.mp3";
 const AUTO_PLAY_INTERVAL = 3200;
+const DEFAULT_BGM_NAME = "回忆背景音乐";
 
 function getTypeLabel(type) {
   return TYPE_LABELS[type] || "其他";
@@ -101,7 +106,13 @@ function resolveMemoryRelation(item, relationMap, elderName) {
   const person = normalizeName(item && item.person);
   const personRole = normalizeName(item && item.personRole);
 
-  if (personRole === "self" || person === "本人" || person === "自己" || person === "我" || (elderName && person === elderName)) {
+  if (
+    personRole === "self" ||
+    person === "本人" ||
+    person === "自己" ||
+    person === "我" ||
+    (elderName && person === elderName)
+  ) {
     return "本人";
   }
 
@@ -110,6 +121,18 @@ function resolveMemoryRelation(item, relationMap, elderName) {
   }
 
   return relationMap[person] || (personRole === "family" ? "家人" : "");
+}
+
+function buildFlipHint(queryPerson, queryRelation) {
+  if (!queryPerson) {
+    return "轻点卡片可以阅读完整故事";
+  }
+
+  if (queryRelation) {
+    return `正在浏览与 ${queryPerson}（${queryRelation}）有关的回忆`;
+  }
+
+  return `正在浏览与 ${queryPerson} 有关的回忆`;
 }
 
 Page({
@@ -129,6 +152,7 @@ Page({
     errorMsg: "",
     queryPerson: "",
     queryRelation: "",
+    flipHintText: "轻点卡片可以阅读完整故事",
     viewMode: "timeline",
     currentIndex: 0,
     flipMemory: null,
@@ -138,7 +162,9 @@ Page({
     flipDirection: "next",
     isAutoPlaying: false,
     autoPlayPaused: false,
-    bgmEnabled: false
+    bgmEnabled: false,
+    bgmReady: false,
+    bgmName: DEFAULT_BGM_NAME
   },
 
   onLoad(options = {}) {
@@ -146,19 +172,25 @@ Page({
     this.bgmAudio = wx.createInnerAudioContext();
     this.bgmAudio.loop = true;
     this.bgmAudio.obeyMuteSwitch = false;
-    this.bgmAudio.src = BGM_SRC;
     this.bgmAudio.onError(() => {
       if (!this.data.bgmEnabled) return;
-      this.setData({ bgmEnabled: false });
+      this.setData({
+        bgmEnabled: false,
+        bgmReady: false
+      });
       wx.showToast({
         title: "背景音乐暂时不可用",
         icon: "none"
       });
     });
 
+    const queryPerson = safeDecodeQueryValue(options.person);
     this.setData({
-      queryPerson: safeDecodeQueryValue(options.person)
+      queryPerson,
+      flipHintText: buildFlipHint(queryPerson, "")
     });
+
+    this.loadPlaybackConfig();
     this.loadMemories();
   },
 
@@ -181,6 +213,50 @@ Page({
       return 0;
     }
     return Math.max(0, Math.min(Number(index) || 0, list.length - 1));
+  },
+
+  async loadPlaybackConfig() {
+    try {
+      const config = await getMemoryPlaybackConfigAPI();
+      const bgmFileID = String((config && config.bgmFileID) || "").trim();
+      const bgmName = String((config && config.bgmName) || DEFAULT_BGM_NAME).trim() || DEFAULT_BGM_NAME;
+
+      this.bgmFileID = bgmFileID;
+
+      if (!bgmFileID) {
+        this.setData({
+          bgmReady: false,
+          bgmName
+        });
+        return;
+      }
+
+      const tempRes = await wx.cloud.getTempFileURL({
+        fileList: [bgmFileID]
+      });
+      const first = (tempRes.fileList || [])[0] || {};
+      const tempURL = first.tempFileURL || first.tempFileUrl || "";
+
+      if (!tempURL) {
+        this.setData({
+          bgmReady: false,
+          bgmName
+        });
+        return;
+      }
+
+      this.bgmAudio.src = tempURL;
+      this.setData({
+        bgmReady: true,
+        bgmName
+      });
+    } catch (error) {
+      console.error("加载回忆背景音乐配置失败:", error);
+      this.setData({
+        bgmReady: false,
+        bgmName: DEFAULT_BGM_NAME
+      });
+    }
   },
 
   applyFilters(memories, decade, type) {
@@ -242,11 +318,13 @@ Page({
         getPersonListAPI(),
         getElderInfoAPI()
       ]);
+
       const memories = Array.isArray(memoriesRaw)
         ? memoriesRaw
         : memoriesRaw && Array.isArray(memoriesRaw.data)
           ? memoriesRaw.data
           : [];
+
       const elderName = normalizeName(elder && elder.name);
       const relationMap = buildPersonRelationMap(persons);
 
@@ -261,7 +339,7 @@ Page({
           img: item.img || "/assets/images/family.jpg",
           relationLabel: resolveMemoryRelation(item, relationMap, elderName),
           title: item.title || "未命名回忆",
-          story: item.story || "暂无故事内容",
+          story: item.story || "暂时还没有故事内容",
           person: item.person || "未标注人物"
         }))
         .sort((a, b) => normalizeYear(b.year) - normalizeYear(a.year));
@@ -269,15 +347,18 @@ Page({
       const decadeOptions = [...new Set(normalized.map((item) => item.decade).filter(Boolean))].sort(
         (a, b) => Number(b) - Number(a)
       );
+
       const typeOptions = [...new Set(normalized.map((item) => item.type).filter(Boolean))]
         .sort((a, b) => {
           const aIndex = TYPE_ORDER.indexOf(a);
           const bIndex = TYPE_ORDER.indexOf(b);
           const normalizedA = aIndex === -1 ? TYPE_ORDER.length : aIndex;
           const normalizedB = bIndex === -1 ? TYPE_ORDER.length : bIndex;
+
           if (normalizedA !== normalizedB) {
             return normalizedA - normalizedB;
           }
+
           return getTypeLabel(a).localeCompare(getTypeLabel(b), "zh-CN");
         })
         .map((type) => ({
@@ -285,6 +366,9 @@ Page({
           label: getTypeLabel(type)
         }));
 
+      const queryRelation = this.data.queryPerson
+        ? resolveMemoryRelation({ person: this.data.queryPerson }, relationMap, elderName)
+        : "";
       const list = this.applyFilters(normalized, this.data.activeDecade, this.data.activeType);
       const currentIndex = this.getSafeIndex(list, this.data.currentIndex);
 
@@ -299,16 +383,15 @@ Page({
         isFlipping: false,
         isSettling: false,
         activeTypeLabel: getTypeLabel(this.data.activeType || ""),
-        queryRelation: this.data.queryPerson
-          ? resolveMemoryRelation({ person: this.data.queryPerson }, relationMap, elderName)
-          : "",
+        queryRelation,
+        flipHintText: buildFlipHint(this.data.queryPerson, queryRelation),
         loading: false
       });
     } catch (error) {
       console.error("加载回忆数据失败:", error);
       this.setData({
         loading: false,
-        errorMsg: (error && error.message) || "加载失败，请重试"
+        errorMsg: (error && error.message) || "加载失败，请稍后再试"
       });
 
       wx.showToast({
@@ -491,6 +574,14 @@ Page({
   },
 
   toggleBgm() {
+    if (!this.data.bgmReady) {
+      wx.showToast({
+        title: "暂未配置背景音乐",
+        icon: "none"
+      });
+      return;
+    }
+
     const nextEnabled = !this.data.bgmEnabled;
     this.setData({ bgmEnabled: nextEnabled });
 
@@ -501,16 +592,18 @@ Page({
 
     if (this.data.isAutoPlaying) {
       this.playBgmIfNeeded();
-    } else {
-      wx.showToast({
-        title: "开始放映时会自动播放背景音乐",
-        icon: "none"
-      });
+      return;
     }
+
+    wx.showToast({
+      title: "开始放映时会自动播放背景音乐",
+      icon: "none"
+    });
   },
 
   playBgmIfNeeded() {
-    if (!this.data.bgmEnabled || !this.bgmAudio) return;
+    if (!this.data.bgmEnabled || !this.data.bgmReady || !this.bgmAudio) return;
+
     try {
       this.bgmAudio.play();
     } catch (_) {}
@@ -518,6 +611,7 @@ Page({
 
   pauseBgm() {
     if (!this.bgmAudio) return;
+
     try {
       this.bgmAudio.pause();
     } catch (_) {}
@@ -525,6 +619,7 @@ Page({
 
   stopBgm() {
     if (!this.bgmAudio) return;
+
     try {
       this.bgmAudio.stop();
     } catch (_) {}

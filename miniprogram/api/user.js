@@ -92,6 +92,10 @@ function getBindingQRCodeAPI(forceRefresh = false) {
   return callService("getBindingQRCode", { forceRefresh });
 }
 
+function getMemoryPlaybackConfigAPI() {
+  return callService("getMemoryPlaybackConfig");
+}
+
 function importDemoDataAPI() {
   return callService("importDemoData", { confirm: "IMPORT_DEMO_DATA" });
 }
@@ -378,6 +382,7 @@ module.exports = {
   getElderListAPI,
   getElderBindInfoAPI,
   getBindingQRCodeAPI,
+  getMemoryPlaybackConfigAPI,
   importDemoDataAPI,
   bindCurrentUserToDemoElderAPI,
   findElderByPhoneAPI,
