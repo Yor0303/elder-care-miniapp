@@ -305,14 +305,14 @@ Page({
   },
 
   handleOpenMemories() {
-    const index = this.data.currentPage - 1;
-    const member = this.data.familyMembers[index];
-    if (!member || !member.name) {
+    const member = this.data.currentMember || this.data.familyMembers[this.data.currentPage - 1];
+    const personName = String(member && member.name ? member.name : "").trim();
+    if (!personName) {
       return;
     }
 
     wx.navigateTo({
-      url: `/pages/elder/memory?person=${encodeURIComponent(member.name)}`
+      url: `/pages/elder/memory?person=${encodeURIComponent(personName)}`
     });
   }
 });

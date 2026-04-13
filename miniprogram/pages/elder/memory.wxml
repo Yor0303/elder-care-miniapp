@@ -46,7 +46,7 @@
               <view class="memory-title">{{item.title}}</view>
               <view class="memory-meta">
                 <text class="memory-tag">{{item.typeLabel}}</text>
-                <text class="memory-person">{{item.person}}</text>
+                <text class="memory-person">{{item.person}}{{item.relationLabel ? " · " + item.relationLabel : ""}}</text>
               </view>
               <view class="memory-story">{{item.story}}</view>
             </view>
@@ -57,7 +57,7 @@
 
     <view wx:else class="flip-mode">
       <view class="flip-hint">
-        <text>{{queryPerson ? "正在浏览与 " + queryPerson + " 有关的回忆" : "轻点卡片可以阅读完整故事"}}</text>
+        <text>{{queryPerson ? "正在浏览与 " + queryPerson + (queryRelation ? "（" + queryRelation + "）" : "") + " 有关的回忆" : "轻点卡片可以阅读完整故事"}}</text>
       </view>
 
       <view class="playback-bar">
@@ -99,7 +99,7 @@
             <view class="flip-title">{{flipMemory.title}}</view>
             <view class="flip-meta">
               <text class="flip-tag">{{flipMemory.typeLabel}}</text>
-              <text class="flip-person">{{flipMemory.person}}</text>
+              <text class="flip-person">{{flipMemory.person}}{{flipMemory.relationLabel ? " · " + flipMemory.relationLabel : ""}}</text>
             </view>
             <view class="flip-story">{{flipMemory.story}}</view>
           </view>
@@ -118,7 +118,7 @@
             <view class="flip-title">{{incomingMemory.title}}</view>
             <view class="flip-meta">
               <text class="flip-tag">{{incomingMemory.typeLabel}}</text>
-              <text class="flip-person">{{incomingMemory.person}}</text>
+              <text class="flip-person">{{incomingMemory.person}}{{incomingMemory.relationLabel ? " · " + incomingMemory.relationLabel : ""}}</text>
             </view>
             <view class="flip-story">{{incomingMemory.story}}</view>
           </view>
@@ -197,7 +197,7 @@
     <image class="story-image" src="{{currentMemory.img}}" mode="aspectFill" />
     <view class="story-info">
       <text>{{currentMemory.year}}</text>
-      <text>{{currentMemory.person}}</text>
+      <text>{{currentMemory.person}}{{currentMemory.relationLabel ? " · " + currentMemory.relationLabel : ""}}</text>
       <text>{{currentMemory.typeLabel}}</text>
     </view>
     <view class="story-content">{{currentMemory.story}}</view>

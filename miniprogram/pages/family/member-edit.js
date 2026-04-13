@@ -6,6 +6,15 @@ const {
   deletePersonAPI
 } = require("../../api/user");
 
+function getActionValue(e) {
+  return (
+    (e && e.detail && e.detail.value) ||
+    (e && e.detail && e.detail.item && e.detail.item.value) ||
+    (e && e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.value) ||
+    ""
+  );
+}
+
 Page({
   data: {
     loading: false,
@@ -171,8 +180,9 @@ Page({
   },
 
   onRelationActionTap(e) {
+    const relation = getActionValue(e);
     this.setData({
-      relation: e.detail.value || "",
+      relation,
       showRelationSheet: false
     });
   },
@@ -186,8 +196,9 @@ Page({
   },
 
   onGenderActionTap(e) {
+    const gender = getActionValue(e);
     this.setData({
-      gender: e.detail.value || "",
+      gender,
       showGenderSheet: false
     });
   },

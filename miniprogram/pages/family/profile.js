@@ -1,6 +1,15 @@
 // pages/family/profile.js
 const { getElderInfoAPI, updateElderInfoAPI } = require("../../api/user");
 
+function getActionValue(e) {
+  return (
+    (e && e.detail && e.detail.value) ||
+    (e && e.detail && e.detail.item && e.detail.item.value) ||
+    (e && e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.value) ||
+    ""
+  );
+}
+
 Page({
   data: {
     loading: true,
@@ -117,7 +126,7 @@ Page({
   },
 
   onGenderActionTap(e) {
-    const gender = e.detail.value || "";
+    const gender = getActionValue(e);
     this.setData({
       gender,
       genderIndex: this.getGenderIndex(gender),

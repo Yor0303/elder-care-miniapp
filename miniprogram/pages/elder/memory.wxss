@@ -145,8 +145,9 @@
 
 .memory-meta {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
   margin-top: 12rpx;
   font-size: 24rpx;
   color: var(--yz-text-secondary);
@@ -163,7 +164,10 @@
 }
 
 .memory-person {
-  margin-left: 20rpx;
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+  word-break: break-word;
 }
 
 .memory-story {
@@ -381,6 +385,7 @@
 .flip-meta {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 16rpx;
   margin-top: 18rpx;
   font-size: 24rpx;

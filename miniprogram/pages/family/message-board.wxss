@@ -112,7 +112,7 @@
 .draft-desc,
 .message-time {
   font-size: 24rpx;
-  color: var(--yz-text-tertiary);
+  color: var(--yz-text-secondary);
 }
 
 .note-input {
@@ -320,14 +320,16 @@
 
 .message-desc {
   font-size: 24rpx;
-  color: var(--yz-text-tertiary);
+  color: var(--yz-text-secondary);
 }
 
 .message-note {
   margin-top: 14rpx;
   font-size: 28rpx;
   line-height: 1.65;
-  color: var(--yz-info);
+  color: var(--yz-text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .message-schedule {

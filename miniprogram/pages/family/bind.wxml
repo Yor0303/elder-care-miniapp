@@ -57,7 +57,7 @@
 
   <view wx:if="{{mode === 'invite'}}" class="panel-card">
     <view class="panel-title">通过邀请链接绑定</view>
-    <view class="panel-desc">老人可在老人端点击“邀请家人”，通过微信将邀请发送给家属。</view>
+    <view class="panel-desc">老人可在老人端点击“邀请家人”，通过分享将邀请发送给家属。</view>
 
     <view wx:if="{{loading && requestSource === 'share'}}" class="state-card">正在加载邀请信息...</view>
     <view wx:elif="{{!loading && !sharedElder}}" class="state-card">

@@ -35,6 +35,12 @@ page {
   padding: 40rpx 0 20rpx;
 }
 
+.brand-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .brand-logo {
   width: 420rpx;
   height: 420rpx;
@@ -83,7 +89,7 @@ page {
 
 .role-tip {
   font-size: 22rpx;
-  color: #07c060;
+  color: var(--yz-brand-primary);
 }
 
 .role-switch {
@@ -157,8 +163,8 @@ page {
 
 .primary-btn {
   color: #ffffff;
-  background: #07c060;
-  box-shadow: 0 14rpx 28rpx rgba(7, 192, 96, 0.22);
+  background: var(--yz-gradient-primary);
+  box-shadow: 0 14rpx 28rpx rgba(111, 143, 200, 0.22);
 }
 
 .helper-text {
@@ -195,8 +201,8 @@ page {
 }
 
 .agreement-check.checked {
-  border-color: #07c060;
-  background: #07c060;
+  border-color: var(--yz-brand-primary);
+  background: var(--yz-brand-primary);
 }
 
 .agreement-copy {
@@ -204,7 +210,7 @@ page {
 }
 
 .agreement-link {
-  color: #07c060;
+  color: var(--yz-brand-primary);
 }
 
 .footer-links {

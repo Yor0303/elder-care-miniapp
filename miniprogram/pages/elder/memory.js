@@ -1,4 +1,4 @@
-const { getMemoriesAPI } = require("../../api/user");
+const { getMemoriesAPI, getPersonListAPI, getElderInfoAPI } = require("../../api/user");
 
 const TYPE_LABELS = {
   family: "家庭",
@@ -71,6 +71,47 @@ function normalizeDecade(decade, year) {
   return String(Math.floor(numericYear / 10) * 10);
 }
 
+function safeDecodeQueryValue(value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+
+  try {
+    return decodeURIComponent(text).trim();
+  } catch (_) {
+    return text;
+  }
+}
+
+function normalizeName(value) {
+  return String(value || "").trim();
+}
+
+function buildPersonRelationMap(persons = []) {
+  return (Array.isArray(persons) ? persons : []).reduce((map, item) => {
+    const name = normalizeName(item && item.name);
+    const relation = normalizeName(item && item.relation);
+    if (name) {
+      map[name] = relation || "家人";
+    }
+    return map;
+  }, {});
+}
+
+function resolveMemoryRelation(item, relationMap, elderName) {
+  const person = normalizeName(item && item.person);
+  const personRole = normalizeName(item && item.personRole);
+
+  if (personRole === "self" || person === "本人" || person === "自己" || person === "我" || (elderName && person === elderName)) {
+    return "本人";
+  }
+
+  if (!person) {
+    return "";
+  }
+
+  return relationMap[person] || (personRole === "family" ? "家人" : "");
+}
+
 Page({
   data: {
     showFilter: false,
@@ -87,6 +128,7 @@ Page({
     loading: false,
     errorMsg: "",
     queryPerson: "",
+    queryRelation: "",
     viewMode: "timeline",
     currentIndex: 0,
     flipMemory: null,
@@ -115,7 +157,7 @@ Page({
     });
 
     this.setData({
-      queryPerson: options.person || ""
+      queryPerson: safeDecodeQueryValue(options.person)
     });
     this.loadMemories();
   },
@@ -195,12 +237,18 @@ Page({
         queryParams.person = this.data.queryPerson;
       }
 
-      const memoriesRaw = await getMemoriesAPI(queryParams);
+      const [memoriesRaw, persons, elder] = await Promise.all([
+        getMemoriesAPI(queryParams),
+        getPersonListAPI(),
+        getElderInfoAPI()
+      ]);
       const memories = Array.isArray(memoriesRaw)
         ? memoriesRaw
         : memoriesRaw && Array.isArray(memoriesRaw.data)
           ? memoriesRaw.data
           : [];
+      const elderName = normalizeName(elder && elder.name);
+      const relationMap = buildPersonRelationMap(persons);
 
       const normalized = memories
         .map((item) => ({
@@ -211,6 +259,7 @@ Page({
           type: item.type || "daily",
           typeLabel: getTypeLabel(item.type || "daily"),
           img: item.img || "/assets/images/family.jpg",
+          relationLabel: resolveMemoryRelation(item, relationMap, elderName),
           title: item.title || "未命名回忆",
           story: item.story || "暂无故事内容",
           person: item.person || "未标注人物"
@@ -250,6 +299,9 @@ Page({
         isFlipping: false,
         isSettling: false,
         activeTypeLabel: getTypeLabel(this.data.activeType || ""),
+        queryRelation: this.data.queryPerson
+          ? resolveMemoryRelation({ person: this.data.queryPerson }, relationMap, elderName)
+          : "",
         loading: false
       });
     } catch (error) {

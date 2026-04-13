@@ -30,12 +30,14 @@
           <input class="form-input-control" type="number" maxlength="11" placeholder="用于家属查找绑定" value="{{phone}}" bindinput="onPhoneInput" />
         </mp-cell>
 
-        <view class="cell-trigger" bindtap="openGenderSheet">
-          <mp-cell title="性别" link>
-            <view slot="footer" class="picker-text {{gender ? '' : 'picker-placeholder'}}">
+        <view class="cell-trigger picker-cell" bindtap="openGenderSheet">
+          <view class="picker-cell-label">性别</view>
+          <view class="picker-cell-value-wrap">
+            <view class="picker-text {{gender ? '' : 'picker-placeholder'}}">
               {{gender || "请选择性别"}}
             </view>
-          </mp-cell>
+            <view class="picker-cell-arrow">></view>
+          </view>
         </view>
 
         <mp-cell title="年龄" has-footer="{{false}}">

@@ -6,11 +6,13 @@
   </view>
 
   <view class="brand-zone">
-    <image
-      class="brand-logo"
-      src="/assets/images/login-logo.png"
-      mode="aspectFit"
-    ></image>
+    <view class="brand-mark">
+      <image
+        class="brand-logo"
+        src="https://ftp.mioz.cn/test/2026/04/13/1776081115.JPG"
+        mode="aspectFit"
+      ></image>
+    </view>
     <view class="brand-title">{{copy.welcomeTitle}}</view>
     <view class="brand-subtitle">
       {{inviteElderId ? copy.subtitleInvite : copy.subtitleDefault}}
@@ -49,7 +51,7 @@
     </view>
 
     <button class="primary-btn" loading="{{loading}}" bindtap="handlePrimaryAction">
-      {{copy.loginByWechat}}
+      {{copy.loginPrimary}}
     </button>
 
     <view class="helper-text">

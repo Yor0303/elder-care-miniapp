@@ -128,28 +128,34 @@
 
 .memo-tabs {
   display: flex;
-  margin: 18rpx 0 6rpx;
+  gap: 12rpx;
+  margin: 18rpx 0 12rpx;
+  padding: 8rpx;
+  border-radius: 999rpx;
+  background: var(--yz-bg-card-soft);
 }
 
 .memo-tab {
-  min-width: 116rpx;
-  height: 56rpx;
-  line-height: 56rpx;
+  flex: 1;
+  min-width: 0;
+  height: 64rpx;
+  line-height: 64rpx;
   text-align: center;
   border-radius: 999rpx;
-  background: var(--yz-bg-card-soft);
+  background: transparent;
   color: var(--yz-text-secondary);
   font-size: 24rpx;
   font-weight: 600;
 }
 
 .memo-tab + .memo-tab {
-  margin-left: 12rpx;
+  margin-left: 0;
 }
 
 .memo-tab-active {
-  background: var(--yz-info-soft);
+  background: var(--yz-bg-card);
   color: var(--yz-info);
+  box-shadow: 0 6rpx 14rpx rgba(124, 152, 200, 0.12);
 }
 
 .binding-message-card,
@@ -224,6 +230,16 @@
 .message-note,
 .reminder-note {
   margin-top: 8rpx;
+}
+
+.message-meta {
+  color: var(--yz-text-secondary);
+}
+
+.message-note {
+  color: var(--yz-text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .reminder-check {

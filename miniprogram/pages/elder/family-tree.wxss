@@ -150,9 +150,24 @@
 
 .center-avatar-shell,
 .orbit-avatar-shell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  overflow: hidden;
   border-radius: 50%;
   padding: 6rpx;
   background: rgba(116, 165, 255, 0.22);
+}
+
+.center-avatar-shell {
+  width: 88rpx;
+  height: 88rpx;
+}
+
+.orbit-avatar-shell {
+  width: 86rpx;
+  height: 86rpx;
 }
 
 .center-avatar,
@@ -163,6 +178,8 @@
 
 .center-avatar,
 .orbit-avatar {
+  display: block;
+  flex-shrink: 0;
   border-radius: 50%;
 }
 

@@ -82,6 +82,25 @@ function authorizeAsync(scope) {
   });
 }
 
+function showModalAsync(options) {
+  return new Promise((resolve) => {
+    wx.showModal({
+      ...options,
+      success: resolve,
+      fail: () => resolve({ confirm: false, cancel: true })
+    });
+  });
+}
+
+function openSettingAsync() {
+  return new Promise((resolve, reject) => {
+    wx.openSetting({
+      success: resolve,
+      fail: reject
+    });
+  });
+}
+
 Page({
   data: {
     recording: false,
@@ -267,7 +286,27 @@ Page({
       const hasAuth = !!(setting.authSetting && setting.authSetting["scope.record"]);
 
       if (!hasAuth) {
-        await authorizeAsync("scope.record");
+        try {
+          await authorizeAsync("scope.record");
+        } catch (_) {
+          const modalRes = await showModalAsync({
+            title: "需要录音权限",
+            content: "录语音留言需要麦克风权限，请在设置中开启录音权限。",
+            confirmText: "去设置",
+            cancelText: "取消"
+          });
+
+          if (!modalRes.confirm) {
+            return;
+          }
+
+          const settingRes = await openSettingAsync();
+          const enabled = !!(settingRes.authSetting && settingRes.authSetting["scope.record"]);
+          if (!enabled) {
+            wx.showToast({ title: "未开启录音权限", icon: "none" });
+            return;
+          }
+        }
       }
 
       this.recorderManager.start({
@@ -281,7 +320,12 @@ Page({
       wx.showModal({
         title: "需要录音权限",
         content: "请先开启录音权限，才能给老人发送语音留言。",
-        showCancel: false
+        confirmText: "去设置",
+        success: (res) => {
+          if (res.confirm) {
+            wx.openSetting();
+          }
+        }
       });
     }
   },
