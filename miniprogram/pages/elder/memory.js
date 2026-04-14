@@ -171,7 +171,8 @@ Page({
     autoPlayPaused: false,
     bgmEnabled: false,
     bgmReady: false,
-    bgmName: DEFAULT_BGM_NAME
+    bgmName: DEFAULT_BGM_NAME,
+    bgmStatusText: ""
   },
 
   onLoad(options = {}) {
@@ -183,7 +184,8 @@ Page({
       if (!this.data.bgmEnabled) return;
       this.setData({
         bgmEnabled: false,
-        bgmReady: false
+        bgmReady: false,
+        bgmStatusText: "背景音乐播放失败"
       });
       wx.showToast({
         title: "背景音乐暂时不可用",
@@ -199,9 +201,7 @@ Page({
       flipHintText: buildFlipHint(queryPerson, "")
     });
 
-    if (!previewMode) {
-      this.loadPlaybackConfig();
-    }
+    this.loadPlaybackConfig();
     this.loadMemories();
   },
 
@@ -231,42 +231,78 @@ Page({
       const config = await getMemoryPlaybackConfigAPI();
       const bgmFileID = String((config && config.bgmFileID) || "").trim();
       const bgmName = String((config && config.bgmName) || DEFAULT_BGM_NAME).trim() || DEFAULT_BGM_NAME;
+      await this.prepareBgm(bgmFileID, bgmName);
+    } catch (error) {
+      console.error("加载回忆背景音乐配置失败:", error);
+      await this.prepareBgm("", DEFAULT_BGM_NAME);
+    }
+  },
 
-      this.bgmFileID = bgmFileID;
+  async prepareBgm(fileID, bgmName = DEFAULT_BGM_NAME) {
+    const normalizedFileID = String(fileID || "").trim();
+    const normalizedName = String(bgmName || DEFAULT_BGM_NAME).trim() || DEFAULT_BGM_NAME;
 
-      if (!bgmFileID) {
-        this.setData({
-          bgmReady: false,
-          bgmName
-        });
-        return;
-      }
+    this.bgmFileID = normalizedFileID;
 
+    if (!normalizedFileID) {
+      this.setData({
+        bgmReady: false,
+        bgmName: normalizedName,
+        bgmStatusText: "未找到背景音乐文件ID"
+      });
+      return false;
+    }
+
+    try {
       const tempRes = await wx.cloud.getTempFileURL({
-        fileList: [bgmFileID]
+        fileList: [normalizedFileID]
       });
       const first = (tempRes.fileList || [])[0] || {};
       const tempURL = first.tempFileURL || first.tempFileUrl || "";
 
-      if (!tempURL) {
+      if (tempURL) {
+        this.bgmAudio.src = tempURL;
         this.setData({
-          bgmReady: false,
-          bgmName
+          bgmReady: true,
+          bgmName: normalizedName,
+          bgmStatusText: ""
         });
-        return;
+        return true;
       }
 
-      this.bgmAudio.src = tempURL;
+      const downloadRes = await wx.cloud.downloadFile({
+        fileID: normalizedFileID
+      });
+      const tempFilePath = downloadRes.tempFilePath || "";
+      if (!tempFilePath) {
+        console.error("背景音乐未获取到临时地址:", tempRes);
+        this.setData({
+          bgmReady: false,
+          bgmName: normalizedName,
+          bgmStatusText: "未获取到云端音频临时地址"
+        });
+        return false;
+      }
+
+      this.bgmAudio.src = tempFilePath;
       this.setData({
         bgmReady: true,
-        bgmName
+        bgmName: normalizedName,
+        bgmStatusText: ""
       });
+      return true;
     } catch (error) {
-      console.error("加载回忆背景音乐配置失败:", error);
+      console.error("准备背景音乐失败:", error);
+      const detail =
+        String((error && (error.errMsg || error.message)) || "")
+          .replace(/^cloud\.[^:]+:\s*/i, "")
+          .trim() || "云端音频加载失败";
       this.setData({
         bgmReady: false,
-        bgmName: DEFAULT_BGM_NAME
+        bgmName: normalizedName,
+        bgmStatusText: detail
       });
+      return false;
     }
   },
 
@@ -647,13 +683,19 @@ Page({
     }
   },
 
-  toggleBgm() {
+  async toggleBgm() {
     if (!this.data.bgmReady) {
-      wx.showToast({
-        title: "暂未配置背景音乐",
-        icon: "none"
-      });
-      return;
+      const prepared = await this.prepareBgm(
+        this.bgmFileID,
+        this.data.bgmName || DEFAULT_BGM_NAME
+      );
+      if (!prepared) {
+        wx.showToast({
+          title: this.data.bgmStatusText || "暂未配置背景音乐",
+          icon: "none"
+        });
+        return;
+      }
     }
 
     const nextEnabled = !this.data.bgmEnabled;

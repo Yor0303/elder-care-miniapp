@@ -87,6 +87,7 @@
 
         <view wx:if="{{isAutoPlaying}}" class="playback-status">正在自动播放第 {{currentIndex + 1}} 页</view>
         <view wx:elif="{{autoPlayPaused}}" class="playback-status">已暂停在第 {{currentIndex + 1}} 页</view>
+        <view wx:elif="{{!bgmReady && bgmStatusText}}" class="playback-status">{{bgmStatusText}}</view>
         <view wx:elif="{{!bgmReady}}" class="playback-status">未配置云端背景音乐，放映时将静音播放</view>
       </view>
 
