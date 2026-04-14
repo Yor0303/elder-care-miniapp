@@ -3,6 +3,10 @@ const {
   approveBindingRequestAPI,
   rejectBindingRequestAPI
 } = require("../../api/user");
+const {
+  isPreviewMode,
+  previewBindingRequests
+} = require("../../utils/elder-preview");
 
 function formatDateTime(value) {
   if (!value) return "";
@@ -17,6 +21,7 @@ function formatDateTime(value) {
 
 Page({
   data: {
+    previewMode: false,
     loading: false,
     requests: [],
     pendingRequests: [],
@@ -24,7 +29,8 @@ Page({
     historyRequests: []
   },
 
-  onLoad() {
+  onLoad(options = {}) {
+    this.setData({ previewMode: isPreviewMode(options) });
     this.loadRequests();
   },
 
@@ -35,6 +41,18 @@ Page({
   async loadRequests() {
     this.setData({ loading: true });
     try {
+      if (this.data.previewMode) {
+        const list = previewBindingRequests.map((item) => ({ ...item }));
+        this.setData({
+          requests: list,
+          pendingRequests: list.filter((item) => item.status === "pending"),
+          approvedRequests: list.filter((item) => item.status === "approved"),
+          historyRequests: list.filter((item) => item.status !== "pending" && item.status !== "approved"),
+          loading: false
+        });
+        return;
+      }
+
       const requests = await getBindingRequestsAPI();
       const list = Array.isArray(requests)
         ? requests.map((item) => ({
@@ -65,6 +83,13 @@ Page({
   async approveRequest(e) {
     const { id } = e.currentTarget.dataset;
     if (!id) return;
+    if (this.data.previewMode) {
+      wx.showToast({
+        title: "体验模式仅供浏览，登录后可处理绑定申请",
+        icon: "none"
+      });
+      return;
+    }
 
     try {
       wx.showLoading({ title: "处理中" });
@@ -84,6 +109,13 @@ Page({
   async rejectRequest(e) {
     const { id } = e.currentTarget.dataset;
     if (!id) return;
+    if (this.data.previewMode) {
+      wx.showToast({
+        title: "体验模式仅供浏览，登录后可处理绑定申请",
+        icon: "none"
+      });
+      return;
+    }
 
     try {
       wx.showLoading({ title: "处理中" });

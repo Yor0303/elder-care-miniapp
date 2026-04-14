@@ -6,6 +6,7 @@ rules/
 
 # 本地环境变量（含密钥）
 .env.local
+cloudfunctions/yizhanService/config.local.json
 
 # 微信开发者工具私有配置
 project.private.config.json

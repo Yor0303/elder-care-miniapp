@@ -1,4 +1,9 @@
 const { addVoiceMessageAPI, getVoiceMessagesAPI } = require("../../api/user");
+const {
+  isPreviewMode,
+  previewMessageBoardMessages,
+  promptPreviewLogin
+} = require("../../utils/family-preview");
 
 function formatDateTime(value) {
   if (!value) return "";
@@ -103,6 +108,7 @@ function openSettingAsync() {
 
 Page({
   data: {
+    previewMode: false,
     recording: false,
     recordSeconds: 0,
     tempVoicePath: "",
@@ -136,7 +142,10 @@ Page({
     ]
   },
 
-  onLoad() {
+  onLoad(options = {}) {
+    this.setData({
+      previewMode: isPreviewMode(options)
+    });
     this.recorderManager = wx.getRecorderManager();
     this.innerAudioContext = wx.createInnerAudioContext();
     this.recordTimer = null;
@@ -231,6 +240,21 @@ Page({
     this.setData({ loading: true });
 
     try {
+      if (this.data.previewMode) {
+        this.setData({
+          loading: false,
+          messages: previewMessageBoardMessages.map((item) => ({
+            ...item,
+            note: item.note || "",
+            displayTime: formatDateTime(item.createdAt),
+            durationText: "",
+            typeLabel: item.messageType === "reminder" ? "提醒" : "文字",
+            scheduleText: buildScheduleText(item)
+          }))
+        });
+        return;
+      }
+
       const res = await getVoiceMessagesAPI();
       const list = Array.isArray(res && res.list) ? res.list : [];
       const messages = await this.attachAudioUrls(list);
@@ -279,6 +303,10 @@ Page({
   },
 
   async startRecord() {
+    if (this.data.previewMode) {
+      promptPreviewLogin("发送语音留言");
+      return;
+    }
     if (this.data.recording) return;
 
     try {
@@ -429,6 +457,10 @@ Page({
   },
 
   async sendVoiceMessage() {
+    if (this.data.previewMode) {
+      promptPreviewLogin(this.data.reminderMode ? "发送提醒事项" : "发送留言");
+      return;
+    }
     const note = (this.data.messageNote || "").trim();
     if (this.data.sending) return;
 

@@ -9,6 +9,7 @@ const {
   getElderInfoAPI,
   getBindingQRCodeAPI
 } = require("../../api/user");
+const { appendPreviewParam } = require("../../utils/elder-preview");
 
 function formatDateTime(value) {
   if (!value) return "";
@@ -111,6 +112,18 @@ function buildMessageReminders(messages) {
     }));
 }
 
+function hasLoginSession() {
+  try {
+    return !!(wx.getStorageSync("token") || wx.getStorageSync("userId"));
+  } catch (_) {
+    return false;
+  }
+}
+
+function isGuestRoute(options = {}) {
+  return String(options.guest || "") === "1";
+}
+
 Page({
   data: {
     pageTab: "home",
@@ -127,9 +140,15 @@ Page({
     bindQrCodeFileID: "",
     bindQrLoading: false,
     previewMode: false,
+    guestMode: false,
     previewFrom: "",
     completingReminderId: "",
     copy: {
+      guestPreviewTitle: "\u4f53\u9a8c\u529f\u80fd\u670d\u52a1",
+      guestPreviewDesc: "\u5f53\u524d\u4e3a\u6e38\u5ba2\u4f53\u9a8c\u6a21\u5f0f\uff0c\u53ef\u5148\u6d4f\u89c8\u9996\u9875\u529f\u80fd\u4e0e\u754c\u9762\uff0c\u9700\u4fdd\u5b58\u8d44\u6599\u6216\u4f7f\u7528\u5b8c\u6574\u670d\u52a1\u65f6\u518d\u81ea\u884c\u6388\u6743\u767b\u5f55\u3002",
+      guestPreviewAction: "\u6388\u6743\u767b\u5f55",
+      guestLoginTip: "\u767b\u5f55\u540e\u53ef\u540c\u6b65\u771f\u5b9e\u5bb6\u5ead\u6210\u5458\u3001\u56de\u5fc6\u5185\u5bb9\u3001\u5065\u5eb7\u4fe1\u606f\u4e0e\u7ed1\u5b9a\u4e8c\u7ef4\u7801\u3002",
+      loginRequired: "\u4f53\u9a8c\u540e\u53ef\u81ea\u884c\u9009\u62e9\u6388\u6743\u767b\u5f55",
       previewTitle: "家属端预览",
       previewDesc: "当前为老人端首页预览，可返回家属端继续编辑内容。",
       backToFamily: "返回家属端",
@@ -178,9 +197,18 @@ Page({
   },
 
   onLoad(options = {}) {
+    const role = wx.getStorageSync("role");
+    const guestRoute = isGuestRoute(options);
+    if (hasLoginSession() && role === "family" && options.preview !== "1" && !guestRoute) {
+      wx.reLaunch({ url: "/pages/family/home" });
+      return;
+    }
+
+    const guestMode = guestRoute || (!hasLoginSession() && options.preview !== "1");
     this.setData({
-      previewMode: options.preview === "1",
-      previewFrom: options.from || ""
+      previewMode: options.preview === "1" || guestMode,
+      guestMode,
+      previewFrom: guestMode ? (options.from || "guest") : (options.from || "")
     });
     this.innerAudioContext = wx.createInnerAudioContext();
     this.promptAudioContext = wx.createInnerAudioContext();
@@ -191,6 +219,11 @@ Page({
   },
 
   onShow() {
+    if (this.data.guestMode) {
+      this.applyGuestPreviewContent();
+      return;
+    }
+
     this.loadBoardData();
     if (this.data.previewMode) {
       this.setData({ pendingCount: 0 });
@@ -201,6 +234,98 @@ Page({
     if (this.data.pageTab === "mine" && !this.data.previewMode) {
       this.loadBindingQRCode();
     }
+  },
+
+  applyGuestPreviewContent() {
+    this.setData({
+      boardTab: "messages",
+      onThisDay: {
+        title: "欢迎体验易忆站",
+        desc: "可先浏览回忆相册、家庭树、健康管理等首页功能布局，登录后再保存和同步真实数据。",
+        summary: "先体验，再按需登录"
+      },
+      voiceMessages: [
+        {
+          id: "preview-message-1",
+          senderName: "体验消息",
+          displayTime: "刚刚",
+          note: "这里会展示家人给老人留下的语音或文字关怀内容。",
+          hasAudio: false,
+          durationText: ""
+        }
+      ],
+      unreadMessageCount: 1,
+      medicationReminders: [
+        {
+          id: "preview-reminder-1",
+          taskType: "preview",
+          name: "按时喝水",
+          frequency: "体验提醒",
+          time: "09:00",
+          dosage: "",
+          notes: "登录后可由家属维护真实提醒内容。"
+        }
+      ],
+      pendingCount: 0,
+      elderProfile: {
+        name: "体验访客",
+        phone: this.data.copy.guestLoginTip,
+        avatar: "/assets/images/avatar1.png"
+      },
+      bindQrCodeFileID: "",
+      bindQrLoading: false
+    });
+  },
+
+  handlePreviewAction() {
+    if (this.data.guestMode) {
+      this.goToLogin();
+      return;
+    }
+    this.exitPreview();
+  },
+
+  goToLogin() {
+    wx.navigateTo({ url: "/pages/login/login?auth=1&role=elder" });
+  },
+
+  promptLoginForFeature(featureName) {
+    wx.showModal({
+      title: "登录后使用",
+      content: `当前为首页预览，若要使用${featureName || "该功能"}，请先进入登录/注册页。`,
+      confirmText: "去登录",
+      cancelText: "再看看",
+      success: (res) => {
+        if (res.confirm) {
+          this.goToLogin();
+        }
+      }
+    });
+  },
+
+  navigateFeature(url, featureName) {
+    if (this.data.guestMode) {
+      wx.navigateTo({
+        url: appendPreviewParam(url)
+      });
+      return;
+    }
+
+    if (this.data.guestMode) {
+      this.promptLoginForFeature(featureName);
+      return;
+    }
+
+    wx.navigateTo({
+      url: this.data.previewMode ? appendPreviewParam(url) : url
+    });
+  },
+
+  showPreviewOnlyToast(message) {
+    wx.showToast({
+      title: message || this.data.copy.loginRequired,
+      icon: "none"
+    });
   },
 
   onHide() {
@@ -561,30 +686,39 @@ Page({
   },
 
   goToFamily() {
-    wx.navigateTo({ url: "/pages/elder/family-tree" });
+    this.navigateFeature("/pages/elder/family-tree", this.data.copy.familyTree);
   },
 
   goToMemory() {
-    wx.navigateTo({ url: "/pages/elder/memory" });
+    this.navigateFeature("/pages/elder/memory", this.data.copy.memoryAlbum);
   },
 
   goToHealth() {
-    wx.navigateTo({ url: "/pages/elder/health" });
+    this.navigateFeature("/pages/elder/health", this.data.copy.healthManage);
   },
 
   goToProfile() {
-    wx.navigateTo({ url: "/pages/elder/profile" });
+    this.navigateFeature("/pages/elder/profile", this.data.copy.myProfile);
   },
 
   goToMatch() {
-    wx.navigateTo({ url: "/pages/elder/match" });
+    this.navigateFeature("/pages/elder/match", this.data.copy.memoryMatch);
   },
 
   goToLifeGuides() {
-    wx.navigateTo({ url: "/pages/elder/life-guides" });
+    this.navigateFeature("/pages/elder/life-guides", this.data.copy.lifeGuide);
   },
 
   goToBindingRequests() {
+    if (this.data.guestMode) {
+      wx.navigateTo({ url: appendPreviewParam("/pages/elder/binding-requests") });
+      return;
+    }
+
+    if (this.data.guestMode) {
+      this.promptLoginForFeature(this.data.copy.bindingMessages);
+      return;
+    }
     if (this.data.previewMode) {
       wx.showToast({ title: "预览模式下不可用", icon: "none" });
       return;
@@ -593,6 +727,19 @@ Page({
   },
 
   goToFaceRecognition() {
+    if (this.data.guestMode) {
+      wx.navigateTo({ url: appendPreviewParam("/pages/elder/face-recognition") });
+      return;
+    }
+
+    if (this.data.guestMode) {
+      this.promptLoginForFeature(this.data.copy.faceRecognition);
+      return;
+    }
+    if (this.data.guestMode) {
+      this.showPreviewOnlyToast("可先浏览其他功能，登录后使用人脸识别");
+      return;
+    }
     wx.navigateTo({ url: "/pages/elder/face-recognition" });
   },
 

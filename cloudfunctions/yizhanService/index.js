@@ -3,6 +3,13 @@ const { iai } = require("tencentcloud-sdk-nodejs");
 const demoData = require("./demo-data.json");
 const appConfig = require("./config.json");
 
+let localConfig = {};
+try {
+  localConfig = require("./config.local.json");
+} catch (_) {
+  localConfig = {};
+}
+
 const IaiClient = iai.v20200303.Client;
 
 cloud.init({
@@ -63,6 +70,14 @@ function normalizePhone(phone) {
   return digits;
 }
 
+function normalizeDisplayName(value) {
+  return String(value || "").trim().slice(0, 30);
+}
+
+function normalizeAvatar(value) {
+  return String(value || "").trim();
+}
+
 function maskPhone(phone) {
   const normalized = normalizePhone(phone);
   if (normalized.length !== 11) return normalized;
@@ -80,7 +95,6 @@ function getBindingRequestStatusText(status) {
   }
 }
 
-const FACE_MODEL_VERSION = "3.0";
 const DEFAULT_FACE_SCORE_THRESHOLD = 85;
 const DEMO_ELDER_ID = "elder_demo_001";
 
@@ -98,10 +112,18 @@ function getMemoryPlaybackConfig() {
 }
 
 function getFaceRecognitionConfig() {
-  const secretId = process.env.TENCENTCLOUD_SECRET_ID || "";
-  const secretKey = process.env.TENCENTCLOUD_SECRET_KEY || "";
-  const region = process.env.TENCENTCLOUD_REGION || "ap-shanghai";
-  const scoreThreshold = Number(process.env.FACE_SCORE_THRESHOLD || DEFAULT_FACE_SCORE_THRESHOLD);
+  const faceRecognitionConfig =
+    (localConfig && localConfig.faceRecognition) ||
+    (appConfig && appConfig.faceRecognition) ||
+    {};
+  const secretId = process.env.TENCENTCLOUD_SECRET_ID || faceRecognitionConfig.secretId || "";
+  const secretKey = process.env.TENCENTCLOUD_SECRET_KEY || faceRecognitionConfig.secretKey || "";
+  const region = process.env.TENCENTCLOUD_REGION || faceRecognitionConfig.region || "ap-shanghai";
+  const scoreThreshold = Number(
+    process.env.FACE_SCORE_THRESHOLD ||
+      faceRecognitionConfig.scoreThreshold ||
+      DEFAULT_FACE_SCORE_THRESHOLD
+  );
 
   return {
     secretId,
@@ -114,7 +136,7 @@ function getFaceRecognitionConfig() {
 function assertFaceRecognitionConfigured() {
   const config = getFaceRecognitionConfig();
   if (!config.secretId || !config.secretKey) {
-    throw new Error("请先在云函数环境变量中配置 TENCENTCLOUD_SECRET_ID 和 TENCENTCLOUD_SECRET_KEY");
+    throw new Error("请先在 config.local.json 或云函数环境变量中配置 TENCENTCLOUD_SECRET_ID 和 TENCENTCLOUD_SECRET_KEY");
   }
   return config;
 }
@@ -179,8 +201,7 @@ async function ensureIaiGroup(client, elderId) {
       GroupId: groupId,
       GroupName: `家庭成员库-${String(elderId).slice(-6)}`,
       GroupExDescriptions: ["relation", "personId"],
-      Tag: "elder-care-miniapp",
-      FaceModelVersion: FACE_MODEL_VERSION
+      Tag: "elder-care-miniapp"
     });
     return groupId;
   }
@@ -216,16 +237,15 @@ async function syncPersonFaceToIai(personDoc) {
     PersonId: personId,
     Gender: mapGenderToIai(personDoc.gender),
     Image: imageBase64,
-    FaceModelVersion: FACE_MODEL_VERSION,
     NeedRotateDetection: 1,
     PersonExDescriptionInfos: [
       {
-        Desc: "relation",
-        Value: personDoc.relation || ""
+        PersonExDescriptionIndex: 0,
+        PersonExDescription: personDoc.relation || ""
       },
       {
-        Desc: "personId",
-        Value: personDoc._id
+        PersonExDescriptionIndex: 1,
+        PersonExDescription: personDoc._id
       }
     ]
   });
@@ -519,6 +539,8 @@ async function getUserById(userId) {
  * 登录 - 创建或获取用户
  */
 async function login(event = {}) {
+  return await loginAccountV2(event);
+
   await ensureCollections();
 
   const wxContext = cloud.getWXContext();
@@ -526,6 +548,62 @@ async function login(event = {}) {
   const role = event.role || "elder";
 
   // 查找已存在的用户
+  if (!name) {
+    throw new Error("请先填写昵称后再登录");
+  }
+
+  if (!avatar) {
+    throw new Error("请选择头像后再登录");
+  }
+
+  if (!phone) {
+    throw new Error("请先填写手机号后再登录");
+  }
+
+  if (phone.length !== 11) {
+    throw new Error("请填写正确的11位手机号");
+  }
+
+  if (!name) {
+    throw new Error("请先填写昵称后再登录");
+  }
+
+  if (!avatar) {
+    throw new Error("请选择头像后再登录");
+  }
+
+  if (!name) {
+    throw new Error("请先填写昵称后再登录");
+  }
+
+  if (!avatar) {
+    throw new Error("请选择头像后再登录");
+  }
+
+  if (!name) {
+    throw new Error("请先填写昵称后再登录");
+  }
+
+  if (!avatar) {
+    throw new Error("请选择头像后再登录");
+  }
+
+  if (!name) {
+    throw new Error("请先填写昵称后再登录");
+  }
+
+  if (!avatar) {
+    throw new Error("请选择头像后再登录");
+  }
+
+  if (!name) {
+    throw new Error("请先填写昵称后再登录");
+  }
+
+  if (!avatar) {
+    throw new Error("请选择头像后再登录");
+  }
+
   const existingUser = await userCollection.where({ openId: wxContext.OPENID }).get();
 
   if (existingUser.data.length) {
@@ -550,8 +628,8 @@ async function login(event = {}) {
   const addResult = await userCollection.add({
     data: {
       openId: wxContext.OPENID,
-      name: "",
-      avatar: "",
+      name,
+      avatar,
       age: null,
       phone: "",
       gender: "",
@@ -2237,6 +2315,232 @@ async function deleteLifeGuide(event = {}) {
   return { success: true };
 }
 
+function collectLifeGuideFileIDs(guide = {}) {
+  const fileIDs = [];
+  const steps = normalizeLifeGuideSteps(guide.steps, guide);
+
+  steps.forEach((step) => {
+    const image = typeof step.image === "string" ? step.image.trim() : "";
+    if (image) {
+      fileIDs.push(image);
+    }
+  });
+
+  const legacyCover = typeof guide.coverImage === "string" ? guide.coverImage.trim() : "";
+  if (legacyCover) {
+    fileIDs.push(legacyCover);
+  }
+
+  const videoFileID = typeof guide.videoFileID === "string" ? guide.videoFileID.trim() : "";
+  if (videoFileID) {
+    fileIDs.push(videoFileID);
+  }
+
+  return fileIDs;
+}
+
+function collectUploadedFileIDsByCollection(collectionName, docs = []) {
+  const fileIDs = [];
+  const list = Array.isArray(docs) ? docs : [];
+
+  list.forEach((doc) => {
+    if (!doc) return;
+
+    switch (collectionName) {
+      case COLLECTION_NAMES.users: {
+        const avatar = typeof doc.avatar === "string" ? doc.avatar.trim() : "";
+        const bindQrCodeFileID =
+          typeof doc.bindQrCodeFileID === "string" ? doc.bindQrCodeFileID.trim() : "";
+        if (avatar) fileIDs.push(avatar);
+        if (bindQrCodeFileID) fileIDs.push(bindQrCodeFileID);
+        break;
+      }
+      case COLLECTION_NAMES.persons: {
+        const avatar = typeof doc.avatar === "string" ? doc.avatar.trim() : "";
+        const facePhoto = typeof doc.facePhoto === "string" ? doc.facePhoto.trim() : "";
+        if (avatar) fileIDs.push(avatar);
+        if (facePhoto) fileIDs.push(facePhoto);
+        break;
+      }
+      case COLLECTION_NAMES.memories: {
+        const img = typeof doc.img === "string" ? doc.img.trim() : "";
+        if (img) fileIDs.push(img);
+        break;
+      }
+      case COLLECTION_NAMES.elderUploads: {
+        const img = typeof doc.img === "string" ? doc.img.trim() : "";
+        if (img) fileIDs.push(img);
+        break;
+      }
+      case COLLECTION_NAMES.voiceMessages: {
+        const fileID = typeof doc.fileID === "string" ? doc.fileID.trim() : "";
+        if (fileID) fileIDs.push(fileID);
+        break;
+      }
+      case COLLECTION_NAMES.lifeGuides: {
+        fileIDs.push(...collectLifeGuideFileIDs(doc));
+        break;
+      }
+      case COLLECTION_NAMES.memoryPairs: {
+        const leftImg = typeof doc.leftImg === "string" ? doc.leftImg.trim() : "";
+        const rightImg = typeof doc.rightImg === "string" ? doc.rightImg.trim() : "";
+        if (leftImg) fileIDs.push(leftImg);
+        if (rightImg) fileIDs.push(rightImg);
+        break;
+      }
+      default:
+        break;
+    }
+  });
+
+  return fileIDs;
+}
+
+async function deleteCloudFiles(fileIDs = []) {
+  const uniqueFileIDs = Array.from(
+    new Set(
+      (Array.isArray(fileIDs) ? fileIDs : [])
+        .map((item) => String(item || "").trim())
+        .filter(Boolean)
+    )
+  );
+
+  let deleted = 0;
+  let failed = 0;
+
+  for (let i = 0; i < uniqueFileIDs.length; i += 50) {
+    const fileList = uniqueFileIDs.slice(i, i + 50);
+    if (!fileList.length) continue;
+
+    try {
+      const res = await cloud.deleteFile({ fileList });
+      const resultList = Array.isArray(res.fileList) ? res.fileList : [];
+      if (!resultList.length) {
+        deleted += fileList.length;
+        continue;
+      }
+
+      resultList.forEach((item) => {
+        if (item.status === "deleted" || item.code === "SUCCESS" || item.errMsg === "ok") {
+          deleted += 1;
+        } else {
+          failed += 1;
+        }
+      });
+    } catch (_) {
+      failed += fileList.length;
+    }
+  }
+
+  return {
+    requested: uniqueFileIDs.length,
+    deleted,
+    failed
+  };
+}
+
+async function purgeCollection(collectionName) {
+  const pageSize = 100;
+  let deletedDocs = 0;
+  const fileIDs = [];
+  let iaiClient = null;
+  let iaiCleanupEnabled = collectionName === COLLECTION_NAMES.persons;
+
+  if (iaiCleanupEnabled) {
+    try {
+      iaiClient = createIaiClient();
+    } catch (_) {
+      iaiCleanupEnabled = false;
+    }
+  }
+
+  while (true) {
+    const res = await db.collection(collectionName).limit(pageSize).get();
+    const docs = Array.isArray(res.data) ? res.data : [];
+
+    if (!docs.length) {
+      break;
+    }
+
+    fileIDs.push(...collectUploadedFileIDsByCollection(collectionName, docs));
+
+    for (const doc of docs) {
+      if (collectionName === COLLECTION_NAMES.persons && iaiCleanupEnabled && iaiClient) {
+        await removeIaiPersonIfExists(iaiClient, doc._id);
+      }
+      await db.collection(collectionName).doc(doc._id).remove();
+      deletedDocs += 1;
+    }
+  }
+
+  return {
+    deletedDocs,
+    fileIDs
+  };
+}
+
+async function purgeUploadedData(event = {}) {
+  await ensureCollections();
+
+  if (event.confirm !== "PURGE_UPLOADED_DATA") {
+    throw new Error("请传入 confirm=PURGE_UPLOADED_DATA 后再执行清理");
+  }
+
+  const targetCollections = [
+    COLLECTION_NAMES.memories,
+    COLLECTION_NAMES.elderUploads,
+    COLLECTION_NAMES.voiceMessages,
+    COLLECTION_NAMES.lifeGuides,
+    COLLECTION_NAMES.memoryPairs,
+    COLLECTION_NAMES.dailyTaskLogs
+  ];
+
+  const summary = {};
+  const allFileIDs = [];
+
+  for (const collectionName of targetCollections) {
+    const result = await purgeCollection(collectionName);
+    summary[collectionName] = result.deletedDocs;
+    allFileIDs.push(...result.fileIDs);
+  }
+
+  const fileSummary = await deleteCloudFiles(allFileIDs);
+
+  return {
+    success: true,
+    message: "上传类历史数据已清理",
+    summary,
+    files: fileSummary
+  };
+}
+
+async function purgeDemoAndLoginData(event = {}) {
+  await ensureCollections();
+
+  if (event.confirm !== "PURGE_DEMO_AND_LOGIN_DATA") {
+    throw new Error("请传入 confirm=PURGE_DEMO_AND_LOGIN_DATA 后再执行清理");
+  }
+
+  const targetCollections = Object.values(COLLECTION_NAMES);
+  const summary = {};
+  const allFileIDs = [];
+
+  for (const collectionName of targetCollections) {
+    const result = await purgeCollection(collectionName);
+    summary[collectionName] = result.deletedDocs;
+    allFileIDs.push(...result.fileIDs);
+  }
+
+  const fileSummary = await deleteCloudFiles(allFileIDs);
+
+  return {
+    success: true,
+    message: "演示数据和登录数据已清空",
+    summary,
+    files: fileSummary
+  };
+}
+
 async function importDemoData(event = {}) {
   await ensureCollections();
 
@@ -2520,8 +2824,7 @@ async function recognizeFace(event = {}) {
     Image: imageBase64,
     MaxFaceNum: 1,
     MaxPersonNum: 1,
-    NeedRotateDetection: 1,
-    FaceModelVersion: FACE_MODEL_VERSION
+    NeedRotateDetection: 1
   });
 
   const firstResult = searchRes.Results && searchRes.Results[0];
@@ -2633,32 +2936,62 @@ async function registerAccount(event = {}) {
   const wxContext = cloud.getWXContext();
   const userCollection = db.collection(COLLECTION_NAMES.users);
   const role = event.role;
+  const name = normalizeDisplayName(event.name || event.nickname);
+  const avatar = normalizeAvatar(event.avatar || event.avatarUrl);
+  const phone = normalizePhone(event.phone || "");
 
   if (role !== "elder" && role !== "family") {
     throw new Error("注册时请选择身份");
   }
 
   const existingUser = await userCollection.where({ openId: wxContext.OPENID }).get();
+  if (!name) {
+    throw new Error("请先填写昵称后再登录");
+  }
+
+  if (!avatar) {
+    throw new Error("请选择头像后再登录");
+  }
+
+  if (!name) {
+    throw new Error("请先填写昵称后再登录");
+  }
+
+  if (!avatar) {
+    throw new Error("请选择头像后再登录");
+  }
+
   if (existingUser.data.length) {
     const user = existingUser.data[0];
     if (user.userType && user.userType !== role) {
       throw new Error(`当前微信号已注册为${user.userType === "elder" ? "老人" : "家属"}`);
     }
-    return {
-      success: true,
-      alreadyRegistered: true,
-      token: `cloud-${wxContext.OPENID}`,
-      userType: user.userType || role,
-      userId: user._id,
-      boundElderId: user.boundElderId || ""
-    };
+    await userCollection.doc(user._id).update({
+      data: {
+        name,
+        avatar,
+        phone,
+        updatedAt: now
+      }
+    });
+
+    return buildAuthResult(
+      {
+        ...user,
+        name,
+        avatar,
+        phone
+      },
+      wxContext,
+      role
+    );
   }
 
   const addResult = await userCollection.add({
     data: {
       openId: wxContext.OPENID,
-      name: "",
-      avatar: "",
+      name,
+      avatar,
       age: null,
       phone: "",
       gender: "",
@@ -2669,18 +3002,23 @@ async function registerAccount(event = {}) {
         heartRate: null,
         bloodSugar: ""
       },
-      createdAt: new Date().toISOString()
+      createdAt: now,
+      updatedAt: now
     }
   });
 
-  return {
-    success: true,
-    alreadyRegistered: false,
-    token: `cloud-${wxContext.OPENID}`,
-    userType: role,
-    userId: addResult._id,
-    boundElderId: ""
-  };
+  return buildAuthResult(
+    {
+      _id: addResult._id,
+      userType: role,
+      boundElderId: "",
+      name,
+      avatar,
+      phone: ""
+    },
+    wxContext,
+    role
+  );
 }
 
 async function loginAccount() {
@@ -2709,6 +3047,10 @@ async function registerAccountV2(event = {}) {
   const wxContext = cloud.getWXContext();
   const userCollection = db.collection(COLLECTION_NAMES.users);
   const role = event.role;
+  const name = normalizeDisplayName(event.name || event.nickname);
+  const avatar = normalizeAvatar(event.avatar || event.avatarUrl);
+  const phone = normalizePhone(event.phone || "");
+  const now = new Date().toISOString();
 
   if (role !== "elder" && role !== "family") {
     throw new Error("注册时请选择身份");
@@ -2721,21 +3063,30 @@ async function registerAccountV2(event = {}) {
       throw new Error(`当前微信号已注册为${user.userType === "elder" ? "老人" : "家属"}`);
     }
 
-    return {
-      success: true,
-      alreadyRegistered: true,
-      token: `cloud-${wxContext.OPENID}`,
-      userType: user.userType || role,
-      userId: user._id,
-      boundElderId: user.boundElderId || ""
-    };
+    await userCollection.doc(user._id).update({
+      data: {
+        name,
+        avatar,
+        updatedAt: now
+      }
+    });
+
+    return buildAuthResult(
+      {
+        ...user,
+        name,
+        avatar
+      },
+      wxContext,
+      role
+    );
   }
 
   const addResult = await userCollection.add({
     data: {
       openId: wxContext.OPENID,
-      name: "",
-      avatar: "",
+      name,
+      avatar,
       age: null,
       phone: "",
       gender: "",
@@ -2746,18 +3097,107 @@ async function registerAccountV2(event = {}) {
         heartRate: null,
         bloodSugar: ""
       },
-      createdAt: new Date().toISOString()
+      createdAt: now,
+      updatedAt: now
     }
   });
 
-  return {
-    success: true,
-    alreadyRegistered: false,
-    token: `cloud-${wxContext.OPENID}`,
-    userType: role,
-    userId: addResult._id,
-    boundElderId: ""
-  };
+  return buildAuthResult(
+    {
+      _id: addResult._id,
+      userType: role,
+      boundElderId: "",
+      name,
+      avatar,
+      phone: ""
+    },
+    wxContext,
+    role
+  );
+}
+
+async function registerAccountPersonalV3(event = {}) {
+  await ensureCollections();
+
+  const wxContext = cloud.getWXContext();
+  const userCollection = db.collection(COLLECTION_NAMES.users);
+  const role = event.role;
+  const name = normalizeDisplayName(event.name || event.nickname);
+  const avatar = normalizeAvatar(event.avatar || event.avatarUrl);
+  const now = new Date().toISOString();
+
+  if (role !== "elder" && role !== "family") {
+    throw new Error("注册时请选择身份");
+  }
+
+  if (!name) {
+    throw new Error("请先填写昵称后再登录");
+  }
+
+  if (!avatar) {
+    throw new Error("请选择头像后再登录");
+  }
+
+  const existingUser = await userCollection.where({ openId: wxContext.OPENID }).get();
+
+  if (existingUser.data.length) {
+    const user = existingUser.data[0];
+    if (user.userType && user.userType !== role) {
+      throw new Error(`当前微信号已注册为${user.userType === "elder" ? "老人" : "家属"}`);
+    }
+
+    await userCollection.doc(user._id).update({
+      data: {
+        name,
+        avatar,
+        updatedAt: now
+      }
+    });
+
+    return buildAuthResult(
+      {
+        ...user,
+        name,
+        avatar,
+        phone: user.phone || ""
+      },
+      wxContext,
+      role
+    );
+  }
+
+  const addResult = await userCollection.add({
+    data: {
+      openId: wxContext.OPENID,
+      name,
+      avatar,
+      age: null,
+      phone: "",
+      gender: "",
+      userType: role,
+      relation: role === "family" ? "家属" : "本人",
+      healthStatus: {
+        bloodPressure: "",
+        heartRate: null,
+        bloodSugar: ""
+      },
+      createdAt: now,
+      updatedAt: now
+    }
+  });
+
+  return buildAuthResult(
+    {
+      _id: addResult._id,
+      userType: role,
+      boundElderId: "",
+      name,
+      avatar,
+      phone: ""
+    },
+    wxContext,
+    role
+  );
 }
 
 async function loginAccountV2() {
@@ -2788,7 +3228,9 @@ function buildAuthResult(user, wxContext, fallbackRole = "elder") {
     userType: user.userType || fallbackRole || "elder",
     userId: user._id,
     boundElderId: user.boundElderId || "",
-    phone: user.phone || ""
+    phone: user.phone || "",
+    name: user.name || "",
+    avatar: user.avatar || ""
   };
 }
 
@@ -2894,9 +3336,19 @@ async function quickLoginWithPhoneV2(event = {}) {
   const wxContext = cloud.getWXContext();
   const userCollection = db.collection(COLLECTION_NAMES.users);
   const role = event.role;
+  const name = normalizeDisplayName(event.name || event.nickname);
+  const avatar = normalizeAvatar(event.avatar || event.avatarUrl);
 
   if (role !== "elder" && role !== "family") {
     throw new Error("娉ㄥ唽鏃惰閫夋嫨韬唤");
+  }
+
+  if (!name) {
+    throw new Error("请先填写昵称后再登录");
+  }
+
+  if (!avatar) {
+    throw new Error("请选择头像后再登录");
   }
 
   const phoneInfo = await getPhoneInfoFromPhoneCredential(event);
@@ -2916,6 +3368,8 @@ async function quickLoginWithPhoneV2(event = {}) {
 
     await userCollection.doc(user._id).update({
       data: {
+        name,
+        avatar,
         phone,
         updatedAt: now
       }
@@ -2924,6 +3378,8 @@ async function quickLoginWithPhoneV2(event = {}) {
     return buildAuthResult(
       {
         ...user,
+        name,
+        avatar,
         phone
       },
       wxContext,
@@ -2934,8 +3390,8 @@ async function quickLoginWithPhoneV2(event = {}) {
   const addResult = await userCollection.add({
     data: {
       openId: wxContext.OPENID,
-      name: "",
-      avatar: "",
+      name,
+      avatar,
       age: null,
       phone,
       gender: "",
@@ -2956,6 +3412,8 @@ async function quickLoginWithPhoneV2(event = {}) {
       _id: addResult._id,
       userType: role,
       boundElderId: "",
+      name,
+      avatar,
       phone
     },
     wxContext,
@@ -3215,7 +3673,7 @@ exports.main = async (event) => {
   try {
     switch (event.action) {
       case "register":
-        return await registerAccountV2(event);
+        return await registerAccountPersonalV3(event);
       case "login":
         return await loginAccountV2();
       case "quickLoginWithPhone":
@@ -3306,6 +3764,10 @@ exports.main = async (event) => {
         return await updateLifeGuide(event);
       case "deleteLifeGuide":
         return await deleteLifeGuide(event);
+      case "purgeUploadedData":
+        return await purgeUploadedData(event);
+      case "purgeDemoAndLoginData":
+        return await purgeDemoAndLoginData(event);
       case "importDemoData":
         return await importDemoData(event);
       case "bindCurrentUserToDemoElder":

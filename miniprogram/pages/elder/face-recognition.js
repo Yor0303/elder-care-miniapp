@@ -1,8 +1,37 @@
 ﻿// pages/elder/face-recognition.js
 const { recognizeFaceAPI } = require("../../api/user");
+const {
+  isPreviewMode,
+  previewFamilyMembers,
+  promptPreviewLogin
+} = require("../../utils/family-preview");
+const FACE_UPLOAD_TIMEOUT = 15000;
+const FACE_RECOGNITION_TIMEOUT = 20000;
+
+function withTimeout(promise, timeoutMs, message) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(message));
+      }, timeoutMs);
+    })
+  ]);
+}
+
+function normalizeDecodeErrorMessage(message = "") {
+  if (message.includes("图片解码失败") || message.includes("ImageDecodeFailed")) {
+    return "图片解码失败，请使用光线充足环境重新拍摄，家属人脸照建议重新上传 JPG 或 PNG 格式的清晰正脸照。";
+  }
+  if (message.includes("识别超时")) {
+    return "识别超时，请重新部署云函数后重试。若云函数超时时间仍为 3 秒，建议调大到 15-20 秒。";
+  }
+  return message;
+}
 
 Page({
   data: {
+    previewMode: false,
     cameraAuthorized: false,
     recognizing: false,
     recognizedPerson: null,
@@ -11,7 +40,21 @@ Page({
     errorMessage: ""
   },
 
-  onLoad() {
+  onLoad(options = {}) {
+    const previewMode = isPreviewMode(options);
+    if (previewMode) {
+      const recognizedPerson = (previewFamilyMembers && previewFamilyMembers[0]) || null;
+      this.setData({
+        previewMode,
+        cameraAuthorized: false,
+        recognizedPerson,
+        displayAvatar: recognizedPerson ? (recognizedPerson.avatar || "") : "",
+        noMatch: false,
+        errorMessage: ""
+      });
+      return;
+    }
+
     this.checkCameraAuth();
   },
 
@@ -26,6 +69,10 @@ Page({
   },
 
   requestCameraAuth() {
+    if (this.data.previewMode) {
+      promptPreviewLogin("人脸识别");
+      return;
+    }
     wx.authorize({
       scope: "scope.camera",
       success: () => {
@@ -55,6 +102,10 @@ Page({
   },
 
   takePhoto() {
+    if (this.data.previewMode) {
+      promptPreviewLogin("人脸识别");
+      return;
+    }
     if (this.data.recognizing) return;
 
     this.setData({
@@ -87,18 +138,37 @@ Page({
     try {
       wx.showLoading({ title: "识别中...", mask: true });
 
-      const uploadRes = await wx.cloud.uploadFile({
-        cloudPath: `face-photos/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.jpg`,
-        filePath: tempFilePath
-      });
+      let uploadPath = tempFilePath;
+      try {
+        const compressed = await wx.compressImage({
+          src: tempFilePath,
+          quality: 80
+        });
+        if (compressed && compressed.tempFilePath) {
+          uploadPath = compressed.tempFilePath;
+        }
+      } catch (_) {
+        uploadPath = tempFilePath;
+      }
+
+      const uploadRes = await withTimeout(
+        wx.cloud.uploadFile({
+          cloudPath: `face-photos/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.jpg`,
+          filePath: uploadPath
+        }),
+        FACE_UPLOAD_TIMEOUT,
+        "上传超时，请检查网络后重试"
+      );
 
       if (!uploadRes.fileID) {
         throw new Error("上传失败");
       }
 
-      const result = await recognizeFaceAPI(uploadRes.fileID);
-
-      wx.hideLoading();
+      const result = await withTimeout(
+        recognizeFaceAPI(uploadRes.fileID),
+        FACE_RECOGNITION_TIMEOUT,
+        "识别超时"
+      );
 
       if (result.success && result.match) {
         this.setData({
@@ -117,10 +187,9 @@ Page({
         });
       }
     } catch (error) {
-      wx.hideLoading();
       console.error("人脸识别失败:", error);
 
-      const message = (error && error.message) || "识别失败，请重试";
+      const message = normalizeDecodeErrorMessage((error && error.message) || "识别失败，请重试");
       const isNoMatch =
         message.includes("未识别到家庭成员") ||
         message.includes("暂无家庭成员上传人脸照片");
@@ -139,10 +208,16 @@ Page({
           icon: "none"
         });
       }
+    } finally {
+      wx.hideLoading();
     }
   },
 
   retry() {
+    if (this.data.previewMode) {
+      promptPreviewLogin("人脸识别");
+      return;
+    }
     this.setData({
       recognizedPerson: null,
       displayAvatar: "",

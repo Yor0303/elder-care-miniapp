@@ -4,6 +4,12 @@ const {
   getElderInfoAPI,
   getMemoryPlaybackConfigAPI
 } = require("../../api/user");
+const {
+  isPreviewMode,
+  previewElderProfile,
+  previewFamilyMembers,
+  previewMemories
+} = require("../../utils/elder-preview");
 
 const TYPE_LABELS = {
   family: "家庭",
@@ -137,6 +143,7 @@ function buildFlipHint(queryPerson, queryRelation) {
 
 Page({
   data: {
+    previewMode: false,
     showFilter: false,
     showDetail: false,
     expandedSection: "",
@@ -185,12 +192,16 @@ Page({
     });
 
     const queryPerson = safeDecodeQueryValue(options.person);
+    const previewMode = isPreviewMode(options);
     this.setData({
+      previewMode,
       queryPerson,
       flipHintText: buildFlipHint(queryPerson, "")
     });
 
-    this.loadPlaybackConfig();
+    if (!previewMode) {
+      this.loadPlaybackConfig();
+    }
     this.loadMemories();
   },
 
@@ -308,6 +319,11 @@ Page({
     });
 
     try {
+      if (this.data.previewMode) {
+        this.applyPreviewMemories();
+        return;
+      }
+
       const queryParams = {};
       if (this.data.queryPerson) {
         queryParams.person = this.data.queryPerson;
@@ -399,6 +415,64 @@ Page({
         icon: "none"
       });
     }
+  },
+
+  applyPreviewMemories() {
+    const elderName = normalizeName(previewElderProfile.name);
+    const relationMap = buildPersonRelationMap(previewFamilyMembers);
+    const memories = previewMemories
+      .filter((item) => {
+        if (!this.data.queryPerson) return true;
+        return normalizeName(item.person) === this.data.queryPerson;
+      })
+      .map((item) => ({
+        ...item,
+        typeLabel: getTypeLabel(item.type || "daily"),
+        relationLabel: resolveMemoryRelation(item, relationMap, elderName)
+      }))
+      .sort((a, b) => normalizeYear(b.year) - normalizeYear(a.year));
+
+    const decadeOptions = [...new Set(memories.map((item) => item.decade).filter(Boolean))].sort(
+      (a, b) => Number(b) - Number(a)
+    );
+    const typeOptions = [...new Set(memories.map((item) => item.type).filter(Boolean))]
+      .sort((a, b) => {
+        const aIndex = TYPE_ORDER.indexOf(a);
+        const bIndex = TYPE_ORDER.indexOf(b);
+        const normalizedA = aIndex === -1 ? TYPE_ORDER.length : aIndex;
+        const normalizedB = bIndex === -1 ? TYPE_ORDER.length : bIndex;
+
+        if (normalizedA !== normalizedB) {
+          return normalizedA - normalizedB;
+        }
+
+        return getTypeLabel(a).localeCompare(getTypeLabel(b), "zh-CN");
+      })
+      .map((type) => ({
+        value: type,
+        label: getTypeLabel(type)
+      }));
+    const queryRelation = this.data.queryPerson
+      ? resolveMemoryRelation({ person: this.data.queryPerson }, relationMap, elderName)
+      : "";
+    const list = this.applyFilters(memories, this.data.activeDecade, this.data.activeType);
+    const currentIndex = this.getSafeIndex(list, this.data.currentIndex);
+
+    this.setData({
+      memories,
+      list,
+      decadeOptions,
+      typeOptions,
+      currentIndex,
+      flipMemory: list[currentIndex] || null,
+      incomingMemory: null,
+      isFlipping: false,
+      isSettling: false,
+      activeTypeLabel: getTypeLabel(this.data.activeType || ""),
+      queryRelation,
+      flipHintText: buildFlipHint(this.data.queryPerson, queryRelation),
+      loading: false
+    });
   },
 
   async onPullDownRefresh() {

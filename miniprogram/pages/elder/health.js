@@ -1,4 +1,5 @@
 const { getHealthInfoAPI, updateTodayHealthAPI } = require("../../api/user");
+const { isPreviewMode, previewHealthInfo } = require("../../utils/elder-preview");
 
 function parsePressure(value) {
   if (!value || typeof value !== "string") {
@@ -181,6 +182,7 @@ function buildReminderMedications(medications = []) {
 
 Page({
   data: {
+    previewMode: false,
     loading: false,
     errorMsg: "",
     todayHealth: {
@@ -201,7 +203,8 @@ Page({
     pressureTrend: []
   },
 
-  onLoad() {
+  onLoad(options = {}) {
+    this.setData({ previewMode: isPreviewMode(options) });
     this.loadHealthInfo();
   },
 
@@ -212,6 +215,25 @@ Page({
     });
 
     try {
+      if (this.data.previewMode) {
+        const viewModel = buildHealthViewModel(
+          previewHealthInfo.todayHealth || {},
+          previewHealthInfo.healthTrend || []
+        );
+
+        this.setData({
+          todayHealth: previewHealthInfo.todayHealth || {},
+          medicalHistory: Array.isArray(previewHealthInfo.medicalHistory) ? previewHealthInfo.medicalHistory : [],
+          medications: Array.isArray(previewHealthInfo.medications) ? previewHealthInfo.medications : [],
+          reminderMedications: buildReminderMedications(previewHealthInfo.medications),
+          chartCards: viewModel.chartCards,
+          pressureOverview: viewModel.pressureOverview,
+          pressureTrend: viewModel.pressureTrend,
+          loading: false
+        });
+        return;
+      }
+
       const healthInfo = await getHealthInfoAPI();
       const todayHealth = healthInfo.todayHealth || {
         bloodPressure: "--/--",
@@ -250,6 +272,14 @@ Page({
   },
 
   updateHealthData() {
+    if (this.data.previewMode) {
+      wx.showToast({
+        title: "体验模式仅供浏览，登录后可更新健康信息",
+        icon: "none"
+      });
+      return;
+    }
+
     wx.showModal({
       title: "更新血压",
       editable: true,

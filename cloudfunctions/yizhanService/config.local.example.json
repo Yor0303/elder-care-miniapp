@@ -1,0 +1,8 @@
+{
+  "faceRecognition": {
+    "secretId": "REPLACE_WITH_NEW_SECRET_ID",
+    "secretKey": "REPLACE_WITH_NEW_SECRET_KEY",
+    "region": "ap-shanghai",
+    "scoreThreshold": 85
+  }
+}

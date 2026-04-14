@@ -1,4 +1,9 @@
 const { getLifeGuidesAPI, deleteLifeGuideAPI } = require("../../api/user");
+const {
+  isPreviewMode,
+  previewLifeGuides,
+  promptPreviewLogin
+} = require("../../utils/family-preview");
 
 function formatDateTime(value) {
   if (!value) return "";
@@ -13,6 +18,7 @@ function formatDateTime(value) {
 
 Page({
   data: {
+    previewMode: false,
     loading: false,
     guides: [],
     showDeleteDialog: false,
@@ -23,6 +29,10 @@ Page({
     ]
   },
 
+  onLoad(options = {}) {
+    this.setData({ previewMode: isPreviewMode(options) });
+  },
+
   onShow() {
     this.loadGuides();
   },
@@ -31,6 +41,19 @@ Page({
     this.setData({ loading: true });
 
     try {
+      if (this.data.previewMode) {
+        this.setData({
+          loading: false,
+          guides: previewLifeGuides.map((item) => ({
+            ...item,
+            coverUrl: item.coverUrl || item.coverImage || "",
+            content: item.content || ((item.steps || []).map((step) => step.text).filter(Boolean).join(" ").slice(0, 60)),
+            displayTime: "04-14 09:20"
+          }))
+        });
+        return;
+      }
+
       const list = await getLifeGuidesAPI();
       const guides = await this.attachCoverUrls(Array.isArray(list) ? list : []);
       this.setData({
@@ -68,12 +91,20 @@ Page({
   },
 
   goToCreate() {
+    if (this.data.previewMode) {
+      promptPreviewLogin("新增生活指南");
+      return;
+    }
     wx.navigateTo({
       url: "/pages/family/life-guide-edit"
     });
   },
 
   goToEdit(e) {
+    if (this.data.previewMode) {
+      promptPreviewLogin("编辑生活指南");
+      return;
+    }
     const { id } = e.currentTarget.dataset;
     if (!id) return;
 
@@ -83,6 +114,10 @@ Page({
   },
 
   deleteGuide(e) {
+    if (this.data.previewMode) {
+      promptPreviewLogin("删除生活指南");
+      return;
+    }
     const { id } = e.currentTarget.dataset;
     if (!id) return;
 

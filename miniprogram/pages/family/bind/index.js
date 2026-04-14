@@ -7,6 +7,11 @@ const {
   importDemoDataAPI,
   bindCurrentUserToDemoElderAPI
 } = require("../../../api/user");
+const {
+  getPreviewBindingState,
+  isPreviewMode,
+  promptPreviewLogin
+} = require("../../../utils/family-preview");
 
 const RELATION_OPTIONS = ["配偶", "子女", "孙辈", "兄弟姐妹", "亲属", "朋友", "护工", "其他"];
 
@@ -41,6 +46,7 @@ function scanCode() {
 
 Page({
   data: {
+    previewMode: false,
     mode: "scan",
     loading: false,
     demoLoading: false,
@@ -58,6 +64,22 @@ Page({
   },
 
   onLoad(options = {}) {
+    const previewMode = isPreviewMode(options);
+    this.setData({ previewMode });
+
+    if (previewMode) {
+      const previewState = getPreviewBindingState();
+      this.setData({
+        currentBoundElder: previewState.currentBoundElder,
+        sharedElder: previewState.sharedElder,
+        pendingRequests: previewState.pendingRequests,
+        relation: previewState.relation,
+        relationIndex: previewState.relationIndex,
+        requestSource: "phone"
+      });
+      return;
+    }
+
     const elderId = options.elderId || "";
     const source = options.source || "share";
     if (elderId) {
@@ -67,11 +89,20 @@ Page({
   },
 
   onShow() {
+    if (this.data.previewMode) {
+      return;
+    }
     this.loadCurrentBinding();
     this.loadPendingRequests();
   },
 
   setMode(e) {
+    if (this.data.previewMode) {
+      this.setData({
+        mode: e.currentTarget.dataset.mode || "scan"
+      });
+      return;
+    }
     const { mode } = e.currentTarget.dataset;
     if (!mode || mode === this.data.mode) return;
     this.setData({
@@ -112,6 +143,9 @@ Page({
   },
 
   async loadCurrentBinding() {
+    if (this.data.previewMode) {
+      return;
+    }
     try {
       const elder = await getElderInfoAPI();
       if (elder && elder.id) {
@@ -127,6 +161,9 @@ Page({
   },
 
   async loadPendingRequests() {
+    if (this.data.previewMode) {
+      return;
+    }
     try {
       const requests = await getMyBindingRequestsAPI();
       const pendingRequests = Array.isArray(requests)
@@ -142,6 +179,9 @@ Page({
   },
 
   async loadSharedElder(elderId, source = "invite") {
+    if (this.data.previewMode) {
+      return;
+    }
     this.setData({
       loading: true,
       requestSent: false,
@@ -164,6 +204,10 @@ Page({
   },
 
   async lookupByPhone() {
+    if (this.data.previewMode) {
+      promptPreviewLogin("查找并绑定老人");
+      return;
+    }
     const phone = this.data.phone.trim();
     if (!phone) {
       wx.showToast({ title: "请先输入手机号", icon: "none" });
@@ -234,6 +278,10 @@ Page({
   },
 
   async scanBindCode() {
+    if (this.data.previewMode) {
+      promptPreviewLogin("扫码绑定");
+      return;
+    }
     try {
       const res = await scanCode();
       const elderId = this.parseScannedElderId((res && (res.path || res.result)) || "");
@@ -259,6 +307,10 @@ Page({
   },
 
   async enterDemoMode() {
+    if (this.data.previewMode) {
+      promptPreviewLogin("进入演示绑定");
+      return;
+    }
     if (this.data.demoLoading) return;
 
     try {
@@ -285,6 +337,10 @@ Page({
   },
 
   async submitInviteRequest() {
+    if (this.data.previewMode) {
+      promptPreviewLogin("提交绑定申请");
+      return;
+    }
     const elder = this.data.sharedElder;
     if (!elder || !elder.id) return;
     if (!this.data.relation) {

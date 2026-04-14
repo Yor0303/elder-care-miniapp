@@ -1,10 +1,10 @@
 <view class="page">
   <view wx:if="{{previewMode}}" class="preview-banner">
     <view class="preview-copy">
-      <view class="preview-title">{{copy.previewTitle}}</view>
-      <view class="preview-desc">{{copy.previewDesc}}</view>
+      <view class="preview-title">{{guestMode ? copy.guestPreviewTitle : copy.previewTitle}}</view>
+      <view class="preview-desc">{{guestMode ? copy.guestPreviewDesc : copy.previewDesc}}</view>
     </view>
-    <button class="preview-btn" bindtap="exitPreview">{{copy.backToFamily}}</button>
+    <button class="preview-btn" bindtap="handlePreviewAction">{{guestMode ? copy.guestPreviewAction : copy.backToFamily}}</button>
   </view>
 
   <block wx:if="{{pageTab === 'home'}}">
@@ -170,8 +170,9 @@
     </view>
 
     <view wx:if="{{previewMode}}" class="preview-panel">
-      <view class="preview-panel-title">{{copy.previewQrTitle}}</view>
-      <view class="preview-panel-desc">{{copy.previewQrDesc}}</view>
+      <view class="preview-panel-title">{{guestMode ? copy.guestPreviewTitle : copy.previewQrTitle}}</view>
+      <view class="preview-panel-desc">{{guestMode ? copy.guestLoginTip : copy.previewQrDesc}}</view>
+      <button wx:if="{{guestMode}}" class="preview-btn preview-panel-btn" bindtap="goToLogin">{{copy.guestPreviewAction}}</button>
     </view>
 
     <view wx:else class="qr-panel">

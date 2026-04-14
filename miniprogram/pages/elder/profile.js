@@ -1,7 +1,13 @@
 const { getElderInfoAPI, getMemoriesAPI, updateElderInfoAPI } = require("../../api/user");
+const {
+  isPreviewMode,
+  previewElderProfile,
+  previewMemories
+} = require("../../utils/elder-preview");
 
 Page({
   data: {
+    previewMode: false,
     loading: true,
     saving: false,
     elder: null,
@@ -9,7 +15,8 @@ Page({
     phone: ""
   },
 
-  onLoad() {
+  onLoad(options = {}) {
+    this.setData({ previewMode: isPreviewMode(options) });
     this.loadData();
   },
 
@@ -17,6 +24,20 @@ Page({
     this.setData({ loading: true });
 
     try {
+      if (this.data.previewMode) {
+        const selfMemories = previewMemories
+          .filter((item) => item && item.personRole === "self")
+          .sort((a, b) => (a.year || 0) - (b.year || 0));
+
+        this.setData({
+          elder: { ...previewElderProfile },
+          selfMemories,
+          phone: previewElderProfile.phone || "",
+          loading: false
+        });
+        return;
+      }
+
       const elder = await getElderInfoAPI();
       const memoriesRaw = await getMemoriesAPI({});
       const memories = Array.isArray(memoriesRaw)
@@ -55,6 +76,13 @@ Page({
 
   async savePhone() {
     if (this.data.saving) return;
+    if (this.data.previewMode) {
+      wx.showToast({
+        title: "体验模式仅供浏览，登录后可绑定手机号",
+        icon: "none"
+      });
+      return;
+    }
 
     try {
       this.setData({ saving: true });

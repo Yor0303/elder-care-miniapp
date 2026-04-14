@@ -50,23 +50,78 @@
       </view>
     </view>
 
+    <block wx:if="{{authMode}}">
+      <view class="auth-panel">
+        <view class="auth-panel-title">{{copy.authPanelTitle}}</view>
+        <view class="auth-panel-desc">{{copy.authPanelDesc}}</view>
+
+        <view class="auth-field auth-avatar-field">
+          <text class="auth-label">{{copy.avatarLabel}}</text>
+          <button
+            class="avatar-picker"
+            open-type="chooseAvatar"
+            bindchooseavatar="handleChooseAvatar"
+          >
+            <image
+              wx:if="{{avatar}}"
+              class="avatar-image"
+              src="{{avatar}}"
+              mode="aspectFill"
+            ></image>
+            <view wx:else class="avatar-placeholder">{{copy.avatarAction}}</view>
+          </button>
+        </view>
+
+        <view class="auth-field">
+          <text class="auth-label">{{copy.nicknameLabel}}</text>
+          <input
+            class="nickname-input"
+            type="nickname"
+            maxlength="20"
+            placeholder="{{copy.nicknamePlaceholder}}"
+            value="{{nickname}}"
+            bindinput="handleNicknameInput"
+          />
+        </view>
+
+        <button
+          class="primary-btn auth-submit-btn"
+          loading="{{loading}}"
+          disabled="{{loading || !agreed || !nickname || !avatar}}"
+          bindtap="handleManualRegister"
+        >
+          {{copy.authPrimary}}
+        </button>
+
+        <view class="helper-text auth-helper">{{copy.authHelper}}</view>
+      </view>
+    </block>
+
     <button
+      wx:else
       class="primary-btn"
       loading="{{loading}}"
       disabled="{{loading}}"
-      open-type="getPhoneNumber"
-      bindgetphonenumber="handlePrimaryAction"
+      bindtap="handlePrimaryAction"
     >
-      {{copy.loginPrimary}}
+      {{copy.previewPrimary}}
     </button>
 
-    <view class="helper-text">
-      {{copy.helperLogin}}
+    <button
+      class="secondary-btn"
+      disabled="{{loading}}"
+      bindtap="handleSecondaryAction"
+    >
+      {{authMode ? copy.switchToPreview : copy.switchToAuth}}
+    </button>
+
+    <view wx:if="{{!authMode}}" class="helper-text">
+      {{authMode ? copy.authHelper : copy.previewHelper}}
     </view>
   </view>
 
   <view class="agreement-section">
-    <view class="agreement-row" bindtap="toggleAgreement">
+    <view wx:if="{{authMode}}" class="agreement-row" bindtap="toggleAgreement">
       <view class="agreement-check {{agreed ? 'checked' : ''}}">
         <app-icon wx:if="{{agreed}}" name="check" size="18rpx" color="#ffffff"></app-icon>
       </view>

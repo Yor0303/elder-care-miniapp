@@ -1,4 +1,10 @@
 const { getMemoriesAPI, getElderInfoAPI } = require("../../api/user");
+const {
+  isPreviewMode,
+  previewElderProfile,
+  previewMemories,
+  promptPreviewLogin
+} = require("../../utils/family-preview");
 
 function isSelfMemory(item, elderName) {
   if (item && item.personRole === "self") {
@@ -12,6 +18,7 @@ function isSelfMemory(item, elderName) {
 
 Page({
   data: {
+    previewMode: false,
     list: [],
     fullList: [],
     loading: true,
@@ -19,7 +26,8 @@ Page({
     elderName: ""
   },
 
-  onLoad() {
+  onLoad(options = {}) {
+    this.setData({ previewMode: isPreviewMode(options) });
     this.loadMemories();
   },
 
@@ -36,6 +44,25 @@ Page({
     this.setData({ loading: true });
 
     try {
+      if (this.data.previewMode) {
+        const elderName = (previewElderProfile && previewElderProfile.name) || "";
+        const withFlags = previewMemories.map((item) => ({
+          ...item,
+          isSelf: isSelfMemory(item, elderName),
+          eventDateLabel: item && item.eventDate ? String(item.eventDate).slice(0, 10) : `${item.year || ""}`
+        }));
+        const sorted = withFlags.sort((a, b) => String(b.eventDate || "").localeCompare(String(a.eventDate || "")) || (b.year || 0) - (a.year || 0));
+        const filtered = this.applyFilter(sorted, this.data.filterType);
+
+        this.setData({
+          fullList: sorted,
+          list: filtered,
+          loading: false,
+          elderName
+        });
+        return;
+      }
+
       const [elder, list] = await Promise.all([
         getElderInfoAPI(),
         getMemoriesAPI()
@@ -103,6 +130,10 @@ Page({
   },
 
   editMemory(e) {
+    if (this.data.previewMode) {
+      promptPreviewLogin("编辑回忆");
+      return;
+    }
     const { id } = e.currentTarget.dataset;
     wx.navigateTo({
       url: `/pages/family/memory-edit?id=${id}`
@@ -110,6 +141,10 @@ Page({
   },
 
   uploadMemory() {
+    if (this.data.previewMode) {
+      promptPreviewLogin("上传回忆");
+      return;
+    }
     wx.navigateTo({
       url: "/pages/family/upload"
     });

@@ -21,10 +21,20 @@
 
       <view class="bind-phone-card">
         <view class="bind-phone-title">绑定手机号</view>
-        <view class="bind-phone-desc">家属可通过这个手机号查找并申请绑定。</view>
-        <input class="bind-phone-input" type="number" maxlength="11" placeholder="请输入绑定手机号" value="{{phone}}" bindinput="onPhoneInput" />
-        <button class="bind-phone-btn" bindtap="savePhone" disabled="{{saving}}">
-          {{saving ? "保存中..." : "保存手机号"}}
+        <view class="bind-phone-desc">
+          {{previewMode ? "当前为游客预览模式，登录后可绑定真实手机号并接收家属绑定申请。" : "家属可通过这个手机号查找并申请绑定。"}}
+        </view>
+        <input
+          class="bind-phone-input"
+          type="number"
+          maxlength="11"
+          placeholder="请输入绑定手机号"
+          value="{{phone}}"
+          bindinput="onPhoneInput"
+          disabled="{{previewMode}}"
+        />
+        <button class="bind-phone-btn" bindtap="savePhone" disabled="{{saving || previewMode}}">
+          {{previewMode ? "登录后绑定手机号" : (saving ? "保存中..." : "保存手机号")}}
         </button>
       </view>
 

@@ -6,6 +6,11 @@ const {
   updateTodayHealthAPI,
   deleteHealthRecordAPI
 } = require("../../api/user");
+const {
+  isPreviewMode,
+  previewHealthInfo,
+  promptPreviewLogin
+} = require("../../utils/family-preview");
 
 function parsePressure(value) {
   if (!value || typeof value !== "string") {
@@ -233,6 +238,7 @@ function buildMedicationForm(item = {}) {
 
 Page({
   data: {
+    previewMode: false,
     loading: false,
     todayHealth: {
       bloodPressure: "",
@@ -273,8 +279,9 @@ Page({
     ]
   },
 
-  onLoad() {
+  onLoad(options = {}) {
     this.setData({
+      previewMode: isPreviewMode(options),
       formDialogButtons: [
         { text: "取消", value: "cancel" },
         { text: "确认", value: "confirm" }
@@ -299,6 +306,29 @@ Page({
   async loadHealthInfo() {
     this.setData({ loading: true });
     try {
+      if (this.data.previewMode) {
+        const todayHealth = previewHealthInfo.todayHealth || {
+          bloodPressure: "",
+          heartRate: "",
+          bloodSugar: ""
+        };
+        const viewModel = buildHealthViewModel(todayHealth, previewHealthInfo.healthTrend || []);
+
+        this.setData({
+          todayHealth,
+          medicalHistory: Array.isArray(previewHealthInfo.medicalHistory) ? previewHealthInfo.medicalHistory : [],
+          medications: (Array.isArray(previewHealthInfo.medications) ? previewHealthInfo.medications : []).map((item) => ({
+            ...item,
+            reminderScheduleText: buildReminderScheduleText(item)
+          })),
+          chartCards: viewModel.chartCards,
+          pressureOverview: viewModel.pressureOverview,
+          pressureTrend: viewModel.pressureTrend,
+          loading: false
+        });
+        return;
+      }
+
       const healthInfo = await getHealthInfoAPI();
       const todayHealth = healthInfo.todayHealth || {
         bloodPressure: "",
@@ -327,6 +357,10 @@ Page({
   },
 
   async editTodayHealth() {
+    if (this.data.previewMode) {
+      promptPreviewLogin("编辑健康数据");
+      return;
+    }
     const { todayHealth } = this.data;
     wx.showModal({
       title: "更新今日血压",
@@ -347,6 +381,10 @@ Page({
   },
 
   async editHeartRate() {
+    if (this.data.previewMode) {
+      promptPreviewLogin("编辑健康数据");
+      return;
+    }
     wx.showModal({
       title: "更新心率",
       editable: true,
@@ -365,6 +403,10 @@ Page({
   },
 
   async editBloodSugar() {
+    if (this.data.previewMode) {
+      promptPreviewLogin("编辑健康数据");
+      return;
+    }
     wx.showModal({
       title: "更新血糖",
       editable: true,
@@ -383,6 +425,10 @@ Page({
   },
 
   showAddHistory() {
+    if (this.data.previewMode) {
+      promptPreviewLogin("新增病史");
+      return;
+    }
     this.setData({
       showAddModal: true,
       addType: "history",
@@ -396,6 +442,10 @@ Page({
   },
 
   showAddMedication() {
+    if (this.data.previewMode) {
+      promptPreviewLogin("新增用药");
+      return;
+    }
     this.setData({
       showAddModal: true,
       addType: "medication",
@@ -405,6 +455,10 @@ Page({
   },
 
   editMedication(e) {
+    if (this.data.previewMode) {
+      promptPreviewLogin("编辑用药");
+      return;
+    }
     const { id } = e.currentTarget.dataset;
     const target = this.data.medications.find((item) => item.id === id);
     if (!target) return;
@@ -489,6 +543,10 @@ Page({
   },
 
   async submitNewRecord() {
+    if (this.data.previewMode) {
+      promptPreviewLogin("保存健康记录");
+      return;
+    }
     const { addType, newRecord, editingMedicationId } = this.data;
     if (!newRecord.name || !newRecord.name.trim()) {
       wx.showToast({ title: "请输入名称", icon: "none" });
@@ -541,6 +599,10 @@ Page({
   },
 
   deleteRecord(e) {
+    if (this.data.previewMode) {
+      promptPreviewLogin("删除健康记录");
+      return;
+    }
     const { id } = e.currentTarget.dataset;
     this.setData({
       showDeleteDialog: true,

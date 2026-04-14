@@ -5,6 +5,54 @@
   background: var(--yz-bg-page);
 }
 
+.preview-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+  padding: 22rpx 24rpx;
+  margin-bottom: 20rpx;
+  border-radius: 24rpx;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1rpx solid var(--yz-border-soft);
+  box-shadow: var(--yz-shadow-soft);
+}
+
+.preview-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.preview-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--yz-text-primary);
+}
+
+.preview-desc {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  line-height: 1.7;
+  color: var(--yz-text-secondary);
+}
+
+.preview-btn {
+  min-width: 172rpx;
+  height: 68rpx;
+  line-height: 68rpx;
+  padding: 0 20rpx;
+  border-radius: 14rpx;
+  background: var(--yz-brand-primary);
+  color: #ffffff;
+  font-size: 24rpx;
+  font-weight: 600;
+  border: none;
+}
+
+.preview-btn::after {
+  border: none;
+}
+
 .hero-card,
 .section-card {
   border-radius: 24rpx;

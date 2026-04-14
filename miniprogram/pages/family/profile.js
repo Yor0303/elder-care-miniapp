@@ -1,5 +1,10 @@
 // pages/family/profile.js
 const { getElderInfoAPI, updateElderInfoAPI } = require("../../api/user");
+const {
+  isPreviewMode,
+  previewElderProfile,
+  promptPreviewLogin
+} = require("../../utils/family-preview");
 
 function getActionValue(e) {
   return (
@@ -12,6 +17,7 @@ function getActionValue(e) {
 
 Page({
   data: {
+    previewMode: false,
     loading: true,
     saving: false,
 
@@ -38,8 +44,9 @@ Page({
     uploadAvatarFile: null
   },
 
-  onLoad() {
+  onLoad(options = {}) {
     this.setData({
+      previewMode: isPreviewMode(options),
       genderActionItems: this.data.genderOptions.map((item) => ({
         text: item,
         value: item
@@ -54,6 +61,32 @@ Page({
   async loadElderInfo() {
     this.setData({ loading: true });
     try {
+      if (this.data.previewMode) {
+        const elder = previewElderProfile || {};
+        const genderIndex = this.getGenderIndex(elder.gender);
+        const avatar = elder.avatar || "";
+
+        this.setData({
+          avatar,
+          name: elder.name || "",
+          phone: elder.phone || "",
+          gender: elder.gender || "",
+          age: elder.age || "",
+          birthYear: elder.birthYear || "",
+          hometown: elder.hometown || "",
+          address: elder.address || "",
+          emergencyContactName: elder.emergencyContactName || "",
+          emergencyContactPhone: elder.emergencyContactPhone || "",
+          allergies: elder.allergies || "",
+          medications: elder.medications || "",
+          notes: elder.notes || "",
+          genderIndex,
+          avatarFiles: avatar ? [{ url: avatar }] : [],
+          loading: false
+        });
+        return;
+      }
+
       const elder = await getElderInfoAPI();
       const genderIndex = this.getGenderIndex(elder && elder.gender);
       const avatar = (elder && elder.avatar) || "";
@@ -162,6 +195,10 @@ Page({
   },
 
   async save() {
+    if (this.data.previewMode) {
+      promptPreviewLogin("保存老人资料");
+      return;
+    }
     if (this.data.saving) return;
     this.setData({ saving: true });
 

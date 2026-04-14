@@ -1,4 +1,18 @@
 const { getElderInfoAPI, getTodayCompletedTasksAPI } = require("../../api/user");
+const { appendPreviewParam } = require("../../utils/family-preview");
+
+const PREVIEW_COMPLETED_TASKS = [
+  {
+    id: "preview-task-1",
+    title: "查看首页预览布局",
+    subtitle: "先熟悉家属端入口与功能分区"
+  },
+  {
+    id: "preview-task-2",
+    title: "体验资料与照护分区",
+    subtitle: "登录后可继续保存和同步真实数据"
+  }
+];
 
 const SECTION_META = [
   {
@@ -49,7 +63,7 @@ function getSectionActions(hasBoundElder, elderName) {
       {
         key: "message",
         title: "家人留言",
-        desc: hasBoundElder ? `给 ${elderName} 留下问候。` : "绑定后就可以留下问候。"
+        desc: hasBoundElder ? `给${elderName}留下问候与提醒。` : "绑定后就可以留下问候。"
       }
     ],
     care: [
@@ -90,6 +104,35 @@ function buildSheetActions(section, hasBoundElder, elderName) {
   }));
 }
 
+function hasLoginSession() {
+  try {
+    return !!(wx.getStorageSync("token") || wx.getStorageSync("userId"));
+  } catch (_) {
+    return false;
+  }
+}
+
+function getPreviewRoute(action) {
+  switch (action) {
+    case "bind":
+      return "/pages/family/bind/index";
+    case "profile":
+      return "/pages/family/profile";
+    case "members":
+      return "/pages/family/members";
+    case "memory":
+      return "/pages/memories/index";
+    case "message":
+      return "/pages/family/message-board";
+    case "health":
+      return "/pages/family/health-manage";
+    case "guide":
+      return "/pages/family/life-guides";
+    default:
+      return "";
+  }
+}
+
 Page({
   data: {
     elderName: "未绑定老人",
@@ -100,15 +143,71 @@ Page({
     sectionSheetVisible: false,
     sectionSheetTitle: "",
     sectionSheetActions: [],
-    currentSection: ""
+    currentSection: "",
+    previewMode: false,
+    guestMode: false,
+    copy: {
+      guestPreviewTitle: "家属端首页预览",
+      guestPreviewDesc: "当前为游客预览模式，可先浏览家属首页结构与功能入口，使用具体功能时再登录/注册。",
+      guestPreviewAction: "登录/注册",
+      guestState: "预览中",
+      guestElderName: "体验长辈",
+      guestHeroDesc: "可先查看绑定、成员、回忆、健康管理等首页布局，点击具体功能时再进入登录/注册页。",
+      guestPrimaryFeature: "体验绑定入口",
+      guestSecondaryFeature: "体验老人端入口"
+    }
   },
 
-  onLoad() {
+  onLoad(options = {}) {
+    const guestMode = String(options.guest || "") === "1" || !hasLoginSession();
+    if (guestMode) {
+      this.applyGuestPreviewState();
+      return;
+    }
+
     this.loadElderName();
   },
 
   onShow() {
+    if (this.data.guestMode) {
+      this.applyGuestPreviewState();
+      return;
+    }
+
     this.loadElderName();
+  },
+
+  applyGuestPreviewState() {
+    const elderName = this.data.copy.guestElderName;
+    this.setData({
+      previewMode: true,
+      guestMode: true,
+      elderName,
+      hasBoundElder: true,
+      todayCompletedTasks: PREVIEW_COMPLETED_TASKS,
+      tasksLoading: false
+    });
+    this.syncSectionState(true, elderName);
+  },
+
+  goToLogin() {
+    wx.navigateTo({
+      url: "/pages/login/login?auth=1&role=family"
+    });
+  },
+
+  promptLoginForFeature(featureName) {
+    wx.showModal({
+      title: "登录后使用",
+      content: `当前为首页预览，若要使用${featureName || "该功能"}，请先进入登录/注册页。`,
+      confirmText: "去登录",
+      cancelText: "再看看",
+      success: (res) => {
+        if (res.confirm) {
+          this.goToLogin();
+        }
+      }
+    });
   },
 
   async loadElderName() {
@@ -121,13 +220,23 @@ Page({
       }
 
       if (name) {
-        this.setData({ elderName: name, hasBoundElder: true });
+        this.setData({
+          elderName: name,
+          hasBoundElder: true,
+          previewMode: false,
+          guestMode: false
+        });
         this.syncSectionState(true, name);
         this.loadTodayCompletedTasks();
         return;
       }
 
-      this.setData({ elderName: "已绑定老人", hasBoundElder: true });
+      this.setData({
+        elderName: "已绑定老人",
+        hasBoundElder: true,
+        previewMode: false,
+        guestMode: false
+      });
       this.syncSectionState(true, "已绑定老人");
       this.loadTodayCompletedTasks();
     } catch (_) {
@@ -136,7 +245,9 @@ Page({
         elderName: "未绑定老人",
         hasBoundElder: false,
         todayCompletedTasks: [],
-        tasksLoading: false
+        tasksLoading: false,
+        previewMode: false,
+        guestMode: false
       });
       this.syncSectionState(false, "未绑定老人");
     }
@@ -188,7 +299,25 @@ Page({
 
   onSelectSectionAction(e) {
     const action = e.detail.value;
+    const actionItem = (this.data.sectionSheetActions || []).find((item) => item.value === action);
     this.closeSectionPopup();
+
+    if (this.data.guestMode) {
+      const previewRoute = getPreviewRoute(action);
+      if (previewRoute) {
+        wx.navigateTo({
+          url: appendPreviewParam(previewRoute)
+        });
+        return;
+      }
+      this.promptLoginForFeature(actionItem ? actionItem.text : "该功能");
+      return;
+    }
+
+    if (this.data.guestMode) {
+      this.promptLoginForFeature(actionItem ? actionItem.text : "该功能");
+      return;
+    }
 
     switch (action) {
       case "bind":
@@ -217,7 +346,12 @@ Page({
     }
   },
 
-  ensureBoundElder() {
+  ensureBoundElder(featureName) {
+    if (this.data.guestMode) {
+      this.promptLoginForFeature(featureName);
+      return false;
+    }
+
     if (this.data.hasBoundElder) {
       return true;
     }
@@ -236,49 +370,96 @@ Page({
   },
 
   goToMemoryManage() {
-    if (!this.ensureBoundElder()) return;
+    if (this.data.guestMode) {
+      wx.navigateTo({
+        url: appendPreviewParam("/pages/memories/index")
+      });
+      return;
+    }
+    if (!this.ensureBoundElder("回忆管理")) return;
     wx.navigateTo({
       url: "/pages/memories/index"
     });
   },
 
   goToMembers() {
-    if (!this.ensureBoundElder()) return;
+    if (this.data.guestMode) {
+      wx.navigateTo({
+        url: appendPreviewParam("/pages/family/members")
+      });
+      return;
+    }
+    if (!this.ensureBoundElder("家庭成员")) return;
     wx.navigateTo({
       url: "/pages/family/members"
     });
   },
 
   goToHealthManage() {
-    if (!this.ensureBoundElder()) return;
+    if (this.data.guestMode) {
+      wx.navigateTo({
+        url: appendPreviewParam("/pages/family/health-manage")
+      });
+      return;
+    }
+    if (!this.ensureBoundElder("健康管理")) return;
     wx.navigateTo({
       url: "/pages/family/health-manage"
     });
   },
 
   goToMessageBoard() {
-    if (!this.ensureBoundElder()) return;
+    if (this.data.guestMode) {
+      wx.navigateTo({
+        url: appendPreviewParam("/pages/family/message-board")
+      });
+      return;
+    }
+    if (!this.ensureBoundElder("家人留言")) return;
     wx.navigateTo({
       url: "/pages/family/message-board"
     });
   },
 
   goToLifeGuides() {
-    if (!this.ensureBoundElder()) return;
+    if (this.data.guestMode) {
+      wx.navigateTo({
+        url: appendPreviewParam("/pages/family/life-guides")
+      });
+      return;
+    }
+    if (!this.ensureBoundElder("生活小助手")) return;
     wx.navigateTo({
       url: "/pages/family/life-guides"
     });
   },
 
   goToProfile() {
-    if (!this.ensureBoundElder()) return;
+    if (this.data.guestMode) {
+      wx.navigateTo({
+        url: appendPreviewParam("/pages/family/profile")
+      });
+      return;
+    }
+    if (!this.ensureBoundElder("老人资料")) return;
     wx.navigateTo({
       url: "/pages/family/profile"
     });
   },
 
   goToElderPreview() {
-    if (!this.ensureBoundElder()) return;
+    if (this.data.guestMode) {
+      wx.reLaunch({
+        url: "/pages/elder/home?guest=1&from=familyPreview"
+      });
+      return;
+    }
+    if (this.data.guestMode) {
+      this.promptLoginForFeature("老人端功能");
+      return;
+    }
+
+    if (!this.ensureBoundElder("老人端功能")) return;
     wx.reLaunch({
       url: "/pages/elder/home",
       fail: (err) => {
@@ -288,6 +469,17 @@ Page({
   },
 
   goToBindPage() {
+    if (this.data.guestMode) {
+      wx.navigateTo({
+        url: appendPreviewParam("/pages/family/bind/index")
+      });
+      return;
+    }
+    if (this.data.guestMode) {
+      this.promptLoginForFeature("绑定老人");
+      return;
+    }
+
     wx.navigateTo({
       url: "/pages/family/bind/index",
       fail: (err) => {

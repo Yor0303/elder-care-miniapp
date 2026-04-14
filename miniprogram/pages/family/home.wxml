@@ -1,20 +1,32 @@
 <view class="page">
+  <view wx:if="{{previewMode}}" class="preview-banner">
+    <view class="preview-copy">
+      <view class="preview-title">{{copy.guestPreviewTitle}}</view>
+      <view class="preview-desc">{{copy.guestPreviewDesc}}</view>
+    </view>
+    <button class="preview-btn" bindtap="goToLogin">{{copy.guestPreviewAction}}</button>
+  </view>
+
   <view class="hero-card">
     <view class="hero-top">
       <view class="hero-label">家属端</view>
-      <view class="hero-state {{hasBoundElder ? 'ready' : ''}}">
-        {{hasBoundElder ? "已连接" : "待绑定"}}
+      <view class="hero-state {{hasBoundElder && !guestMode ? 'ready' : ''}}">
+        {{guestMode ? copy.guestState : (hasBoundElder ? "已连接" : "待绑定")}}
       </view>
     </view>
 
-    <view class="hero-name">{{hasBoundElder ? elderName : "未绑定老人"}}</view>
+    <view class="hero-name">{{guestMode ? copy.guestElderName : (hasBoundElder ? elderName : "未绑定老人")}}</view>
     <view class="hero-desc">
-      {{hasBoundElder ? "围绕建档、陪伴和照护整理好全部功能入口。" : "先完成绑定，再开始管理资料、回忆和健康内容。"}}
+      {{guestMode ? copy.guestHeroDesc : (hasBoundElder ? "围绕建档、陪伴和照护整理好全部功能入口。" : "先完成绑定，再开始管理资料、回忆和健康内容。")}}
     </view>
 
     <view class="hero-actions">
-      <button class="hero-btn" bindtap="goToBindPage">{{hasBoundElder ? "管理绑定" : "立即绑定"}}</button>
-      <button class="hero-btn ghost-btn" bindtap="goToElderPreview">进入老人端</button>
+      <button class="hero-btn" bindtap="goToBindPage">
+        {{guestMode ? copy.guestPrimaryFeature : (hasBoundElder ? "管理绑定" : "立即绑定")}}
+      </button>
+      <button class="hero-btn ghost-btn" bindtap="goToElderPreview">
+        {{guestMode ? copy.guestSecondaryFeature : "进入老人端"}}
+      </button>
     </view>
   </view>
 

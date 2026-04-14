@@ -1,4 +1,8 @@
 const { getLifeGuideDetailAPI } = require("../../api/user");
+const {
+  isPreviewMode,
+  previewLifeGuides
+} = require("../../utils/elder-preview");
 
 function getTempFileURL(fileList) {
   if (!Array.isArray(fileList) || !fileList.length) {
@@ -18,14 +22,24 @@ function getTempFileURL(fileList) {
 
 Page({
   data: {
+    previewMode: false,
     loading: false,
     guide: null
   },
 
   onLoad(options) {
+    const previewMode = isPreviewMode(options || {});
     const guideId = options && options.guideId ? options.guideId : "";
+    this.setData({ previewMode });
+
     if (!guideId) {
       this.setData({ guide: null });
+      return;
+    }
+
+    if (previewMode) {
+      const guide = previewLifeGuides.find((item) => item.id === guideId) || null;
+      this.setData({ guide });
       return;
     }
 

@@ -15,6 +15,10 @@ function getActionValue(e) {
   );
 }
 
+function isUnsupportedFaceImage(tempFilePath = "") {
+  return /\.(heic|heif)$/i.test(tempFilePath);
+}
+
 Page({
   data: {
     loading: false,
@@ -205,6 +209,11 @@ Page({
 
   uploadToCloud(tempFilePath, folder = "member-avatars") {
     return new Promise((resolve, reject) => {
+      if (folder === "member-faces" && isUnsupportedFaceImage(tempFilePath)) {
+        reject(new Error("人脸照暂不支持 HEIC/HEIF，请改用 JPG 或 PNG 格式"));
+        return;
+      }
+
       const extMatch = tempFilePath.match(/\.[^.]+$/);
       const ext = extMatch ? extMatch[0] : ".jpg";
       const cloudPath = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 11)}${ext}`;

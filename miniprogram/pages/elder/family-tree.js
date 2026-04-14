@@ -4,6 +4,12 @@ const {
   getMemoriesAPI,
   getElderInfoAPI
 } = require("../../api/user");
+const {
+  appendPreviewParam,
+  isPreviewMode,
+  previewElderProfile,
+  previewFamilyMembers
+} = require("../../utils/elder-preview");
 
 const RELATION_ORDER = [
   ["老伴", "配偶", "爱人", "丈夫", "妻子"],
@@ -105,6 +111,7 @@ function buildOrbitMembers(members = [], selectedNodeId = "") {
 
 Page({
   data: {
+    previewMode: false,
     loading: true,
     elderCard: null,
     familyMembers: [],
@@ -115,13 +122,36 @@ Page({
     totalPages: 1
   },
 
-  async onLoad() {
+  async onLoad(options = {}) {
+    this.setData({ previewMode: isPreviewMode(options) });
     await this.loadAlbumData();
   },
 
   async loadAlbumData() {
     this.setData({ loading: true });
     try {
+      if (this.data.previewMode) {
+        const familyMembers = previewFamilyMembers.map((item) => ({ ...item }));
+        const elderCard = {
+          id: previewElderProfile.id,
+          name: normalizeText(previewElderProfile.name, "我"),
+          relation: "本人",
+          avatar: normalizeText(previewElderProfile.avatar, "")
+        };
+
+        this.setData({
+          loading: false,
+          elderCard,
+          familyMembers,
+          overviewMembers: buildOrbitMembers(familyMembers, ""),
+          currentPage: 0,
+          currentMember: null,
+          selectedNodeId: "",
+          totalPages: familyMembers.length + 1
+        });
+        return;
+      }
+
       const [roots, elderInfo] = await Promise.all([getFamilyTreeAPI(), getElderInfoAPI()]);
       const familyMembers = flattenFamilyNodes(roots);
       const elderCard = {
@@ -245,6 +275,10 @@ Page({
       return;
     }
 
+    if (this.data.previewMode) {
+      return;
+    }
+
     this.setData({
       [`familyMembers[${index}].loading`]: true
     });
@@ -312,7 +346,9 @@ Page({
     }
 
     wx.navigateTo({
-      url: `/pages/elder/memory?person=${encodeURIComponent(personName)}`
+      url: this.data.previewMode
+        ? appendPreviewParam(`/pages/elder/memory?person=${encodeURIComponent(personName)}`)
+        : `/pages/elder/memory?person=${encodeURIComponent(personName)}`
     });
   }
 });

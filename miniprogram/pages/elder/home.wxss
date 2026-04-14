@@ -89,6 +89,10 @@
   border: none;
 }
 
+.preview-panel-btn {
+  margin-top: 20rpx;
+}
+
 .preview-btn::after,
 .message-play-btn::after,
 .secondary-btn::after {

@@ -1,4 +1,8 @@
 const { getPersonListAPI, getMemoryPairsAPI } = require("../../api/user");
+const {
+  isPreviewMode,
+  previewMatchCards
+} = require("../../utils/elder-preview");
 
 function shuffle(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -10,11 +14,16 @@ function shuffle(arr) {
 
 Page({
   data: {
+    previewMode: false,
     cards: [],
     firstIndex: -1,
     secondIndex: -1,
     lock: false,
     win: false
+  },
+
+  onLoad(options = {}) {
+    this.setData({ previewMode: isPreviewMode(options) });
   },
 
   onShow() {
@@ -24,6 +33,11 @@ Page({
   async resetGame() {
     this.setData({ cards: [], firstIndex: -1, secondIndex: -1, lock: false, win: false });
     try {
+      if (this.data.previewMode) {
+        this.setData({ cards: shuffle(previewMatchCards.map((item) => ({ ...item }))) });
+        return;
+      }
+
       const pairs = await getMemoryPairsAPI();
       let cards = [];
       const usablePairs = Array.isArray(pairs) ? pairs.filter(p => p && p.leftImg && p.rightImg) : [];

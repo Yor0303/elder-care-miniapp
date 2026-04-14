@@ -60,19 +60,25 @@ function callService(action, data = {}) {
   });
 }
 
-function registerAPI(role) {
-  return callService("register", { role });
+function registerAPI(role, name, avatar) {
+  return callService("register", {
+    role,
+    name,
+    avatar
+  });
 }
 
 function loginAPI() {
   return callService("login");
 }
 
-function quickLoginWithPhoneAPI(role, phoneCode, cloudID) {
+function quickLoginWithPhoneAPI(role, phoneCode, cloudID, name, avatar) {
   return callService("quickLoginWithPhone", {
     role,
     phoneCode,
-    cloudID
+    cloudID,
+    name,
+    avatar
   });
 }
 

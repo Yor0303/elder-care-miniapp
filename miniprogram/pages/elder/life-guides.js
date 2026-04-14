@@ -1,9 +1,19 @@
 const { getLifeGuidesAPI } = require("../../api/user");
+const {
+  appendPreviewParam,
+  isPreviewMode,
+  previewLifeGuides
+} = require("../../utils/elder-preview");
 
 Page({
   data: {
+    previewMode: false,
     loading: false,
     guides: []
+  },
+
+  onLoad(options = {}) {
+    this.setData({ previewMode: isPreviewMode(options) });
   },
 
   onShow() {
@@ -14,6 +24,14 @@ Page({
     this.setData({ loading: true });
 
     try {
+      if (this.data.previewMode) {
+        this.setData({
+          loading: false,
+          guides: previewLifeGuides.map((item) => ({ ...item }))
+        });
+        return;
+      }
+
       const list = await getLifeGuidesAPI();
       const guides = await this.attachCoverUrls(Array.isArray(list) ? list : []);
       this.setData({
@@ -52,7 +70,9 @@ Page({
     if (!id) return;
 
     wx.navigateTo({
-      url: `/pages/elder/life-guide-detail?guideId=${id}`
+      url: this.data.previewMode
+        ? appendPreviewParam(`/pages/elder/life-guide-detail?guideId=${id}`)
+        : `/pages/elder/life-guide-detail?guideId=${id}`
     });
   }
 });
