@@ -60,6 +60,25 @@ const TYPE_ORDER = [
 const AUTO_PLAY_INTERVAL = 3200;
 const DEFAULT_BGM_NAME = "回忆背景音乐";
 
+function resolveTempFileURLs(fileIDs = []) {
+  const validFileIDs = Array.from(
+    new Set((Array.isArray(fileIDs) ? fileIDs : []).filter((item) => typeof item === "string" && item.startsWith("cloud://")))
+  );
+  if (!validFileIDs.length) {
+    return Promise.resolve({});
+  }
+
+  return wx.cloud.getTempFileURL({ fileList: validFileIDs }).then((res) => {
+    const urlMap = {};
+    (res.fileList || []).forEach((item) => {
+      if (item.fileID && (item.tempFileURL || item.tempFileUrl)) {
+        urlMap[item.fileID] = item.tempFileURL || item.tempFileUrl;
+      }
+    });
+    return urlMap;
+  }).catch(() => ({}));
+}
+
 function getTypeLabel(type) {
   return TYPE_LABELS[type] || "其他";
 }
@@ -379,6 +398,7 @@ Page({
 
       const elderName = normalizeName(elder && elder.name);
       const relationMap = buildPersonRelationMap(persons);
+      const imageUrlMap = await resolveTempFileURLs(memories.map((item) => item && item.img));
 
       const normalized = memories
         .map((item) => ({
@@ -388,7 +408,7 @@ Page({
           decade: normalizeDecade(item.decade, item.year),
           type: item.type || "daily",
           typeLabel: getTypeLabel(item.type || "daily"),
-          img: item.img || "/assets/images/family.jpg",
+          img: imageUrlMap[item.img] || item.img || "/assets/images/family.jpg",
           relationLabel: resolveMemoryRelation(item, relationMap, elderName),
           title: item.title || "未命名回忆",
           story: item.story || "暂时还没有故事内容",

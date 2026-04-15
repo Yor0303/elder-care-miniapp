@@ -109,6 +109,25 @@ function buildOrbitMembers(members = [], selectedNodeId = "") {
   });
 }
 
+function resolveTempFileURLs(fileIDs = []) {
+  const validFileIDs = Array.from(
+    new Set((Array.isArray(fileIDs) ? fileIDs : []).filter((item) => typeof item === "string" && item.startsWith("cloud://")))
+  );
+  if (!validFileIDs.length) {
+    return Promise.resolve({});
+  }
+
+  return wx.cloud.getTempFileURL({ fileList: validFileIDs }).then((res) => {
+    const urlMap = {};
+    (res.fileList || []).forEach((item) => {
+      if (item.fileID && (item.tempFileURL || item.tempFileUrl)) {
+        urlMap[item.fileID] = item.tempFileURL || item.tempFileUrl;
+      }
+    });
+    return urlMap;
+  }).catch(() => ({}));
+}
+
 Page({
   data: {
     previewMode: false,
@@ -154,25 +173,32 @@ Page({
 
       const [roots, elderInfo] = await Promise.all([getFamilyTreeAPI(), getElderInfoAPI()]);
       const familyMembers = flattenFamilyNodes(roots);
+      const urlMap = await resolveTempFileURLs(
+        familyMembers.map((item) => item && item.avatar).concat((elderInfo && elderInfo.avatar) || "")
+      );
       const elderCard = {
         id: elderInfo && elderInfo.id ? elderInfo.id : "self",
         name: normalizeText(elderInfo && elderInfo.name, "我"),
         relation: "本人",
-        avatar: normalizeText(elderInfo && elderInfo.avatar, "")
+        avatar: urlMap[(elderInfo && elderInfo.avatar) || ""] || normalizeText(elderInfo && elderInfo.avatar, "")
       };
+      const resolvedMembers = familyMembers.map((item) => ({
+        ...item,
+        avatar: urlMap[item.avatar] || item.avatar || ""
+      }));
 
       this.setData({
         loading: false,
         elderCard,
-        familyMembers,
-        overviewMembers: buildOrbitMembers(familyMembers, ""),
+        familyMembers: resolvedMembers,
+        overviewMembers: buildOrbitMembers(resolvedMembers, ""),
         currentPage: 0,
         currentMember: null,
         selectedNodeId: "",
-        totalPages: familyMembers.length + 1
+        totalPages: resolvedMembers.length + 1
       });
 
-      if (familyMembers[0]) {
+      if (resolvedMembers[0]) {
         this.ensurePersonLoaded(0);
       }
     } catch (error) {

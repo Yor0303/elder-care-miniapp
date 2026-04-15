@@ -29,6 +29,24 @@ function normalizeDecodeErrorMessage(message = "") {
   return message;
 }
 
+function isCloudFileId(value) {
+  return typeof value === "string" && value.startsWith("cloud://");
+}
+
+function resolveTempFileURL(fileID) {
+  if (!isCloudFileId(fileID)) {
+    return Promise.resolve(fileID || "");
+  }
+
+  return wx.cloud
+    .getTempFileURL({ fileList: [fileID] })
+    .then((res) => {
+      const item = res && res.fileList && res.fileList[0];
+      return (item && (item.tempFileURL || item.tempFileUrl)) || fileID;
+    })
+    .catch(() => fileID);
+}
+
 Page({
   data: {
     previewMode: false,
@@ -171,10 +189,11 @@ Page({
       );
 
       if (result.success && result.match) {
+        const displayAvatar = await resolveTempFileURL(result.match.facePhoto || result.match.avatar || "");
         this.setData({
           recognizing: false,
           recognizedPerson: result.match,
-          displayAvatar: result.match.avatar || result.match.facePhoto || "",
+          displayAvatar,
           noMatch: false
         });
       } else {

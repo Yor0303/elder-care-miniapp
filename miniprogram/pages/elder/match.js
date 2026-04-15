@@ -4,6 +4,25 @@ const {
   previewMatchCards
 } = require("../../utils/elder-preview");
 
+function resolveTempFileURLs(fileIDs = []) {
+  const validFileIDs = Array.from(
+    new Set((Array.isArray(fileIDs) ? fileIDs : []).filter((item) => typeof item === "string" && item.startsWith("cloud://")))
+  );
+  if (!validFileIDs.length) {
+    return Promise.resolve({});
+  }
+
+  return wx.cloud.getTempFileURL({ fileList: validFileIDs }).then((res) => {
+    const urlMap = {};
+    (res.fileList || []).forEach((item) => {
+      if (item.fileID && (item.tempFileURL || item.tempFileUrl)) {
+        urlMap[item.fileID] = item.tempFileURL || item.tempFileUrl;
+      }
+    });
+    return urlMap;
+  }).catch(() => ({}));
+}
+
 function shuffle(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -116,7 +135,13 @@ Page({
         this.setData({ cards: [] });
         return;
       }
-      this.setData({ cards: shuffle(cards) });
+      const urlMap = await resolveTempFileURLs(cards.map((item) => item && item.img));
+      this.setData({
+        cards: shuffle(cards.map((item) => ({
+          ...item,
+          img: urlMap[item.img] || item.img || ""
+        })))
+      });
     } catch (e) {
       this.setData({ cards: [] });
     }

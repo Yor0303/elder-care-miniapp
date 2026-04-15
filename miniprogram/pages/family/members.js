@@ -6,8 +6,24 @@ const {
   promptPreviewLogin
 } = require("../../utils/family-preview");
 
-Page({
+function resolveTempFileURLs(fileIDs = []) {
+  const validFileIDs = Array.from(new Set((Array.isArray(fileIDs) ? fileIDs : []).filter((item) => typeof item === "string" && item.startsWith("cloud://"))));
+  if (!validFileIDs.length) {
+    return Promise.resolve({});
+  }
 
+  return wx.cloud.getTempFileURL({ fileList: validFileIDs }).then((res) => {
+    const urlMap = {};
+    (res.fileList || []).forEach((item) => {
+      if (item.fileID && (item.tempFileURL || item.tempFileUrl)) {
+        urlMap[item.fileID] = item.tempFileURL || item.tempFileUrl;
+      }
+    });
+    return urlMap;
+  }).catch(() => ({}));
+}
+
+Page({
   data: {
     previewMode: false,
     loading: false,
@@ -36,9 +52,13 @@ Page({
       }
 
       const members = await getPersonListAPI();
+      const urlMap = await resolveTempFileURLs((members || []).map((item) => item && item.avatar));
 
       this.setData({
-        members,
+        members: (members || []).map((item) => ({
+          ...item,
+          avatar: urlMap[item.avatar] || item.avatar || ""
+        })),
         loading: false
       });
 

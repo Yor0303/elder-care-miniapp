@@ -142,6 +142,24 @@ function appendRouteParam(url, key, value) {
   return `${url}${url.includes("?") ? "&" : "?"}${key}=${encodeURIComponent(value)}`;
 }
 
+function isCloudFileId(value) {
+  return typeof value === "string" && value.startsWith("cloud://");
+}
+
+function resolveTempFileURL(fileID) {
+  if (!isCloudFileId(fileID)) {
+    return Promise.resolve(fileID || "");
+  }
+
+  return wx.cloud
+    .getTempFileURL({ fileList: [fileID] })
+    .then((res) => {
+      const item = res && res.fileList && res.fileList[0];
+      return (item && (item.tempFileURL || item.tempFileUrl)) || fileID;
+    })
+    .catch(() => fileID);
+}
+
 Page({
   setPageActive(active) {
     this._pageActive = !!active;
@@ -166,6 +184,7 @@ Page({
     previewImg: "",
     playingMessageId: "",
     elderProfile: null,
+    mineAvatarSrc: "/assets/images/avatar1.png",
     bindQrCodeFileID: "",
     bindQrLoading: false,
     previewMode: false,
@@ -483,12 +502,28 @@ Page({
   async loadElderProfile() {
     try {
       const elder = await getElderInfoAPI();
+      const avatarUrl = await resolveTempFileURL((elder && elder.avatarUrl) || (elder && elder.avatar) || "");
       this.safeSetData({
-        elderProfile: elder || null
+        mineAvatarSrc: avatarUrl || "/assets/images/avatar1.png",
+        elderProfile: elder
+          ? {
+              ...elder,
+              avatarUrl
+            }
+          : null
       });
     } catch (_) {
-      this.safeSetData({ elderProfile: null });
+      this.safeSetData({
+        elderProfile: null,
+        mineAvatarSrc: "/assets/images/avatar1.png"
+      });
     }
+  },
+
+  handleMineAvatarError() {
+    this.safeSetData({
+      mineAvatarSrc: "/assets/images/avatar1.png"
+    });
   },
 
   async loadBindingQRCode(forceRefresh = false) {
@@ -497,8 +532,9 @@ Page({
     try {
       this.safeSetData({ bindQrLoading: true });
       const result = await getBindingQRCodeAPI(!!forceRefresh);
+      const qrUrl = await resolveTempFileURL((result && result.fileID) || "");
       this.safeSetData({
-        bindQrCodeFileID: (result && result.fileID) || "",
+        bindQrCodeFileID: qrUrl,
         bindQrLoading: false
       });
     } catch (error) {
@@ -513,7 +549,15 @@ Page({
   async loadOnThisDay() {
     try {
       const data = await getOnThisDayMemoryAPI();
-      this.safeSetData({ onThisDay: data || null });
+      const imgUrl = await resolveTempFileURL((data && data.img) || "");
+      this.safeSetData({
+        onThisDay: data
+          ? {
+              ...data,
+              img: imgUrl || data.img || ""
+            }
+          : null
+      });
     } catch (_) {
       this.safeSetData({ onThisDay: null });
     }

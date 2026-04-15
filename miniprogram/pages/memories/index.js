@@ -6,6 +6,25 @@ const {
   promptPreviewLogin
 } = require("../../utils/family-preview");
 
+function resolveTempFileURLs(fileIDs = []) {
+  const validFileIDs = Array.from(
+    new Set((Array.isArray(fileIDs) ? fileIDs : []).filter((item) => typeof item === "string" && item.startsWith("cloud://")))
+  );
+  if (!validFileIDs.length) {
+    return Promise.resolve({});
+  }
+
+  return wx.cloud.getTempFileURL({ fileList: validFileIDs }).then((res) => {
+    const urlMap = {};
+    (res.fileList || []).forEach((item) => {
+      if (item.fileID && (item.tempFileURL || item.tempFileUrl)) {
+        urlMap[item.fileID] = item.tempFileURL || item.tempFileUrl;
+      }
+    });
+    return urlMap;
+  }).catch(() => ({}));
+}
+
 function isSelfMemory(item, elderName) {
   if (item && item.personRole === "self") {
     return true;
@@ -73,8 +92,10 @@ Page({
         : (list && Array.isArray(list.data) ? list.data : []);
 
       const elderName = elder && elder.name ? elder.name.trim() : "";
+      const urlMap = await resolveTempFileURLs(normalized.map((item) => item && item.img));
       const withFlags = normalized.map((item) => ({
         ...item,
+        img: urlMap[item.img] || item.img || "",
         isSelf: isSelfMemory(item, elderName),
         eventDateLabel: item && item.eventDate ? String(item.eventDate).slice(0, 10) : `${item.year || ""}`
       }));

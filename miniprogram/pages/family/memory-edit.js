@@ -89,6 +89,35 @@ function buildPersonOptions(persons, elderName) {
   return options;
 }
 
+function isCloudFileId(value) {
+  return typeof value === "string" && value.startsWith("cloud://");
+}
+
+function resolveTempFileURL(fileID) {
+  if (!isCloudFileId(fileID)) {
+    return Promise.resolve(fileID || "");
+  }
+
+  return wx.cloud
+    .getTempFileURL({ fileList: [fileID] })
+    .then((res) => {
+      const item = res && res.fileList && res.fileList[0];
+      return (item && (item.tempFileURL || item.tempFileUrl)) || fileID;
+    })
+    .catch(() => fileID);
+}
+
+function shouldUploadImage(filePath = "") {
+  const value = String(filePath || "").trim();
+  if (!value) return false;
+  if (value.startsWith("cloud://")) return false;
+  if (value.startsWith("http://tmp/")) return true;
+  if (value.startsWith("https://tmp/")) return true;
+  if (value.startsWith("wxfile://")) return true;
+  if (value.startsWith("wdfile://")) return true;
+  return !/^https?:\/\//i.test(value);
+}
+
 Page({
   data: {
     isEdit: false,
@@ -167,6 +196,7 @@ Page({
 
       if (memory) {
         const personRole = inferPersonRole(memory.person, memory.personRole);
+        const previewUrl = await resolveTempFileURL(memory.img || "");
         this.setData({
           title: memory.title || "",
           story: memory.story || "",
@@ -175,7 +205,7 @@ Page({
           personRole,
           type: memory.type || "",
           img: memory.img || "",
-          fileList: memory.img ? [{ url: memory.img }] : []
+          fileList: previewUrl ? [{ url: previewUrl }] : []
         });
         this.syncPersonIndex(memory.person, personRole);
       }
@@ -280,7 +310,7 @@ Page({
     try {
       let cloudUrl = img;
 
-      if (img && img.startsWith("wxfile://")) {
+      if (shouldUploadImage(img)) {
         wx.showLoading({ title: "上传图片中..." });
         cloudUrl = await this.uploadToCloud(img);
       }

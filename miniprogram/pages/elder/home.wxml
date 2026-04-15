@@ -157,8 +157,9 @@
       <view class="mine-profile">
         <image
           class="mine-avatar"
-          src="{{(elderProfile && (elderProfile.avatarUrl || elderProfile.avatar)) || '/assets/images/avatar1.png'}}"
+          src="{{mineAvatarSrc}}"
           mode="aspectFill"
+          binderror="handleMineAvatarError"
         />
         <view class="mine-copy">
           <view class="hero-title">{{(elderProfile && elderProfile.name) || copy.defaultElderName}}</view>

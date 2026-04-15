@@ -5,12 +5,31 @@ const {
   previewMemories
 } = require("../../utils/elder-preview");
 
+function isCloudFileId(value) {
+  return typeof value === "string" && value.startsWith("cloud://");
+}
+
+function resolveTempFileURL(fileID) {
+  if (!isCloudFileId(fileID)) {
+    return Promise.resolve(fileID || "");
+  }
+
+  return wx.cloud
+    .getTempFileURL({ fileList: [fileID] })
+    .then((res) => {
+      const item = res && res.fileList && res.fileList[0];
+      return (item && (item.tempFileURL || item.tempFileUrl)) || fileID;
+    })
+    .catch(() => fileID);
+}
+
 Page({
   data: {
     previewMode: false,
     loading: true,
     saving: false,
     elder: null,
+    elderAvatarSrc: "/assets/images/avatar1.png",
     selfMemories: [],
     phone: ""
   },
@@ -31,6 +50,7 @@ Page({
 
         this.setData({
           elder: { ...previewElderProfile },
+          elderAvatarSrc: (previewElderProfile && previewElderProfile.avatar) || "/assets/images/avatar1.png",
           selfMemories,
           phone: previewElderProfile.phone || "",
           loading: false
@@ -44,6 +64,7 @@ Page({
         ? memoriesRaw
         : (memoriesRaw && Array.isArray(memoriesRaw.data) ? memoriesRaw.data : []);
 
+      const avatarUrl = await resolveTempFileURL((elder && elder.avatar) || "");
       const name = elder && elder.name ? elder.name.trim() : "";
       const selfKeys = ["本人", "自己", "我"];
       const selfMemories = (memories || [])
@@ -58,20 +79,35 @@ Page({
         .sort((a, b) => (a.year || 0) - (b.year || 0));
 
       this.setData({
-        elder,
+        elderAvatarSrc: avatarUrl || "/assets/images/avatar1.png",
+        elder: elder
+          ? {
+              ...elder,
+              avatarUrl
+            }
+          : null,
         selfMemories,
         phone: (elder && elder.phone) || "",
         loading: false
       });
     } catch (error) {
       console.error("load elder profile failed", error);
-      this.setData({ loading: false });
+      this.setData({
+        loading: false,
+        elderAvatarSrc: "/assets/images/avatar1.png"
+      });
       wx.showToast({ title: "加载失败", icon: "none" });
     }
   },
 
   onPhoneInput(e) {
     this.setData({ phone: e.detail.value });
+  },
+
+  handleAvatarError() {
+    this.setData({
+      elderAvatarSrc: "/assets/images/avatar1.png"
+    });
   },
 
   async savePhone() {

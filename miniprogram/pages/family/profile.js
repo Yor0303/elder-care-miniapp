@@ -15,6 +15,24 @@ function getActionValue(e) {
   );
 }
 
+function isCloudFileId(value) {
+  return typeof value === "string" && value.startsWith("cloud://");
+}
+
+function resolveTempFileURL(fileID) {
+  if (!isCloudFileId(fileID)) {
+    return Promise.resolve(fileID || "");
+  }
+
+  return wx.cloud
+    .getTempFileURL({ fileList: [fileID] })
+    .then((res) => {
+      const item = res && res.fileList && res.fileList[0];
+      return (item && (item.tempFileURL || item.tempFileUrl)) || fileID;
+    })
+    .catch(() => fileID);
+}
+
 Page({
   data: {
     previewMode: false,
@@ -90,6 +108,7 @@ Page({
       const elder = await getElderInfoAPI();
       const genderIndex = this.getGenderIndex(elder && elder.gender);
       const avatar = (elder && elder.avatar) || "";
+      const avatarPreviewUrl = await resolveTempFileURL(avatar);
 
       this.setData({
         avatar,
@@ -106,7 +125,7 @@ Page({
         medications: (elder && elder.medications) || "",
         notes: (elder && elder.notes) || "",
         genderIndex,
-        avatarFiles: avatar ? [{ url: avatar }] : [],
+        avatarFiles: avatarPreviewUrl ? [{ url: avatarPreviewUrl }] : [],
         loading: false
       });
     } catch (error) {
@@ -128,17 +147,20 @@ Page({
     return Promise.all(tempFilePaths.map((item) => this.uploadToCloud(item, "avatars"))).then((urls) => ({ urls }));
   },
 
-  onAvatarUploadSuccess(e) {
+  async onAvatarUploadSuccess(e) {
     const url = (e.detail.urls && e.detail.urls[0]) || "";
+    const avatarPreviewUrl = await resolveTempFileURL(url);
     this.setData({
       avatar: url,
-      avatarFiles: url ? [{ url }] : []
+      avatarFiles: avatarPreviewUrl ? [{ url: avatarPreviewUrl }] : []
     });
   },
 
   onAvatarUploadFail() {
-    this.setData({
-      avatarFiles: this.data.avatar ? [{ url: this.data.avatar }] : []
+    resolveTempFileURL(this.data.avatar).then((avatarPreviewUrl) => {
+      this.setData({
+        avatarFiles: avatarPreviewUrl ? [{ url: avatarPreviewUrl }] : []
+      });
     });
     wx.showToast({ title: "头像上传失败", icon: "none" });
   },

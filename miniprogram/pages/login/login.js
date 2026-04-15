@@ -48,6 +48,17 @@ function normalizeNickname(value) {
   return String(value || "").trim();
 }
 
+function shouldUploadAvatar(filePath = "") {
+  const value = String(filePath || "").trim();
+  if (!value) return false;
+  if (value.startsWith("cloud://")) return false;
+  if (value.startsWith("http://tmp/")) return true;
+  if (value.startsWith("https://tmp/")) return true;
+  if (value.startsWith("wxfile://")) return true;
+  if (value.startsWith("wdfile://")) return true;
+  return !/^https?:\/\//i.test(value);
+}
+
 function relaunchWithFallback(url) {
   return new Promise((resolve, reject) => {
     wx.reLaunch({
@@ -401,7 +412,7 @@ Page({
       const nickname = normalizeNickname(this.data.nickname);
       let avatar = this.data.avatar;
 
-      if (this.data.avatarTempFilePath && this.data.avatarTempFilePath.startsWith("wxfile://")) {
+      if (shouldUploadAvatar(this.data.avatarTempFilePath)) {
         wx.showLoading({ title: this.data.copy.loadingAvatar });
         avatar = await this.uploadAvatarToCloud(this.data.avatarTempFilePath);
         wx.showLoading({ title: this.data.copy.loadingLogin });
