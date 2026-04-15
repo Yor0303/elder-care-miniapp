@@ -123,6 +123,10 @@ function getRecorderErrorMessage(error = {}) {
     return "当前环境不支持录音，请使用真机调试";
   }
 
+  if (raw.includes("NotReadableError")) {
+    return "麦克风当前不可读，通常是录音设备被其他程序占用、系统没有可用输入设备，或开发者工具录音异常。请先关闭占用麦克风的软件后重试，优先使用真机调试。";
+  }
+
   if (raw.includes("interrupted")) {
     return "录音被系统中断，请重试";
   }
