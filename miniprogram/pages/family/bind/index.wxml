@@ -41,7 +41,10 @@
       <view class="action-mark"><app-icon name="scan" size="48rpx" color="#ffffff"></app-icon></view>
       <view class="action-title">扫描老人端二维码</view>
       <view class="action-desc">面对面绑定更快</view>
-      <button class="primary-btn" bindtap="scanBindCode">立即扫码</button>
+      <button class="primary-btn" bindtap="scanBindCode" loading="{{loading && requestSource === 'scan'}}">立即扫码</button>
+      <view wx:if="{{loading && requestSource === 'scan'}}" class="state-card loading-state">
+        <mp-loading type="dot-gray"></mp-loading>
+      </view>
     </view>
 
     <view wx:if="{{mode === 'phone'}}" class="action-card">

@@ -53,8 +53,14 @@
   color: var(--yz-bg-card);
 }
 
-.hero-main {
+.hero-main-card {
   flex: 1;
+  transition: transform 120ms ease, opacity 120ms ease;
+}
+
+.hero-main-card:active {
+  transform: scale(0.99);
+  opacity: 0.92;
 }
 
 .hero-label {
@@ -84,11 +90,17 @@
   width: 220rpx;
 }
 
-.metric-chip {
+.hero-side-card {
   padding: 22rpx;
   border-radius: 22rpx;
   background: rgba(255, 255, 255, 0.16);
   backdrop-filter: blur(8rpx);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.hero-side-card:active {
+  transform: scale(0.98);
+  box-shadow: 0 8rpx 18rpx rgba(23, 46, 99, 0.18);
 }
 
 .metric-chip-label {

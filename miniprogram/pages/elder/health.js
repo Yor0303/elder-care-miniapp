@@ -19,29 +19,23 @@ function parsePressure(value) {
 
 function formatFriendlyLabel(value) {
   if (!value) return "--";
+
   const raw = String(value);
   const normalized = raw.includes("T") ? raw.slice(0, 10) : raw;
   const parts = normalized.split("-");
+
   if (parts.length === 3) {
-    return `${Number(parts[1])}月${Number(parts[2])}日`;
+    return `${Number(parts[1])}\u6708${Number(parts[2])}\u65e5`;
   }
 
   if (raw.includes("/")) {
     const slashParts = raw.split("/");
     if (slashParts.length >= 2) {
-      return `${Number(slashParts[0])}月${Number(slashParts[1])}日`;
+      return `${Number(slashParts[0])}\u6708${Number(slashParts[1])}\u65e5`;
     }
   }
 
   return raw;
-}
-
-function getPressureHeight(value) {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) {
-    return 24;
-  }
-
-  return Math.max(24, Math.round(Number(value) / 2));
 }
 
 function toSortableTime(item = {}) {
@@ -88,6 +82,18 @@ function buildMetricChart(trend, options) {
   const latest = values[values.length - 1];
   const previous = values.length > 1 ? values[values.length - 2] : null;
 
+  let changeText = "\u8bb0\u5f55\u6ee12\u6761\u540e\u53ef\u67e5\u770b\u53d8\u5316";
+  if (previous && latest) {
+    if (latest.value === previous.value) {
+      changeText = "\u4e0e\u4e0a\u4e00\u6761\u8bb0\u5f55\u6301\u5e73";
+    } else {
+      const direction = latest.value > previous.value ? "\u4e0a\u5347" : "\u4e0b\u964d";
+      changeText = `\u8f83\u4e0a\u4e00\u6761${direction} ${Math.abs(latest.value - previous.value).toFixed(
+        options.decimals || 0
+      )}${options.unit}`;
+    }
+  }
+
   return {
     key: options.key,
     title: options.title,
@@ -95,12 +101,7 @@ function buildMetricChart(trend, options) {
     empty: false,
     latestValue: latest ? latest.value : options.emptyValue,
     latestLabel: latest ? latest.label : "",
-    changeText:
-      previous && latest
-        ? latest.value === previous.value
-          ? "与上一条记录持平"
-          : `较上一条${latest.value > previous.value ? "上升" : "下降"} ${Math.abs(latest.value - previous.value).toFixed(options.decimals || 0)}${options.unit}`
-        : "记录满 2 条后可查看变化",
+    changeText,
     bars: values.map((item) => ({
       label: item.label,
       valueText: options.format ? options.format(item.value) : `${item.value}${options.unit}`,
@@ -128,7 +129,11 @@ function buildHealthViewModel(todayHealth, trend) {
   });
 
   const systolicMax = Math.max(...normalizedTrend.map((item) => item.systolic || 0), parsedPressure.systolic || 0, 1);
-  const diastolicMax = Math.max(...normalizedTrend.map((item) => item.diastolic || 0), parsedPressure.diastolic || 0, 1);
+  const diastolicMax = Math.max(
+    ...normalizedTrend.map((item) => item.diastolic || 0),
+    parsedPressure.diastolic || 0,
+    1
+  );
 
   const pressureTrend = normalizedTrend.map((item) => ({
     ...item,
@@ -154,14 +159,14 @@ function buildHealthViewModel(todayHealth, trend) {
     chartCards: [
       buildMetricChart(normalizedTrend, {
         key: "heartRate",
-        title: "心率趋势",
-        unit: "次/分",
+        title: "\u5fc3\u7387\u8d8b\u52bf",
+        unit: "\u6b21/\u5206",
         emptyValue: "--",
         minScale: 60
       }),
       buildMetricChart(normalizedTrend, {
         key: "bloodSugar",
-        title: "血糖趋势",
+        title: "\u8840\u7cd6\u8d8b\u52bf",
         unit: " mmol/L",
         emptyValue: "--",
         minScale: 8,
@@ -253,14 +258,14 @@ Page({
         loading: false
       });
     } catch (error) {
-      console.error("加载健康信息失败:", error);
+      console.error("load health info failed:", error);
       this.setData({
         loading: false,
-        errorMsg: error.message || "加载失败，请重试"
+        errorMsg: error.message || "\u52a0\u8f7d\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5"
       });
 
       wx.showToast({
-        title: "加载失败",
+        title: "\u52a0\u8f7d\u5931\u8d25",
         icon: "none"
       });
     }
@@ -274,16 +279,16 @@ Page({
   updateHealthData() {
     if (this.data.previewMode) {
       wx.showToast({
-        title: "体验模式仅供浏览，登录后可更新健康信息",
+        title: "\u4f53\u9a8c\u6a21\u5f0f\u4ec5\u4f9b\u6d4f\u89c8\uff0c\u767b\u5f55\u540e\u53ef\u66f4\u65b0\u5065\u5eb7\u4fe1\u606f",
         icon: "none"
       });
       return;
     }
 
     wx.showModal({
-      title: "更新血压",
+      title: "\u66f4\u65b0\u8840\u538b",
       editable: true,
-      placeholderText: "请输入血压，例如 120/80",
+      placeholderText: "\u8bf7\u8f93\u5165\u8840\u538b\uff0c\u4f8b\u5982 120/80",
       success: async (res) => {
         if (!res.confirm || !res.content) {
           return;
@@ -295,12 +300,86 @@ Page({
           });
           await this.loadHealthInfo();
           wx.showToast({
-            title: "更新成功",
+            title: "\u66f4\u65b0\u6210\u529f",
             icon: "success"
           });
-        } catch (error) {
+        } catch (_) {
           wx.showToast({
-            title: "更新失败",
+            title: "\u66f4\u65b0\u5931\u8d25",
+            icon: "none"
+          });
+        }
+      }
+    });
+  },
+
+  editHeartRate() {
+    if (this.data.previewMode) {
+      wx.showToast({
+        title: "\u4f53\u9a8c\u6a21\u5f0f\u4ec5\u4f9b\u6d4f\u89c8\uff0c\u767b\u5f55\u540e\u53ef\u66f4\u65b0\u5065\u5eb7\u4fe1\u606f",
+        icon: "none"
+      });
+      return;
+    }
+
+    wx.showModal({
+      title: "\u66f4\u65b0\u5fc3\u7387",
+      editable: true,
+      placeholderText: "\u8bf7\u8f93\u5165\u5fc3\u7387\uff0c\u4f8b\u5982 72",
+      success: async (res) => {
+        if (!res.confirm || !res.content) {
+          return;
+        }
+
+        try {
+          await updateTodayHealthAPI({
+            heartRate: parseInt(res.content, 10)
+          });
+          await this.loadHealthInfo();
+          wx.showToast({
+            title: "\u66f4\u65b0\u6210\u529f",
+            icon: "success"
+          });
+        } catch (_) {
+          wx.showToast({
+            title: "\u66f4\u65b0\u5931\u8d25",
+            icon: "none"
+          });
+        }
+      }
+    });
+  },
+
+  editBloodSugar() {
+    if (this.data.previewMode) {
+      wx.showToast({
+        title: "\u4f53\u9a8c\u6a21\u5f0f\u4ec5\u4f9b\u6d4f\u89c8\uff0c\u767b\u5f55\u540e\u53ef\u66f4\u65b0\u5065\u5eb7\u4fe1\u606f",
+        icon: "none"
+      });
+      return;
+    }
+
+    wx.showModal({
+      title: "\u66f4\u65b0\u8840\u7cd6",
+      editable: true,
+      placeholderText: "\u8bf7\u8f93\u5165\u8840\u7cd6\uff0c\u4f8b\u5982 5.6",
+      success: async (res) => {
+        if (!res.confirm || !res.content) {
+          return;
+        }
+
+        try {
+          await updateTodayHealthAPI({
+            bloodSugar: res.content.trim()
+          });
+          await this.loadHealthInfo();
+          wx.showToast({
+            title: "\u66f4\u65b0\u6210\u529f",
+            icon: "success"
+          });
+        } catch (_) {
+          wx.showToast({
+            title: "\u66f4\u65b0\u5931\u8d25",
             icon: "none"
           });
         }

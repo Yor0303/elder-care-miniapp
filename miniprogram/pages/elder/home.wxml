@@ -196,13 +196,17 @@
       </view>
 
       <view class="qr-actions">
-        <button class="secondary-btn icon-btn" bindtap="refreshBindingQRCode">
-          <app-icon name="qrcode" size="28rpx" color="#ffffff"></app-icon>
+        <button class="secondary-btn icon-btn qr-action-half" bindtap="refreshBindingQRCode">
+          <view class="btn-icon-mark">
+            <app-icon name="qrcode" size="28rpx" color="#ffffff"></app-icon>
+          </view>
           <text class="btn-icon-text">{{copy.refreshQr}}</text>
         </button>
-        <button class="secondary-btn ghost-btn icon-btn" bindtap="goToBindingRequests">
-          <app-icon name="system-messages-filled" size="28rpx" color="#56B0EB"></app-icon>
-          <text class="btn-icon-text ghost-text">{{copy.viewBindingMessages}}</text>
+        <button class="secondary-btn icon-btn qr-action-half" open-type="share">
+          <view class="btn-icon-mark">
+            <app-icon name="relation" size="28rpx" color="#ffffff"></app-icon>
+          </view>
+          <text class="btn-icon-text">{{copy.shareBindLink}}</text>
         </button>
       </view>
     </view>

@@ -423,12 +423,12 @@
 }
 
 .qr-image {
-  width: 320rpx;
-  height: 320rpx;
+  width: 400rpx;
+  height: 400rpx;
 }
 
 .qr-placeholder {
-  min-height: 320rpx;
+  min-height: 400rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -452,7 +452,19 @@
 
 .qr-actions {
   display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
   margin-top: 18rpx;
+}
+
+.qr-action-half {
+  flex: none;
+  width: calc((100% - 12rpx) / 2);
+}
+
+.qr-action-full {
+  flex: none;
+  width: 100%;
 }
 
 .secondary-btn {
@@ -471,14 +483,35 @@
   margin-left: 12rpx;
 }
 
+.qr-actions .secondary-btn + .secondary-btn {
+  margin-left: 0;
+}
+
 .icon-btn {
   display: flex;
   align-items: center;
   justify-content: center;
+  white-space: nowrap;
+  overflow: hidden;
+  line-height: normal;
+}
+
+.btn-icon-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  transform: translateY(2rpx);
 }
 
 .btn-icon-text {
   margin-left: 10rpx;
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1;
 }
 
 .ghost-btn {
@@ -488,6 +521,11 @@
 
 .ghost-text {
   color: var(--yz-info);
+}
+
+.qr-actions .icon-btn app-icon,
+.qr-actions .icon-btn .btn-icon-text {
+  vertical-align: middle;
 }
 
 .mine-feature-panel {

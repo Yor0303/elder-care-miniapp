@@ -16,18 +16,18 @@
   <view wx:if="{{!loading && !errorMsg}}">
     <view class="section">
       <view class="section-title">今日健康概览</view>
-      <view class="hero-card" bindtap="updateHealthData">
-        <view class="hero-main">
+      <view class="hero-card">
+        <view class="hero-main-card" bindtap="updateHealthData">
           <view class="hero-label">血压</view>
           <view class="hero-value">{{pressureOverview.current}}</view>
           <view class="hero-tip">{{pressureOverview.latestLabel ? "最近记录 " + pressureOverview.latestLabel : "点击可更新今日血压"}}</view>
         </view>
         <view class="hero-meta">
-          <view class="metric-chip">
+          <view class="hero-side-card" catchtap="editHeartRate">
             <text class="metric-chip-label">心率</text>
             <text class="metric-chip-value">{{todayHealth.heartRate || "--"}} 次/分</text>
           </view>
-          <view class="metric-chip">
+          <view class="hero-side-card" catchtap="editBloodSugar">
             <text class="metric-chip-label">血糖</text>
             <text class="metric-chip-value">{{todayHealth.bloodSugar || "--"}} mmol/L</text>
           </view>

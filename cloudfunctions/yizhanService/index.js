@@ -488,7 +488,7 @@ async function getCurrentUser() {
     throw new Error("用户不存在，请先登录");
   }
 
-  return result.data[0];
+  return await sanitizeFamilyBinding(result.data[0]);
 }
 
 
@@ -498,6 +498,37 @@ function normalizeUserType(user) {
 
 function isElderUser(user) {
   return normalizeUserType(user) === "elder";
+}
+
+async function sanitizeFamilyBinding(user) {
+  if (!user || normalizeUserType(user) !== "family" || !user.boundElderId) {
+    return user;
+  }
+
+  let elder = null;
+  try {
+    elder = await getUserById(user.boundElderId);
+  } catch (_) {
+    elder = null;
+  }
+
+  if (elder && isElderUser(elder)) {
+    return user;
+  }
+
+  await db.collection(COLLECTION_NAMES.users).doc(user._id).update({
+    data: {
+      boundElderId: "",
+      boundAt: "",
+      updatedAt: new Date().toISOString()
+    }
+  });
+
+  return {
+    ...user,
+    boundElderId: "",
+    boundAt: ""
+  };
 }
 
 async function getEffectiveElderId(user) {
@@ -701,9 +732,14 @@ async function getElderBindInfo(event = {}) {
     throw new Error("缺少老人ID");
   }
 
-  const elder = await getUserById(event.elderId);
+  let elder = null;
+  try {
+    elder = await getUserById(event.elderId);
+  } catch (_) {
+    throw new Error("老人不存在或绑定码无效");
+  }
   if (!elder || !isElderUser(elder)) {
-    throw new Error("老人不存在");
+    throw new Error("老人不存在或绑定码无效");
   }
 
   return {
@@ -989,6 +1025,29 @@ async function approveBindingRequest(event = {}) {
       boundAt: now
     }
   });
+
+  // Once a family account is bound, other pending requests for that account
+  // should no longer remain actionable for other elders.
+  const otherPendingRequests = await db
+    .collection(COLLECTION_NAMES.bindingRequests)
+    .where({
+      familyUserId: request.familyUserId,
+      status: "pending"
+    })
+    .get();
+
+  const staleRequests = (otherPendingRequests.data || []).filter((item) => item && item._id !== event.requestId);
+  for (const item of staleRequests) {
+    await db.collection(COLLECTION_NAMES.bindingRequests).doc(item._id).update({
+      data: {
+        status: "rejected",
+        updatedAt: now,
+        rejectedAt: now,
+        rejectedBy: user._id,
+        rejectReason: "bound_to_other_elder"
+      }
+    });
+  }
 
   return { success: true };
 }
@@ -1976,6 +2035,8 @@ async function addHealthMeasurement(event = {}) {
 async function updateTodayHealth(event = {}) {
   const user = await getCurrentUser();
   const elderId = await resolveElderIdForEvent(user, event);
+  const elder = elderId === user._id ? user : await getUserById(elderId);
+  const currentHealth = (elder && elder.healthStatus) || {};
 
   const updateData = {};
   if (event.bloodPressure !== undefined) updateData["healthStatus.bloodPressure"] = event.bloodPressure;
@@ -1989,14 +2050,33 @@ async function updateTodayHealth(event = {}) {
 
     const todayKey = getDateKey();
     const now = toIsoDate();
-    const bloodPressure = event.bloodPressure !== undefined ? String(event.bloodPressure || "").trim() : "";
-    const parsedPressure = parseBloodPressure(bloodPressure);
-    const heartRate = event.heartRate !== undefined ? parseNumberValue(event.heartRate) : null;
-    const bloodSugar = event.bloodSugar !== undefined ? String(event.bloodSugar || "").trim() : "";
     const existing = await db
       .collection(COLLECTION_NAMES.healthRecords)
       .where({ elderId, type: "dailyHealth", dateKey: todayKey })
       .get();
+    const existingRecord = existing.data.length ? existing.data[0] : null;
+    const bloodPressure = event.bloodPressure !== undefined
+      ? String(event.bloodPressure || "").trim()
+      : String(
+          (existingRecord && existingRecord.bloodPressure !== undefined
+            ? existingRecord.bloodPressure
+            : currentHealth.bloodPressure) || ""
+        ).trim();
+    const parsedPressure = parseBloodPressure(bloodPressure);
+    const heartRate = event.heartRate !== undefined
+      ? parseNumberValue(event.heartRate)
+      : parseNumberValue(
+          existingRecord && existingRecord.heartRate !== undefined
+            ? existingRecord.heartRate
+            : currentHealth.heartRate
+        );
+    const bloodSugar = event.bloodSugar !== undefined
+      ? String(event.bloodSugar || "").trim()
+      : String(
+          (existingRecord && existingRecord.bloodSugar !== undefined
+            ? existingRecord.bloodSugar
+            : currentHealth.bloodSugar) || ""
+        ).trim();
 
     const trendPayload = {
       elderId,
@@ -2013,8 +2093,8 @@ async function updateTodayHealth(event = {}) {
       updatedAt: now
     };
 
-    if (existing.data.length) {
-      await db.collection(COLLECTION_NAMES.healthRecords).doc(existing.data[0]._id).update({
+    if (existingRecord) {
+      await db.collection(COLLECTION_NAMES.healthRecords).doc(existingRecord._id).update({
         data: trendPayload
       });
     } else {
@@ -3032,7 +3112,7 @@ async function loginAccount() {
     throw new Error("当前微信号未注册，请先注册");
   }
 
-  const user = existingUser.data[0];
+  const user = await sanitizeFamilyBinding(existingUser.data[0]);
   return {
     token: `cloud-${wxContext.OPENID}`,
     userType: user.userType || "elder",
@@ -3071,15 +3151,13 @@ async function registerAccountV2(event = {}) {
       }
     });
 
-    return buildAuthResult(
-      {
-        ...user,
-        name,
-        avatar
-      },
-      wxContext,
-      role
-    );
+    const nextUser = await sanitizeFamilyBinding({
+      ...user,
+      name,
+      avatar
+    });
+
+    return buildAuthResult(nextUser, wxContext, role);
   }
 
   const addResult = await userCollection.add({
@@ -3154,16 +3232,14 @@ async function registerAccountPersonalV3(event = {}) {
       }
     });
 
-    return buildAuthResult(
-      {
-        ...user,
-        name,
-        avatar,
-        phone: user.phone || ""
-      },
-      wxContext,
-      role
-    );
+    const nextUser = await sanitizeFamilyBinding({
+      ...user,
+      name,
+      avatar,
+      phone: user.phone || ""
+    });
+
+    return buildAuthResult(nextUser, wxContext, role);
   }
 
   const addResult = await userCollection.add({
@@ -3211,7 +3287,7 @@ async function loginAccountV2() {
     throw new Error("当前微信号未注册，请先注册");
   }
 
-  const user = existingUser.data[0];
+  const user = await sanitizeFamilyBinding(existingUser.data[0]);
   return {
     success: true,
     token: `cloud-${wxContext.OPENID}`,
@@ -3375,16 +3451,14 @@ async function quickLoginWithPhoneV2(event = {}) {
       }
     });
 
-    return buildAuthResult(
-      {
-        ...user,
-        name,
-        avatar,
-        phone
-      },
-      wxContext,
-      role
-    );
+    const nextUser = await sanitizeFamilyBinding({
+      ...user,
+      name,
+      avatar,
+      phone
+    });
+
+    return buildAuthResult(nextUser, wxContext, role);
   }
 
   const addResult = await userCollection.add({

@@ -11,6 +11,8 @@ const {
 } = require("../../api/user");
 const { appendPreviewParam } = require("../../utils/elder-preview");
 
+const HOME_POLL_INTERVAL = 5000;
+
 function formatDateTime(value) {
   if (!value) return "";
   const date = new Date(value);
@@ -185,6 +187,7 @@ Page({
       qrLoading: "二维码生成中",
       qrPlaceholder: "点击刷新生成绑定二维码",
       refreshQr: "\u5237\u65b0\u4e8c\u7ef4\u7801",
+      shareBindLink: "\u5206\u4eab\u7ed1\u5b9a\u94fe\u63a5",
       generateQr: "\u751f\u6210\u4e8c\u7ef4\u7801",
       viewBindingMessages: "\u67e5\u770b\u7ed1\u5b9a\u6d88\u606f",
       personalProfile: "个人资料",
@@ -214,6 +217,11 @@ Page({
     this.promptAudioContext = wx.createInnerAudioContext();
     this.speechPlugin = getSpeechPlugin();
     this.lastPromptKey = "";
+    this.lastHandledUnreadMessageId = "";
+    this.promptRequestSeq = 0;
+    this.activePromptRequestId = 0;
+    this.homePollTimer = null;
+    this.homePollRunning = false;
     this.initAudioPlayer();
     this.initPromptAudioPlayer();
   },
@@ -234,6 +242,7 @@ Page({
     if (this.data.pageTab === "mine" && !this.data.previewMode) {
       this.loadBindingQRCode();
     }
+    this.startHomePolling();
   },
 
   applyGuestPreviewContent() {
@@ -329,11 +338,13 @@ Page({
   },
 
   onHide() {
+    this.stopHomePolling();
     this.stopAudio();
     this.stopPromptAudio();
   },
 
   onUnload() {
+    this.stopHomePolling();
     this.stopAudio();
     this.stopPromptAudio();
     if (this.innerAudioContext) {
@@ -358,20 +369,57 @@ Page({
     });
 
     this.innerAudioContext.onError(() => {
+      const hadPlayingMessage = !!this.data.playingMessageId;
       this.setData({ playingMessageId: "" });
-      wx.showToast({ title: "语音播放失败", icon: "none" });
+      if (hadPlayingMessage) {
+        wx.showToast({ title: "语音播放失败", icon: "none" });
+      }
     });
   },
 
   initPromptAudioPlayer() {
     if (!this.promptAudioContext) return;
     this.promptAudioContext.onError(() => {
-      this.fallbackPromptHint();
+      if (!this.activePromptRequestId) {
+        return;
+      }
+      this.fallbackPromptHint(this.activePromptRequestId);
     });
   },
 
   async loadBoardData() {
     await Promise.all([this.loadOnThisDay(), this.loadVoiceMessages(), this.loadMedicationReminders()]);
+  },
+
+  startHomePolling() {
+    if (this.data.guestMode || this.data.previewMode || this.homePollTimer) {
+      return;
+    }
+
+    this.homePollTimer = setInterval(() => {
+      this.pollHomeData();
+    }, HOME_POLL_INTERVAL);
+  },
+
+  stopHomePolling() {
+    if (this.homePollTimer) {
+      clearInterval(this.homePollTimer);
+      this.homePollTimer = null;
+    }
+    this.homePollRunning = false;
+  },
+
+  async pollHomeData() {
+    if (this.homePollRunning || this.data.guestMode || this.data.previewMode) {
+      return;
+    }
+
+    this.homePollRunning = true;
+    try {
+      await Promise.all([this.loadVoiceMessages(), this.loadMedicationReminders()]);
+    } finally {
+      this.homePollRunning = false;
+    }
   },
 
   async loadPendingCount() {
@@ -427,6 +475,8 @@ Page({
 
   async loadVoiceMessages() {
     try {
+      const previousUnreadCount = Number(this.data.unreadMessageCount || 0);
+      const previousLatestUnread = (this.data.voiceMessages || []).find((item) => item && !item.isReadByElder);
       const res = await getVoiceMessagesAPI();
       const list = Array.isArray(res && res.list) ? res.list : [];
       const unreadMessageCount = Number((res && res.unreadCount) || 0);
@@ -445,7 +495,10 @@ Page({
         }))
       });
 
-      this.maybeAnnounceNewMessages(voiceMessages, unreadMessageCount);
+      this.maybeAnnounceNewMessages(voiceMessages, unreadMessageCount, {
+        previousUnreadCount,
+        previousLatestUnreadId: previousLatestUnread && previousLatestUnread.id
+      });
       if (this.data.boardTab === "messages" && unreadMessageCount > 0) {
         this.markMessagesReadSilently();
       }
@@ -570,6 +623,7 @@ Page({
   },
 
   async markMessagesReadSilently() {
+    const latestUnread = (this.data.voiceMessages || []).find((item) => item && !item.isReadByElder);
     try {
       await markVoiceMessagesReadAPI();
     } catch (_) {
@@ -583,7 +637,10 @@ Page({
         isReadByElder: true
       }))
     });
-    this.lastPromptKey = "";
+    if (latestUnread && latestUnread.id) {
+      this.lastHandledUnreadMessageId = latestUnread.id;
+      this.lastPromptKey = `${latestUnread.id}:0`;
+    }
   },
 
   playVoiceMessage(e) {
@@ -613,40 +670,67 @@ Page({
 
   stopPromptAudio() {
     if (this.promptAudioContext) {
+      this.activePromptRequestId = 0;
       this.promptAudioContext.stop();
     }
   },
 
-  maybeAnnounceNewMessages(list, unreadCount) {
+  maybeAnnounceNewMessages(list, unreadCount, previousState = {}) {
     if (!unreadCount) {
       this.lastPromptKey = "";
+      this.activePromptRequestId = 0;
       return;
     }
 
     const unreadList = (list || []).filter((item) => !item.isReadByElder);
     if (!unreadList.length) {
       this.lastPromptKey = "";
+      this.activePromptRequestId = 0;
       return;
     }
 
     const latestUnread = unreadList[0];
     const promptKey = `${latestUnread.id || ""}:${unreadCount}`;
+    const previousUnreadCount = Number(previousState.previousUnreadCount || 0);
+    const previousLatestUnreadId = previousState.previousLatestUnreadId || "";
+
+    if (latestUnread.id && latestUnread.id === this.lastHandledUnreadMessageId) {
+      this.lastPromptKey = promptKey;
+      return;
+    }
+
+    if (previousUnreadCount > 0 && previousLatestUnreadId && previousLatestUnreadId === latestUnread.id) {
+      this.lastPromptKey = promptKey;
+      return;
+    }
+
     if (promptKey === this.lastPromptKey) {
       return;
     }
 
     this.lastPromptKey = promptKey;
-    this.playNewMessagePrompt();
+    if (latestUnread.id) {
+      this.lastHandledUnreadMessageId = latestUnread.id;
+    }
+    this.activePromptRequestId = ++this.promptRequestSeq;
+    this.playNewMessagePrompt(this.activePromptRequestId);
   },
 
-  async playNewMessagePrompt() {
+  async playNewMessagePrompt(requestId) {
     const filePath = await this.synthesizePromptAudio("您有新的家人留言");
+    if (requestId !== this.activePromptRequestId) {
+      return;
+    }
+
     if (!filePath || !this.promptAudioContext) {
-      this.fallbackPromptHint();
+      this.fallbackPromptHint(requestId);
       return;
     }
 
     this.promptAudioContext.stop();
+    if (requestId !== this.activePromptRequestId) {
+      return;
+    }
     this.promptAudioContext.src = filePath;
     this.promptAudioContext.play();
   },
@@ -669,7 +753,10 @@ Page({
     });
   },
 
-  fallbackPromptHint() {
+  fallbackPromptHint(requestId) {
+    if (requestId && requestId !== this.activePromptRequestId) {
+      return;
+    }
     wx.vibrateShort({ type: "light", fail: () => {} });
     wx.showToast({
       title: "您有新的家人留言",

@@ -37,7 +37,6 @@ function scanCode() {
   return new Promise((resolve, reject) => {
     wx.scanCode({
       onlyFromCamera: false,
-      scanType: ["qrCode"],
       success: resolve,
       fail: reject
     });
@@ -184,8 +183,11 @@ Page({
     }
     this.setData({
       loading: true,
+      sharedElder: null,
       requestSent: false,
-      requestSource: source
+      requestSource: source,
+      relation: "",
+      relationIndex: -1
     });
     try {
       const elder = await getElderBindInfoAPI(elderId);
@@ -194,12 +196,15 @@ Page({
         requestSource: source,
         loading: false
       });
-    } catch (_) {
+    } catch (error) {
       this.setData({
         loading: false,
         sharedElder: null
       });
-      wx.showToast({ title: "未找到老人信息", icon: "none" });
+      wx.showToast({
+        title: (error && (error.message || error.msg)) || "加载老人信息失败",
+        icon: "none"
+      });
     }
   },
 
@@ -246,6 +251,11 @@ Page({
     const value = String(rawValue || "").trim();
     if (!value) return "";
 
+    const directPairMatch = value.match(/(?:^|[\s?&])(inviteElderId|elderId)=([^&#\s]+)/);
+    if (directPairMatch && directPairMatch[2]) {
+      return decodeURIComponent(directPairMatch[2]);
+    }
+
     try {
       const parsed = JSON.parse(value);
       if (parsed && (parsed.inviteElderId || parsed.elderId)) {
@@ -260,7 +270,7 @@ Page({
       const decodedScene = decodeURIComponent(sceneMatch[1]);
       const innerMatch = decodedScene.match(/(?:^|&)(?:inviteElderId|elderId)=([^&]+)/);
       if (innerMatch && innerMatch[1]) {
-        return innerMatch[1];
+        return decodeURIComponent(innerMatch[1]);
       }
     }
 
@@ -274,6 +284,11 @@ Page({
       return directMatch[1];
     }
 
+    const pureIdMatch = value.match(/^[A-Za-z0-9_-]{24,32}$/);
+    if (pureIdMatch && pureIdMatch[0]) {
+      return pureIdMatch[0];
+    }
+
     return "";
   },
 
@@ -282,12 +297,18 @@ Page({
       promptPreviewLogin("扫码绑定");
       return;
     }
+    if (this.data.loading) return;
     try {
       const res = await scanCode();
-      const elderId = this.parseScannedElderId((res && (res.path || res.result)) || "");
+      const elderId = this.parseScannedElderId(
+        (res && [res.path, res.result, res.rawData]
+          .filter(Boolean)
+          .join(" ")) || ""
+      );
       if (!elderId) {
+        console.error("scan bind code parse failed:", res);
         wx.showToast({
-          title: "未识别到有效二维码",
+          title: "未识别到带绑定信息的二维码",
           icon: "none"
         });
         return;

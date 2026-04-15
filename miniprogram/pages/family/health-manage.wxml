@@ -13,17 +13,17 @@
       </view>
 
       <view class="overview-card">
-        <view class="overview-main">
+        <view class="overview-main-card" bindtap="editTodayHealth">
           <view class="overview-label">血压</view>
           <view class="overview-value">{{pressureOverview.current}}</view>
           <view class="overview-subtitle">适合快速查看最近状态</view>
         </view>
         <view class="overview-side">
-          <view class="mini-metric">
+          <view class="overview-side-card" catchtap="editHeartRate">
             <text class="mini-metric-label">心率</text>
             <text class="mini-metric-value">{{todayHealth.heartRate || "--"}} 次/分</text>
           </view>
-          <view class="mini-metric">
+          <view class="overview-side-card" catchtap="editBloodSugar">
             <text class="mini-metric-label">血糖</text>
             <text class="mini-metric-value">{{todayHealth.bloodSugar || "--"}} mmol/L</text>
           </view>
