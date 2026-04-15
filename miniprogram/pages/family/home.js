@@ -461,7 +461,7 @@ Page({
 
     if (!this.ensureBoundElder("老人端功能")) return;
     wx.reLaunch({
-      url: "/pages/elder/home",
+      url: "/pages/elder/home?from=familyPreview",
       fail: (err) => {
         console.error("enter elder home failed:", err);
       }

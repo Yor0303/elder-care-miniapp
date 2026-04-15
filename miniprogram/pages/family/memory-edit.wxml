@@ -47,20 +47,22 @@
         bindchange="onPersonChange"
       >
         <view class="form-picker">
-          <text class="{{personIndex < 0 ? 'placeholder' : ''}}">
+          <view class="picker-value {{personIndex < 0 ? 'placeholder' : ''}}">
             {{personIndex < 0 ? "请选择人物" : personOptions[personIndex].label}}
-          </text>
+          </view>
           <text class="arrow">></text>
         </view>
       </picker>
+      <view wx:if="{{personIndex >= 0}}" class="field-helper">当前已选：{{personOptions[personIndex].label}}</view>
     </view>
 
     <view class="form-item" bindtap="showTypePicker">
       <view class="form-label">类型</view>
       <view class="form-picker">
-        <text class="{{type ? '' : 'placeholder'}}">{{typeLabels[type] || "请选择类型"}}</text>
+        <view class="picker-value {{type ? '' : 'placeholder'}}">{{typeLabels[type] || "请选择类型"}}</view>
         <text class="arrow">></text>
       </view>
+      <view wx:if="{{type}}" class="field-helper">当前已选：{{typeLabels[type]}}</view>
     </view>
 
     <view class="form-item">

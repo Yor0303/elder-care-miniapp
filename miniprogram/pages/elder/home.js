@@ -24,6 +24,15 @@ function formatDateTime(value) {
   return `${month}-${day} ${hour}:${minute}`;
 }
 
+function getLocalDateKey(value = new Date()) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function formatDuration(seconds) {
   const total = Math.max(0, Number(seconds) || 0);
   const minute = `${Math.floor(total / 60)}`.padStart(2, "0");
@@ -126,6 +135,13 @@ function isGuestRoute(options = {}) {
   return String(options.guest || "") === "1";
 }
 
+function appendRouteParam(url, key, value) {
+  if (!url || !key || value === undefined || value === null || value === "") {
+    return url;
+  }
+  return `${url}${url.includes("?") ? "&" : "?"}${key}=${encodeURIComponent(value)}`;
+}
+
 Page({
   data: {
     pageTab: "home",
@@ -143,6 +159,7 @@ Page({
     bindQrLoading: false,
     previewMode: false,
     guestMode: false,
+    familyPreviewMode: false,
     previewFrom: "",
     completingReminderId: "",
     copy: {
@@ -202,7 +219,9 @@ Page({
   onLoad(options = {}) {
     const role = wx.getStorageSync("role");
     const guestRoute = isGuestRoute(options);
-    if (hasLoginSession() && role === "family" && options.preview !== "1" && !guestRoute) {
+    const familyPreviewMode =
+      hasLoginSession() && role === "family" && String(options.from || "") === "familyPreview";
+    if (hasLoginSession() && role === "family" && options.preview !== "1" && !guestRoute && !familyPreviewMode) {
       wx.reLaunch({ url: "/pages/family/home" });
       return;
     }
@@ -211,7 +230,8 @@ Page({
     this.setData({
       previewMode: options.preview === "1" || guestMode,
       guestMode,
-      previewFrom: guestMode ? (options.from || "guest") : (options.from || "")
+      familyPreviewMode,
+      previewFrom: guestMode || familyPreviewMode ? (options.from || "guest") : (options.from || "")
     });
     this.innerAudioContext = wx.createInnerAudioContext();
     this.promptAudioContext = wx.createInnerAudioContext();
@@ -233,13 +253,13 @@ Page({
     }
 
     this.loadBoardData();
-    if (this.data.previewMode) {
+    if (this.data.previewMode || this.data.familyPreviewMode) {
       this.setData({ pendingCount: 0 });
     } else {
       this.loadPendingCount();
     }
     this.loadElderProfile();
-    if (this.data.pageTab === "mine" && !this.data.previewMode) {
+    if (this.data.pageTab === "mine" && !this.data.previewMode && !this.data.familyPreviewMode) {
       this.loadBindingQRCode();
     }
     this.startHomePolling();
@@ -325,6 +345,13 @@ Page({
       return;
     }
 
+    if (this.data.familyPreviewMode) {
+      wx.navigateTo({
+        url: appendRouteParam(url, "from", "familyPreview")
+      });
+      return;
+    }
+
     wx.navigateTo({
       url: this.data.previewMode ? appendPreviewParam(url) : url
     });
@@ -392,7 +419,7 @@ Page({
   },
 
   startHomePolling() {
-    if (this.data.guestMode || this.data.previewMode || this.homePollTimer) {
+    if (this.data.guestMode || this.data.previewMode || this.data.familyPreviewMode || this.homePollTimer) {
       return;
     }
 
@@ -410,7 +437,7 @@ Page({
   },
 
   async pollHomeData() {
-    if (this.homePollRunning || this.data.guestMode || this.data.previewMode) {
+    if (this.homePollRunning || this.data.guestMode || this.data.previewMode || this.data.familyPreviewMode) {
       return;
     }
 
@@ -479,9 +506,13 @@ Page({
       const previousLatestUnread = (this.data.voiceMessages || []).find((item) => item && !item.isReadByElder);
       const res = await getVoiceMessagesAPI();
       const list = Array.isArray(res && res.list) ? res.list : [];
-      const unreadMessageCount = Number((res && res.unreadCount) || 0);
+      const todayKey = getLocalDateKey();
+      const todayMessages = list.filter(
+        (item) => item && item.messageType !== "reminder" && getLocalDateKey(item.createdAt) === todayKey
+      );
+      const unreadMessageCount = todayMessages.filter((item) => !item.isReadByElder).length;
       const voiceMessages = await this.attachAudioUrls(
-        list.filter((item) => item && item.messageType !== "reminder")
+        todayMessages
       );
 
       this.setData({
@@ -540,7 +571,7 @@ Page({
     const { id, taskType } = e.currentTarget.dataset;
     if (!id || this.data.completingReminderId) return;
 
-    if (this.data.previewMode) {
+    if (this.data.previewMode || this.data.familyPreviewMode) {
       wx.showToast({ title: "\u9884\u89c8\u6a21\u5f0f\u4e0b\u4e0d\u53ef\u7528", icon: "none" });
       return;
     }
@@ -608,13 +639,13 @@ Page({
     if (!tab || tab === this.data.pageTab) return;
     this.setData({ pageTab: tab });
 
-    if (tab === "mine" && !this.data.previewMode && !this.data.bindQrCodeFileID) {
+    if (tab === "mine" && !this.data.previewMode && !this.data.familyPreviewMode && !this.data.bindQrCodeFileID) {
       this.loadBindingQRCode();
     }
   },
 
   exitPreview() {
-    if (!this.data.previewMode) return;
+    if (!this.data.previewMode && !this.data.familyPreviewMode) return;
     wx.navigateBack({
       fail: () => {
         wx.reLaunch({ url: "/pages/family/home" });
@@ -765,7 +796,7 @@ Page({
   },
 
   refreshBindingQRCode() {
-    if (this.data.previewMode) {
+    if (this.data.previewMode || this.data.familyPreviewMode) {
       wx.showToast({ title: "预览模式下不可用", icon: "none" });
       return;
     }
@@ -802,11 +833,7 @@ Page({
       return;
     }
 
-    if (this.data.guestMode) {
-      this.promptLoginForFeature(this.data.copy.bindingMessages);
-      return;
-    }
-    if (this.data.previewMode) {
+    if (this.data.familyPreviewMode || this.data.previewMode) {
       wx.showToast({ title: "预览模式下不可用", icon: "none" });
       return;
     }
@@ -819,12 +846,8 @@ Page({
       return;
     }
 
-    if (this.data.guestMode) {
-      this.promptLoginForFeature(this.data.copy.faceRecognition);
-      return;
-    }
-    if (this.data.guestMode) {
-      this.showPreviewOnlyToast("可先浏览其他功能，登录后使用人脸识别");
+    if (this.data.familyPreviewMode || this.data.previewMode) {
+      this.showPreviewOnlyToast("预览模式下不可用");
       return;
     }
     wx.navigateTo({ url: "/pages/elder/face-recognition" });

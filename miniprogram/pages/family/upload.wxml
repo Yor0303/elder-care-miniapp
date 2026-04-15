@@ -47,21 +47,29 @@
             <textarea class="form-textarea-control" placeholder="写下这段回忆的故事..." value="{{story}}" bindinput="onStoryInput" maxlength="500" />
           </mp-cell>
 
-          <view class="cell-trigger" bindtap="showTypePicker">
-            <mp-cell title="回忆类型" link>
-              <view slot="footer" class="picker-text {{memoryType ? '' : 'picker-placeholder'}}">
+          <view class="cell-trigger picker-cell" bindtap="showTypePicker">
+            <view class="picker-cell-label">回忆类型</view>
+            <view class="picker-cell-value-wrap">
+              <view class="picker-text {{memoryType ? '' : 'picker-placeholder'}}">
                 {{typeLabels[memoryType] || "请选择类型"}}
               </view>
-            </mp-cell>
+              <view class="picker-cell-arrow">></view>
+            </view>
           </view>
+          <view wx:if="{{memoryType}}" class="field-helper">当前已选：{{typeLabels[memoryType]}}</view>
 
           <picker mode="date" value="{{eventDate}}" bindchange="onDateChange">
-            <mp-cell title="回忆日期" link>
-              <view slot="footer" class="picker-text {{eventDate ? '' : 'picker-placeholder'}}">
-                {{eventDate || "请选择日期"}}
+            <view class="picker-cell">
+              <view class="picker-cell-label">回忆日期</view>
+              <view class="picker-cell-value-wrap">
+                <view class="picker-text {{eventDate ? '' : 'picker-placeholder'}}">
+                  {{eventDate || "请选择日期"}}
+                </view>
+                <view class="picker-cell-arrow">></view>
               </view>
-            </mp-cell>
+            </view>
           </picker>
+          <view wx:if="{{eventDate}}" class="field-helper">当前已选：{{eventDate}}</view>
 
           <picker
             mode="selector"
@@ -70,12 +78,17 @@
             value="{{personIndex < 0 ? 0 : personIndex}}"
             bindchange="onPersonChange"
           >
-            <mp-cell title="相关人物" link>
-              <view slot="footer" class="picker-text {{personIndex < 0 ? 'picker-placeholder' : ''}}">
-                {{personIndex < 0 ? "请选择人物" : personOptions[personIndex].label}}
+            <view class="picker-cell">
+              <view class="picker-cell-label">相关人物</view>
+              <view class="picker-cell-value-wrap">
+                <view class="picker-text {{personIndex < 0 ? 'picker-placeholder' : ''}}">
+                  {{personIndex < 0 ? "请选择人物" : personOptions[personIndex].label}}
+                </view>
+                <view class="picker-cell-arrow">></view>
               </view>
-            </mp-cell>
+            </view>
           </picker>
+          <view wx:if="{{personIndex >= 0}}" class="field-helper">当前已选：{{personOptions[personIndex].label}}</view>
         </mp-cells>
       </mp-form>
 

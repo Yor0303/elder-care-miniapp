@@ -50,7 +50,11 @@
       </view>
     </view>
 
-    <block wx:if="{{authMode}}">
+    <view wx:if="{{!existingAccountChecked}}" class="helper-text account-checking">
+      {{copy.checkingAccount}}
+    </view>
+
+    <block wx:elif="{{authMode}}">
       <view class="auth-panel">
         <view class="auth-panel-title">{{copy.authPanelTitle}}</view>
         <view class="auth-panel-desc">
@@ -91,7 +95,7 @@
         <button
           class="primary-btn auth-submit-btn"
           loading="{{loading}}"
-          disabled="{{loading || !agreed}}"
+          disabled="{{loading || (!agreed && !(existingAccountRole && existingAccountRole === selectedRole))}}"
           bindtap="handleManualRegister"
         >
           {{existingAccountRole ? (existingAccountRole === selectedRole ? copy.authPrimaryLogin : copy.authPrimarySwitch) : copy.authPrimary}}
@@ -114,6 +118,7 @@
     </button>
 
     <button
+      wx:if="{{existingAccountChecked && !existingAccountRole}}"
       class="secondary-btn"
       disabled="{{loading}}"
       bindtap="handleSecondaryAction"
@@ -121,13 +126,13 @@
       {{authMode ? copy.switchToPreview : copy.switchToAuth}}
     </button>
 
-    <view wx:if="{{!authMode}}" class="helper-text">
+    <view wx:if="{{existingAccountChecked && !authMode && !existingAccountRole}}" class="helper-text">
       {{authMode ? copy.authHelper : copy.previewHelper}}
     </view>
   </view>
 
   <view class="agreement-section">
-    <view wx:if="{{authMode}}" class="agreement-row" bindtap="toggleAgreement">
+    <view wx:if="{{existingAccountChecked && authMode}}" class="agreement-row" bindtap="toggleAgreement">
       <view class="agreement-check {{agreed ? 'checked' : ''}}">
         <app-icon wx:if="{{agreed}}" name="check" size="18rpx" color="#ffffff"></app-icon>
       </view>

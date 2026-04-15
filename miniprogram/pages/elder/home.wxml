@@ -43,7 +43,7 @@
           </view>
           <view class="binding-message-copy">
             <view class="binding-message-title">{{onThisDay.title || copy.recallPrompt}}</view>
-            <view class="binding-message-desc">{{onThisDay.desc || onThisDay.summary || copy.recallDesc}}</view>
+            <view wx:if="{{onThisDay.desc || onThisDay.summary}}" class="binding-message-desc">{{onThisDay.desc || onThisDay.summary}}</view>
           </view>
         </view>
 

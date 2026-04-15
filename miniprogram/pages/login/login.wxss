@@ -284,6 +284,11 @@ page {
   line-height: 1.7;
 }
 
+.account-checking {
+  margin-top: 12rpx;
+  margin-bottom: 12rpx;
+}
+
 .agreement-section {
   padding-top: 88rpx;
 }

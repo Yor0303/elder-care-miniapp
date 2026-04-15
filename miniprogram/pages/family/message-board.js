@@ -106,6 +106,34 @@ function openSettingAsync() {
   });
 }
 
+function getRecorderErrorMessage(error = {}) {
+  const raw = String(
+    (error && (error.errMsg || error.message)) || ""
+  ).trim();
+
+  if (!raw) {
+    return "录音失败，请稍后重试";
+  }
+
+  if (raw.includes("auth deny") || raw.includes("authorize:no response")) {
+    return "未开启录音权限，请先授权麦克风";
+  }
+
+  if (raw.includes("not supported") || raw.includes("not support")) {
+    return "当前环境不支持录音，请使用真机调试";
+  }
+
+  if (raw.includes("interrupted")) {
+    return "录音被系统中断，请重试";
+  }
+
+  if (raw.includes("start")) {
+    return `录音启动失败：${raw}`;
+  }
+
+  return `录音失败：${raw}`;
+}
+
 Page({
   data: {
     previewMode: false,
@@ -205,10 +233,16 @@ Page({
       });
     });
 
-    this.recorderManager.onError(() => {
+    this.recorderManager.onError((error) => {
       this.clearRecordTimer();
       this.setData({ recording: false });
-      wx.showToast({ title: "录音失败", icon: "none" });
+      console.error("recorderManager error:", error);
+      wx.showModal({
+        title: "录音失败",
+        content: getRecorderErrorMessage(error),
+        showCancel: false,
+        confirmText: "我知道了"
+      });
     });
   },
 
@@ -342,12 +376,13 @@ Page({
         sampleRate: 16000,
         numberOfChannels: 1,
         encodeBitRate: 96000,
-        format: "mp3"
+        format: "aac"
       });
-    } catch (_) {
+    } catch (error) {
+      console.error("start record failed:", error);
       wx.showModal({
         title: "需要录音权限",
-        content: "请先开启录音权限，才能给老人发送语音留言。",
+        content: getRecorderErrorMessage(error) || "请先开启录音权限，才能给老人发送语音留言。",
         confirmText: "去设置",
         success: (res) => {
           if (res.confirm) {

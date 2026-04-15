@@ -109,6 +109,7 @@ Page({
       authPrimarySwitch: "\u5207\u6362\u5df2\u6ce8\u518c\u8eab\u4efd",
       switchToAuth: "\u767b\u5f55/\u6ce8\u518c",
       switchToPreview: "\u5148\u770b\u770b\u9996\u9875",
+      checkingAccount: "\u6b63\u5728\u68c0\u67e5\u5f53\u524d\u5fae\u4fe1\u53f7\u662f\u5426\u5df2\u6ce8\u518c...",
       agreementPrefix: "\u5df2\u9605\u8bfb\u5e76\u540c\u610f",
       agreementUser: "\u300a\u6613\u5fc6\u7ad9\u7528\u6237\u534f\u8bae\u300b",
       agreementJoiner: "\u548c",
@@ -157,9 +158,12 @@ Page({
   async checkExistingAccount() {
     try {
       const result = await loginAPI();
+      const registeredRole = (result && result.userType) || "";
       this.setData({
-        existingAccountRole: (result && result.userType) || "",
-        existingAccountChecked: true
+        existingAccountRole: registeredRole,
+        existingAccountChecked: true,
+        authMode: !!registeredRole || this.data.authMode,
+        selectedRole: registeredRole || this.data.selectedRole
       });
     } catch (error) {
       const message = getErrorMessage(error, "");
@@ -179,15 +183,24 @@ Page({
     this.setData({ agreed: !this.data.agreed });
   },
 
-  ensureAgreement() {
+  ensureAgreement(options = {}) {
     if (this.data.agreed) {
       return true;
     }
 
-    wx.showToast({
-      title: this.data.copy.toastAgreement,
-      icon: "none"
-    });
+    if (options.useModal) {
+      wx.showModal({
+        title: "提示",
+        content: this.data.copy.toastAgreement,
+        showCancel: false,
+        confirmText: "我知道了"
+      });
+    } else {
+      wx.showToast({
+        title: this.data.copy.toastAgreement,
+        icon: "none"
+      });
+    }
     return false;
   },
 
@@ -342,7 +355,8 @@ Page({
       return;
     }
 
-    if (!this.ensureAgreement()) {
+    const isDirectLogin = !!this.data.existingAccountRole && this.data.existingAccountRole === this.data.selectedRole;
+    if (!this.ensureAgreement({ useModal: isDirectLogin })) {
       return;
     }
 
@@ -430,10 +444,17 @@ Page({
   },
 
   handlePrimaryAction() {
+    if (this.data.existingAccountRole) {
+      this.enterAuthMode();
+      return;
+    }
     this.goToPreviewHome();
   },
 
   handleSecondaryAction() {
+    if (this.data.existingAccountRole) {
+      return;
+    }
     if (this.data.authMode) {
       this.setData({ authMode: false });
       return;

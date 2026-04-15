@@ -93,6 +93,13 @@
   box-sizing: border-box;
 }
 
+.picker-value {
+  flex: 1;
+  min-width: 0;
+  padding-right: 16rpx;
+  color: var(--yz-text-primary);
+}
+
 .form-picker .placeholder {
   color: var(--yz-text-tertiary);
 }
@@ -100,6 +107,14 @@
 .form-picker .arrow {
   color: var(--yz-text-tertiary);
   font-size: 36rpx;
+}
+
+.field-helper {
+  margin-top: 12rpx;
+  padding: 0 8rpx;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: var(--yz-text-secondary);
 }
 
 .image-section {
