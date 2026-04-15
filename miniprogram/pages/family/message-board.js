@@ -139,6 +139,17 @@ function getRecorderErrorMessage(error = {}) {
 }
 
 Page({
+  setPageActive(active) {
+    this._pageActive = !!active;
+  },
+
+  safeSetData(data, callback) {
+    if (!this._pageActive) {
+      return;
+    }
+    this.setData(data, callback);
+  },
+
   data: {
     previewMode: false,
     recording: false,
@@ -175,13 +186,14 @@ Page({
   },
 
   onLoad(options = {}) {
-    this.setData({
+    this.setPageActive(true);
+    this.safeSetData({
       previewMode: isPreviewMode(options)
     });
     this.recorderManager = wx.getRecorderManager();
     this.innerAudioContext = wx.createInnerAudioContext();
     this.recordTimer = null;
-    this.setData({
+    this.safeSetData({
       reminderScheduleActionItems: this.data.reminderScheduleOptions.map((item) => ({
         text: item.label,
         value: item.value
@@ -192,15 +204,18 @@ Page({
   },
 
   onShow() {
+    this.setPageActive(true);
     this.loadMessages();
   },
 
   onHide() {
+    this.setPageActive(false);
     this.stopAudio();
     this.clearRecordTimer();
   },
 
   onUnload() {
+    this.setPageActive(false);
     this.stopAudio();
     this.clearRecordTimer();
     if (this.innerAudioContext) {
@@ -213,7 +228,7 @@ Page({
     if (!this.recorderManager) return;
 
     this.recorderManager.onStart(() => {
-      this.setData({
+      this.safeSetData({
         recording: true,
         recordSeconds: 0,
         tempVoicePath: "",
@@ -221,7 +236,11 @@ Page({
       });
       this.clearRecordTimer();
       this.recordTimer = setInterval(() => {
-        this.setData({
+        if (!this._pageActive) {
+          this.clearRecordTimer();
+          return;
+        }
+        this.safeSetData({
           recordSeconds: this.data.recordSeconds + 1
         });
       }, 1000);
@@ -230,7 +249,7 @@ Page({
     this.recorderManager.onStop((res) => {
       this.clearRecordTimer();
       const duration = Math.max(1, Math.round((res.duration || 0) / 1000));
-      this.setData({
+      this.safeSetData({
         recording: false,
         tempVoicePath: res.tempFilePath || "",
         tempVoiceDuration: duration
@@ -239,7 +258,7 @@ Page({
 
     this.recorderManager.onError((error) => {
       this.clearRecordTimer();
-      this.setData({ recording: false });
+      this.safeSetData({ recording: false });
       console.error("recorderManager error:", error);
       wx.showModal({
         title: "录音失败",
@@ -254,15 +273,15 @@ Page({
     if (!this.innerAudioContext) return;
 
     this.innerAudioContext.onEnded(() => {
-      this.setData({ playingMessageId: "" });
+      this.safeSetData({ playingMessageId: "" });
     });
 
     this.innerAudioContext.onStop(() => {
-      this.setData({ playingMessageId: "" });
+      this.safeSetData({ playingMessageId: "" });
     });
 
     this.innerAudioContext.onError(() => {
-      this.setData({ playingMessageId: "" });
+      this.safeSetData({ playingMessageId: "" });
       wx.showToast({ title: "语音播放失败", icon: "none" });
     });
   },
@@ -275,11 +294,11 @@ Page({
   },
 
   async loadMessages() {
-    this.setData({ loading: true });
+    this.safeSetData({ loading: true });
 
     try {
       if (this.data.previewMode) {
-        this.setData({
+        this.safeSetData({
           loading: false,
           messages: previewMessageBoardMessages.map((item) => ({
             ...item,
@@ -297,7 +316,7 @@ Page({
       const list = Array.isArray(res && res.list) ? res.list : [];
       const messages = await this.attachAudioUrls(list);
 
-      this.setData({
+      this.safeSetData({
         loading: false,
         messages: messages.map((item) => ({
           ...item,
@@ -310,7 +329,7 @@ Page({
         }))
       });
     } catch (error) {
-      this.setData({ loading: false, messages: [] });
+      this.safeSetData({ loading: false, messages: [] });
       wx.showToast({ title: "留言加载失败", icon: "none" });
     }
   },
@@ -403,7 +422,7 @@ Page({
   },
 
   clearDraft() {
-    this.setData({
+    this.safeSetData({
       tempVoicePath: "",
       tempVoiceDuration: 0,
       recordSeconds: 0
@@ -411,34 +430,34 @@ Page({
   },
 
   onNoteInput(e) {
-    this.setData({ messageNote: e.detail.value });
+    this.safeSetData({ messageNote: e.detail.value });
   },
 
   setComposerMode(e) {
     const { mode } = e.currentTarget.dataset;
     if (!mode) return;
 
-    this.setData({
+    this.safeSetData({
       reminderMode: mode === "reminder"
     });
   },
 
   toggleReminderMode() {
-    this.setData({
+    this.safeSetData({
       reminderMode: !this.data.reminderMode
     });
   },
 
   onReminderTimeInput(e) {
-    this.setData({ reminderTime: e.detail.value });
+    this.safeSetData({ reminderTime: e.detail.value });
   },
 
   openReminderScheduleSheet() {
-    this.setData({ showReminderScheduleSheet: true });
+    this.safeSetData({ showReminderScheduleSheet: true });
   },
 
   closeReminderScheduleSheet() {
-    this.setData({ showReminderScheduleSheet: false });
+    this.safeSetData({ showReminderScheduleSheet: false });
   },
 
   onReminderScheduleSelect(e) {
@@ -458,11 +477,11 @@ Page({
       nextData.reminderDate = getTodayDateKey();
     }
 
-    this.setData(nextData);
+    this.safeSetData(nextData);
   },
 
   onReminderDateChange(e) {
-    this.setData({
+    this.safeSetData({
       reminderDate: e.detail.value
     });
   },
@@ -475,7 +494,7 @@ Page({
     const current = normalizeWeekdays(this.data.reminderWeekdays);
     const exists = current.includes(value);
     const next = exists ? current.filter((item) => item !== value) : current.concat(value);
-    this.setData({
+    this.safeSetData({
       reminderWeekdays: normalizeWeekdays(next)
     });
   },
@@ -522,7 +541,7 @@ Page({
       return;
     }
 
-    this.setData({ sending: true });
+    this.safeSetData({ sending: true });
 
     try {
       wx.showLoading({ title: "发送中..." });
@@ -543,7 +562,7 @@ Page({
       });
 
       wx.hideLoading();
-      this.setData({
+      this.safeSetData({
         sending: false,
         tempVoicePath: "",
         tempVoiceDuration: 0,
@@ -560,7 +579,7 @@ Page({
       this.loadMessages();
     } catch (error) {
       wx.hideLoading();
-      this.setData({ sending: false });
+      this.safeSetData({ sending: false });
       wx.showToast({ title: error.message || "发送失败", icon: "none" });
     }
   },
@@ -581,7 +600,7 @@ Page({
 
     this.innerAudioContext.src = target.audioUrl;
     this.innerAudioContext.play();
-    this.setData({ playingMessageId: id });
+    this.safeSetData({ playingMessageId: id });
   },
 
   stopAudio() {

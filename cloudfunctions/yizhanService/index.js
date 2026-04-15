@@ -116,9 +116,13 @@ function getFaceRecognitionConfig() {
     (localConfig && localConfig.faceRecognition) ||
     (appConfig && appConfig.faceRecognition) ||
     {};
-  const secretId = process.env.TENCENTCLOUD_SECRET_ID || faceRecognitionConfig.secretId || "";
-  const secretKey = process.env.TENCENTCLOUD_SECRET_KEY || faceRecognitionConfig.secretKey || "";
-  const region = process.env.TENCENTCLOUD_REGION || faceRecognitionConfig.region || "ap-shanghai";
+  const secretId = process.env.FACE_SECRET_ID || faceRecognitionConfig.secretId || "";
+  const secretKey = process.env.FACE_SECRET_KEY || faceRecognitionConfig.secretKey || "";
+  const region =
+    process.env.FACE_REGION ||
+    process.env.TENCENTCLOUD_REGION ||
+    faceRecognitionConfig.region ||
+    "ap-shanghai";
   const scoreThreshold = Number(
     process.env.FACE_SCORE_THRESHOLD ||
       faceRecognitionConfig.scoreThreshold ||
@@ -136,7 +140,7 @@ function getFaceRecognitionConfig() {
 function assertFaceRecognitionConfigured() {
   const config = getFaceRecognitionConfig();
   if (!config.secretId || !config.secretKey) {
-    throw new Error("请先在 config.local.json 或云函数环境变量中配置 TENCENTCLOUD_SECRET_ID 和 TENCENTCLOUD_SECRET_KEY");
+    throw new Error("请先在 config.local.json 或云函数环境变量中配置 FACE_SECRET_ID 和 FACE_SECRET_KEY");
   }
   return config;
 }

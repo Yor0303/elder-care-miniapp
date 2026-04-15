@@ -19,6 +19,9 @@ function isUnsupportedFaceImage(tempFilePath = "") {
   return /\.(heic|heif)$/i.test(tempFilePath);
 }
 
+const FACE_UPLOAD_MAX_EDGE = 1600;
+const FACE_UPLOAD_QUALITY = 0.82;
+
 Page({
   data: {
     loading: false,
@@ -46,7 +49,9 @@ Page({
     selectAvatarFile: null,
     uploadAvatarFile: null,
     selectFacePhotoFile: null,
-    uploadFacePhotoFile: null
+    uploadFacePhotoFile: null,
+    faceCanvasWidth: 1,
+    faceCanvasHeight: 1
   },
 
   onLoad(options) {
@@ -131,6 +136,71 @@ Page({
     return Promise.all(tempFilePaths.map((item) => this.uploadToCloud(item, "member-faces"))).then((urls) => ({ urls }));
   },
 
+  getImageInfo(tempFilePath) {
+    return new Promise((resolve, reject) => {
+      wx.getImageInfo({
+        src: tempFilePath,
+        success: resolve,
+        fail: reject
+      });
+    });
+  },
+
+  resizeFaceImage(tempFilePath, targetWidth, targetHeight) {
+    return new Promise((resolve, reject) => {
+      this.setData(
+        {
+          faceCanvasWidth: targetWidth,
+          faceCanvasHeight: targetHeight
+        },
+        () => {
+          const ctx = wx.createCanvasContext("faceUploadCanvas", this);
+          ctx.clearRect(0, 0, targetWidth, targetHeight);
+          ctx.drawImage(tempFilePath, 0, 0, targetWidth, targetHeight);
+          ctx.draw(false, () => {
+            wx.canvasToTempFilePath(
+              {
+                canvasId: "faceUploadCanvas",
+                x: 0,
+                y: 0,
+                width: targetWidth,
+                height: targetHeight,
+                destWidth: targetWidth,
+                destHeight: targetHeight,
+                fileType: "jpg",
+                quality: FACE_UPLOAD_QUALITY,
+                success: (res) => resolve(res.tempFilePath),
+                fail: reject
+              },
+              this
+            );
+          });
+        }
+      );
+    });
+  },
+
+  async normalizeFaceImage(tempFilePath) {
+    if (isUnsupportedFaceImage(tempFilePath)) {
+      throw new Error("人脸照暂不支持 HEIC/HEIF，请改用 JPG 或 PNG 格式");
+    }
+
+    const info = await this.getImageInfo(tempFilePath);
+    const width = Number(info && info.width) || 0;
+    const height = Number(info && info.height) || 0;
+    const maxEdge = Math.max(width, height);
+
+    if (!width || !height || maxEdge <= FACE_UPLOAD_MAX_EDGE) {
+      return tempFilePath;
+    }
+
+    const scale = FACE_UPLOAD_MAX_EDGE / maxEdge;
+    const targetWidth = Math.max(1, Math.round(width * scale));
+    const targetHeight = Math.max(1, Math.round(height * scale));
+
+    return this.resizeFaceImage(tempFilePath, targetWidth, targetHeight);
+  },
+
   onAvatarUploadSuccess(e) {
     const url = (e.detail.urls && e.detail.urls[0]) || "";
     this.setData({
@@ -208,22 +278,26 @@ Page({
   },
 
   uploadToCloud(tempFilePath, folder = "member-avatars") {
-    return new Promise((resolve, reject) => {
-      if (folder === "member-faces" && isUnsupportedFaceImage(tempFilePath)) {
-        reject(new Error("人脸照暂不支持 HEIC/HEIF，请改用 JPG 或 PNG 格式"));
-        return;
+    return new Promise(async (resolve, reject) => {
+      try {
+        let uploadPath = tempFilePath;
+        if (folder === "member-faces") {
+          uploadPath = await this.normalizeFaceImage(tempFilePath);
+        }
+
+        const extMatch = uploadPath.match(/\.[^.]+$/);
+        const ext = folder === "member-faces" ? ".jpg" : (extMatch ? extMatch[0] : ".jpg");
+        const cloudPath = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 11)}${ext}`;
+
+        wx.cloud.uploadFile({
+          cloudPath,
+          filePath: uploadPath,
+          success: (res) => resolve(res.fileID),
+          fail: reject
+        });
+      } catch (error) {
+        reject(error);
       }
-
-      const extMatch = tempFilePath.match(/\.[^.]+$/);
-      const ext = extMatch ? extMatch[0] : ".jpg";
-      const cloudPath = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 11)}${ext}`;
-
-      wx.cloud.uploadFile({
-        cloudPath,
-        filePath: tempFilePath,
-        success: (res) => resolve(res.fileID),
-        fail: reject
-      });
     });
   },
 

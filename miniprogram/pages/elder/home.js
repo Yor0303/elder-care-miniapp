@@ -143,6 +143,17 @@ function appendRouteParam(url, key, value) {
 }
 
 Page({
+  setPageActive(active) {
+    this._pageActive = !!active;
+  },
+
+  safeSetData(data, callback) {
+    if (!this._pageActive) {
+      return;
+    }
+    this.setData(data, callback);
+  },
+
   data: {
     pageTab: "home",
     boardTab: "messages",
@@ -217,6 +228,7 @@ Page({
   },
 
   onLoad(options = {}) {
+    this.setPageActive(true);
     const role = wx.getStorageSync("role");
     const guestRoute = isGuestRoute(options);
     const familyPreviewMode =
@@ -247,6 +259,7 @@ Page({
   },
 
   onShow() {
+    this.setPageActive(true);
     if (this.data.guestMode) {
       this.applyGuestPreviewContent();
       return;
@@ -266,7 +279,7 @@ Page({
   },
 
   applyGuestPreviewContent() {
-    this.setData({
+    this.safeSetData({
       boardTab: "messages",
       onThisDay: {
         title: "欢迎体验易忆站",
@@ -365,12 +378,14 @@ Page({
   },
 
   onHide() {
+    this.setPageActive(false);
     this.stopHomePolling();
     this.stopAudio();
     this.stopPromptAudio();
   },
 
   onUnload() {
+    this.setPageActive(false);
     this.stopHomePolling();
     this.stopAudio();
     this.stopPromptAudio();
@@ -388,16 +403,16 @@ Page({
     if (!this.innerAudioContext) return;
 
     this.innerAudioContext.onEnded(() => {
-      this.setData({ playingMessageId: "" });
+      this.safeSetData({ playingMessageId: "" });
     });
 
     this.innerAudioContext.onStop(() => {
-      this.setData({ playingMessageId: "" });
+      this.safeSetData({ playingMessageId: "" });
     });
 
     this.innerAudioContext.onError(() => {
       const hadPlayingMessage = !!this.data.playingMessageId;
-      this.setData({ playingMessageId: "" });
+      this.safeSetData({ playingMessageId: "" });
       if (hadPlayingMessage) {
         wx.showToast({ title: "语音播放失败", icon: "none" });
       }
@@ -424,6 +439,10 @@ Page({
     }
 
     this.homePollTimer = setInterval(() => {
+      if (!this._pageActive) {
+        this.stopHomePolling();
+        return;
+      }
       this.pollHomeData();
     }, HOME_POLL_INTERVAL);
   },
@@ -453,22 +472,22 @@ Page({
     try {
       const requests = await getBindingRequestsAPI();
       const list = Array.isArray(requests) ? requests : [];
-      this.setData({
+      this.safeSetData({
         pendingCount: list.filter((item) => item && item.status === "pending").length
       });
     } catch (_) {
-      this.setData({ pendingCount: 0 });
+      this.safeSetData({ pendingCount: 0 });
     }
   },
 
   async loadElderProfile() {
     try {
       const elder = await getElderInfoAPI();
-      this.setData({
+      this.safeSetData({
         elderProfile: elder || null
       });
     } catch (_) {
-      this.setData({ elderProfile: null });
+      this.safeSetData({ elderProfile: null });
     }
   },
 
@@ -476,14 +495,14 @@ Page({
     if (this.data.bindQrLoading) return;
 
     try {
-      this.setData({ bindQrLoading: true });
+      this.safeSetData({ bindQrLoading: true });
       const result = await getBindingQRCodeAPI(!!forceRefresh);
-      this.setData({
+      this.safeSetData({
         bindQrCodeFileID: (result && result.fileID) || "",
         bindQrLoading: false
       });
     } catch (error) {
-      this.setData({ bindQrLoading: false });
+      this.safeSetData({ bindQrLoading: false });
       wx.showToast({
         title: (error && (error.message || error.msg)) || "二维码生成失败",
         icon: "none"
@@ -494,9 +513,9 @@ Page({
   async loadOnThisDay() {
     try {
       const data = await getOnThisDayMemoryAPI();
-      this.setData({ onThisDay: data || null });
+      this.safeSetData({ onThisDay: data || null });
     } catch (_) {
-      this.setData({ onThisDay: null });
+      this.safeSetData({ onThisDay: null });
     }
   },
 
@@ -515,7 +534,7 @@ Page({
         todayMessages
       );
 
-      this.setData({
+      this.safeSetData({
         unreadMessageCount,
         voiceMessages: voiceMessages.map((item) => ({
           ...item,
@@ -534,7 +553,7 @@ Page({
         this.markMessagesReadSilently();
       }
     } catch (_) {
-      this.setData({
+      this.safeSetData({
         unreadMessageCount: 0,
         voiceMessages: []
       });
@@ -556,14 +575,14 @@ Page({
       const medicationItems = buildMedicationReminders(healthInfo && healthInfo.medications);
       const messageItems = buildMessageReminders(messageRes && messageRes.list);
 
-      this.setData({
+      this.safeSetData({
         medicationReminders: medicationItems
           .concat(messageItems)
           .filter((item) => !completedKeys.has(`${item.taskType}:${item.id}`))
           .sort((a, b) => String(a.time || "").localeCompare(String(b.time || "")))
       });
     } catch (_) {
-      this.setData({ medicationReminders: [] });
+      this.safeSetData({ medicationReminders: [] });
     }
   },
 
@@ -576,7 +595,7 @@ Page({
       return;
     }
 
-    this.setData({ completingReminderId: id });
+    this.safeSetData({ completingReminderId: id });
 
     try {
       await completeTodayTaskAPI({
@@ -846,8 +865,15 @@ Page({
       return;
     }
 
-    if (this.data.familyPreviewMode || this.data.previewMode) {
+    if (this.data.previewMode) {
       this.showPreviewOnlyToast("预览模式下不可用");
+      return;
+    }
+
+    if (this.data.familyPreviewMode) {
+      wx.navigateTo({
+        url: appendRouteParam("/pages/elder/face-recognition", "from", "familyPreview")
+      });
       return;
     }
     wx.navigateTo({ url: "/pages/elder/face-recognition" });

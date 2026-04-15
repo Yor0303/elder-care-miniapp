@@ -317,9 +317,9 @@ wx.cloud.init({
 如果要启用腾讯云人脸识别，需要在云函数环境变量中配置：
 
 ```env
-TENCENTCLOUD_SECRET_ID=你的SecretId
-TENCENTCLOUD_SECRET_KEY=你的SecretKey
-TENCENTCLOUD_REGION=ap-shanghai
+FACE_SECRET_ID=你的SecretId
+FACE_SECRET_KEY=你的SecretKey
+FACE_REGION=ap-shanghai
 FACE_SCORE_THRESHOLD=85
 ```
 

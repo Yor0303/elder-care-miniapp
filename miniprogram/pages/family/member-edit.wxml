@@ -113,4 +113,9 @@
   >
     删除后无法恢复，这位成员关联的识别信息也会一起失效。
   </mp-dialog>
+
+  <canvas
+    canvas-id="faceUploadCanvas"
+    style="position: fixed; left: -9999px; top: -9999px; width: {{faceCanvasWidth}}px; height: {{faceCanvasHeight}}px; opacity: 0; pointer-events: none;"
+  ></canvas>
 </view>
