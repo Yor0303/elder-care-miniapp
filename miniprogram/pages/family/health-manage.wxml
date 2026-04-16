@@ -188,7 +188,9 @@
           <input class="modal-input" placeholder="剂量，如：1 片" data-field="dosage" value="{{newRecord.dosage}}" bindinput="onInputChange" />
         </view>
         <view class="modal-item">
-          <input class="modal-input" placeholder="服用说明，如：早餐后" data-field="time" value="{{newRecord.time}}" bindinput="onInputChange" />
+          <picker mode="time" value="{{newRecord.time || '09:00'}}" bindchange="onMedicationTimeChange">
+            <view class="picker-field">{{newRecord.time || "选择用药时间"}}</view>
+          </picker>
         </view>
         <view class="modal-item switch-item">
           <view class="switch-copy">
@@ -198,7 +200,9 @@
           <switch color="#8b6a4d" checked="{{newRecord.reminderEnabled}}" bindchange="onReminderSwitch" />
         </view>
         <view wx:if="{{newRecord.reminderEnabled}}" class="modal-item">
-          <input class="modal-input" placeholder="提醒时间，如：09:00" data-field="reminderTime" value="{{newRecord.reminderTime}}" bindinput="onInputChange" />
+          <picker mode="time" value="{{newRecord.reminderTime || '09:00'}}" bindchange="onReminderTimeChange">
+            <view class="picker-field">{{newRecord.reminderTime || "选择提醒时间"}}</view>
+          </picker>
         </view>
         <view wx:if="{{newRecord.reminderEnabled}}" class="modal-item">
           <view class="schedule-label">提醒规则</view>

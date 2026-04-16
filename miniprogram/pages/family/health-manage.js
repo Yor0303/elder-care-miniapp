@@ -236,6 +236,11 @@ function buildMedicationForm(item = {}) {
   };
 }
 
+function buildPressurePlaceholder(currentValue = "") {
+  const current = String(currentValue || "").trim();
+  return current ? `例如 120/80，当前 ${current}` : "例如 120/80";
+}
+
 Page({
   data: {
     previewMode: false,
@@ -364,9 +369,9 @@ Page({
     const { todayHealth } = this.data;
     wx.showModal({
       title: "更新今日血压",
-      content: `当前血压：${todayHealth.bloodPressure || "--/--"}`,
+      content: "",
       editable: true,
-      placeholderText: "请输入血压，例如 120/80",
+      placeholderText: buildPressurePlaceholder(todayHealth.bloodPressure),
       success: async (res) => {
         if (!res.confirm || !res.content) return;
         try {
@@ -494,6 +499,18 @@ Page({
     const { field } = e.currentTarget.dataset;
     this.setData({
       [`newRecord.${field}`]: e.detail.value
+    });
+  },
+
+  onMedicationTimeChange(e) {
+    this.setData({
+      "newRecord.time": e.detail.value
+    });
+  },
+
+  onReminderTimeChange(e) {
+    this.setData({
+      "newRecord.reminderTime": e.detail.value
     });
   },
 

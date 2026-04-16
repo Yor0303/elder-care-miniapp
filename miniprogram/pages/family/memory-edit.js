@@ -118,6 +118,15 @@ function shouldUploadImage(filePath = "") {
   return !/^https?:\/\//i.test(value);
 }
 
+function getActionValue(e) {
+  return (
+    (e && e.detail && e.detail.value) ||
+    (e && e.detail && e.detail.item && e.detail.item.value) ||
+    (e && e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.value) ||
+    ""
+  );
+}
+
 Page({
   data: {
     isEdit: false,
@@ -356,7 +365,7 @@ Page({
   },
 
   async onDeleteDialogTap(e) {
-    const value = e.detail && e.detail.value;
+    const value = getActionValue(e);
     if (value !== "confirm") {
       this.closeDeleteDialog();
       return;

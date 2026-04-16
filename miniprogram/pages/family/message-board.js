@@ -153,6 +153,7 @@ Page({
   data: {
     previewMode: false,
     recording: false,
+    stoppingRecord: false,
     recordSeconds: 0,
     tempVoicePath: "",
     tempVoiceDuration: 0,
@@ -230,6 +231,7 @@ Page({
     this.recorderManager.onStart(() => {
       this.safeSetData({
         recording: true,
+        stoppingRecord: false,
         recordSeconds: 0,
         tempVoicePath: "",
         tempVoiceDuration: 0
@@ -251,6 +253,7 @@ Page({
       const duration = Math.max(1, Math.round((res.duration || 0) / 1000));
       this.safeSetData({
         recording: false,
+        stoppingRecord: false,
         tempVoicePath: res.tempFilePath || "",
         tempVoiceDuration: duration
       });
@@ -258,7 +261,7 @@ Page({
 
     this.recorderManager.onError((error) => {
       this.clearRecordTimer();
-      this.safeSetData({ recording: false });
+      this.safeSetData({ recording: false, stoppingRecord: false });
       console.error("recorderManager error:", error);
       wx.showModal({
         title: "录音失败",
@@ -418,6 +421,10 @@ Page({
 
   stopRecord() {
     if (!this.data.recording) return;
+    this.safeSetData({
+      recording: false,
+      stoppingRecord: true
+    });
     this.recorderManager.stop();
   },
 
@@ -425,7 +432,8 @@ Page({
     this.safeSetData({
       tempVoicePath: "",
       tempVoiceDuration: 0,
-      recordSeconds: 0
+      recordSeconds: 0,
+      stoppingRecord: false
     });
   },
 
@@ -449,6 +457,10 @@ Page({
   },
 
   onReminderTimeInput(e) {
+    this.safeSetData({ reminderTime: e.detail.value });
+  },
+
+  onReminderTimeChange(e) {
     this.safeSetData({ reminderTime: e.detail.value });
   },
 
@@ -567,6 +579,7 @@ Page({
         tempVoicePath: "",
         tempVoiceDuration: 0,
         recordSeconds: 0,
+        stoppingRecord: false,
         messageNote: "",
         reminderMode: false,
         reminderTime: "09:00",

@@ -11,13 +11,27 @@
   <view wx:else class="card form-card">
     <view class="form-item">
       <view class="label">教程标题</view>
-      <input class="input" data-field="title" value="{{title}}" bindinput="onInput" />
+      <input
+        class="input"
+        data-field="title"
+        value="{{title}}"
+        placeholder="输入标题"
+        bindinput="onInput"
+        cursor-spacing="24"
+      />
       <view class="helper-text">例如：电饭煲怎么煮饭</view>
     </view>
 
     <view class="form-item">
       <view class="label">适用物品</view>
-      <input class="input" data-field="itemName" value="{{itemName}}" bindinput="onInput" />
+      <input
+        class="input"
+        data-field="itemName"
+        value="{{itemName}}"
+        placeholder="输入适用物品"
+        bindinput="onInput"
+        cursor-spacing="24"
+      />
       <view class="helper-text">例如：电饭煲、热水器、微波炉</view>
     </view>
 

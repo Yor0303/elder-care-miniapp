@@ -16,6 +16,15 @@ function formatDateTime(value) {
   return `${month}-${day} ${hour}:${minute}`;
 }
 
+function getActionValue(e) {
+  return (
+    (e && e.detail && e.detail.value) ||
+    (e && e.detail && e.detail.item && e.detail.item.value) ||
+    (e && e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.value) ||
+    ""
+  );
+}
+
 Page({
   data: {
     previewMode: false,
@@ -135,7 +144,7 @@ Page({
   },
 
   async onDeleteDialogButtonTap(e) {
-    const value = e.detail && e.detail.value;
+    const value = getActionValue(e);
     if (value !== "confirm") {
       this.closeDeleteDialog();
       return;

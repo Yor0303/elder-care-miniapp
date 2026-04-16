@@ -140,13 +140,27 @@ Page({
   chooseVideo() {
     wx.chooseVideo({
       sourceType: ["album", "camera"],
-      maxDuration: 180,
+      maxDuration: 60,
       compressed: true,
       success: (res) => {
         if (!res.tempFilePath) return;
         this.setData({
           videoTempPath: res.tempFilePath,
           videoPreview: res.tempFilePath
+        });
+      },
+      fail: (error) => {
+        const errMsg = (error && (error.errMsg || error.message)) || "";
+        if (errMsg.includes("cancel")) {
+          return;
+        }
+
+        wx.showModal({
+          title: "无法选择视频",
+          content: errMsg
+            ? `选择视频失败：${errMsg}`
+            : "选择视频失败，请确认已授权相册/摄像头权限后重试。",
+          showCancel: false
         });
       }
     });

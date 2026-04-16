@@ -64,13 +64,20 @@
   background: var(--yz-bg-card-soft);
   border-radius: 20rpx;
   border: 2rpx solid var(--yz-border-soft);
-  padding: 24rpx;
   box-sizing: border-box;
   font-size: 28rpx;
   color: var(--yz-text-primary);
 }
 
+.input {
+  display: block;
+  height: 92rpx;
+  line-height: 92rpx;
+  padding: 0 24rpx;
+}
+
 .textarea {
+  padding: 24rpx;
   min-height: 220rpx;
   line-height: 1.7;
 }
